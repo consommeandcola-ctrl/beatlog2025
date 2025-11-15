@@ -5,10 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120x120.png">
-<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - Emergency Doc (高精度版)</title>
+<title>救急記録 - Emergency Doc</title>
 <style>
   /* ====== iPhone最適化設計 ====== */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
@@ -134,7 +132,7 @@
   <!-- ========== ヘッダー ========== -->
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (高精度版)</h1>
+      <h1>🚑 救急記録 (鹿児島版)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -287,6 +285,7 @@
 
   /* ====== 【新機能】医療用語の自動補正辞書 ====== */
   const MEDICAL_CORRECTIONS = {
+    // 一般的な医療用語の誤認識
     "しーぴーえー": "CPA",
     "心配停止": "心肺停止",
     "気管総監": "気管挿管",
@@ -316,7 +315,47 @@
     "ほりぞん": "ホリゾン",
     "れべちらせたむ": "レベチラセタム",
     "のるえぴねふりん": "ノルエピネフリン",
-    "ぶぷれのるふぃん": "ブプレノルフィン"
+    "ぶぷれのるふぃん": "ブプレノルフィン",
+    
+    // 鹿児島市救急隊名（19カ所）
+    "なんりんじ": "南林寺",
+    "南林字": "南林寺",
+    "南林時": "南林寺",
+    "こうなん": "甲南",
+    "甲南": "甲南",
+    "にしほんしょ": "西本署",
+    "西本所": "西本署",
+    "西本庄": "西本署",
+    "ちゅうおう": "中央",
+    "中央署": "中央",
+    "きいれ": "喜入",
+    "気入れ": "喜入",
+    "たにやま": "谷山",
+    "谷山": "谷山",
+    "いしき": "伊敷",
+    "伊敷": "伊敷",
+    "よしの": "吉野",
+    "吉野": "吉野",
+    "よしだ": "吉田",
+    "吉田": "吉田",
+    "さくらじま": "桜島",
+    "桜島": "桜島",
+    "こおりやま": "郡山",
+    "郡山": "郡山",
+    "ひがし": "東",
+    "東署": "東",
+    "みなみ": "南",
+    "南署": "南",
+    "にし": "西",
+    "西署": "西",
+    "きた": "北",
+    "北署": "北",
+    "かみふくもと": "上福元",
+    "上福元": "上福元",
+    "まつもと": "松元",
+    "松元": "松元",
+    "すぱーく": "スパーク",
+    "SPARK": "スパーク"
   };
 
   /* ====== ユーティリティ ====== */
@@ -611,64 +650,148 @@
     }
   }
 
-  /* ====== 【改良版】音声認識 - 高精度マイク設定 ====== */
+  /* ====== 【改良版】音声認識 - 高精度マイク設定 + バックグラウンド継続強化 ====== */
   class VoiceRec{
     constructor(){
       this.rec=null; this.isRec=false; this.interim=''; this.audioStream=null;
+      this.wakeLock=null; this.restartTimer=null; this.lastSoundTime=Date.now();
       try{
         if('webkitSpeechRecognition' in window) this.rec=new webkitSpeechRecognition();
         else if('SpeechRecognition' in window) this.rec=new SpeechRecognition();
       }catch(e){ this.rec=null; }
       if(this.rec) this.setup();
       this.setupEnhancedAudio();
+      this.setupVisibilityHandler();
+      this.setupWakeLock();
+    }
+    
+    /* ====== 【新機能】Wake Lock APIでスクリーンをオンに保つ ====== */
+    async setupWakeLock(){
+      if('wakeLock' in navigator){
+        try{
+          document.addEventListener('visibilitychange', async ()=>{
+            if(this.isRec && document.visibilityState === 'visible' && !this.wakeLock){
+              await this.requestWakeLock();
+            }
+          });
+        }catch(e){ console.log('Wake Lock未対応'); }
+      }
+    }
+    
+    async requestWakeLock(){
+      if('wakeLock' in navigator && this.isRec){
+        try{
+          this.wakeLock = await navigator.wakeLock.request('screen');
+          console.log('🔒 Wake Lock有効化 - 画面オフを防止');
+          this.wakeLock.addEventListener('release', ()=>{ 
+            console.log('🔓 Wake Lock解放'); 
+            this.wakeLock=null; 
+          });
+        }catch(e){ console.log('Wake Lock取得失敗:', e); }
+      }
+    }
+    
+    async releaseWakeLock(){
+      if(this.wakeLock){
+        try{ await this.wakeLock.release(); this.wakeLock=null; }catch{}
+      }
+    }
+    
+    /* ====== 【新機能】ページの可視性変更を監視してバックグラウンドでも継続 ====== */
+    setupVisibilityHandler(){
+      document.addEventListener('visibilitychange', ()=>{
+        if(this.isRec){
+          if(document.hidden){
+            console.log('📱 バックグラウンドに移行 - 録音継続を試行');
+            this.ensureRecording();
+          }else{
+            console.log('📱 フォアグラウンドに復帰');
+            this.ensureRecording();
+          }
+        }
+      });
+    }
+    
+    /* ====== 【新機能】録音が確実に動いているか定期チェック ====== */
+    ensureRecording(){
+      if(!this.isRec) return;
+      
+      clearTimeout(this.restartTimer);
+      this.restartTimer = setTimeout(()=>{
+        if(this.isRec){
+          const timeSinceLastSound = Date.now() - this.lastSoundTime;
+          if(timeSinceLastSound > 15000){
+            console.log('⚠️ 長時間無音 (15秒以上) - 認識を再起動');
+            this.forceRestart();
+          }else{
+            this.ensureRecording();
+          }
+        }
+      }, 10000);
+    }
+    
+    /* ====== 【新機能】強制再起動 ====== */
+    forceRestart(){
+      if(!this.rec || !this.isRec) return;
+      console.log('🔄 音声認識を強制再起動');
+      try{ this.rec.stop(); }catch{}
+      setTimeout(()=>{
+        if(this.isRec){
+          try{ 
+            this.rec.start(); 
+            this.lastSoundTime=Date.now(); 
+            console.log('✅ 再起動成功');
+          }catch(e){ 
+            console.error('❌ 再起動失敗:', e);
+            setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 1000);
+          }
+        }
+      }, 100);
     }
     
     /* ====== 【新機能】高品質マイク設定 ====== */
     async setupEnhancedAudio() {
       try {
-        console.log('高品質マイク設定を開始...');
+        console.log('🎤 高品質マイク設定を開始...');
         this.audioStream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            echoCancellation: true,        // エコー除去
-            noiseSuppression: true,        // ノイズ除去
-            autoGainControl: true,         // 自動音量調整
-            sampleRate: 48000,             // 高音質サンプリング
-            channelCount: 1,               // モノラル（音声認識に最適）
-            // 追加の高度な設定（対応ブラウザのみ）
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+            channelCount: 1,
             noiseSuppression: { ideal: true },
             echoCancellation: { ideal: true }
           }
         });
         console.log('✅ 高品質マイク設定完了');
-        console.log('- エコー除去: ON');
-        console.log('- ノイズ抑制: ON');
-        console.log('- 自動音量調整: ON');
-        console.log('- サンプルレート: 48kHz');
+        console.log('  - エコー除去: ON');
+        console.log('  - ノイズ抑制: ON');
+        console.log('  - 自動音量調整: ON');
+        console.log('  - サンプルレート: 48kHz');
       } catch(e) {
         console.log('⚠️ 標準マイク設定を使用:', e.message);
       }
     }
     
     setup(){
-      // 【改良】候補数を10に増加
       try{ 
         this.rec.lang='ja-JP'; 
         this.rec.continuous=true; 
         this.rec.interimResults=true; 
-        this.rec.maxAlternatives=10;  // 5から10に増加
+        this.rec.maxAlternatives=10;
       }catch(e){}
       
       this.rec.onresult=async (e)=>{
+        this.lastSoundTime = Date.now();
         let interim='', final='';
         let bestConfidence = 0;
         
         for(let i=e.resultIndex;i<e.results.length;i++){
           if(e.results[i].isFinal) {
-            // 【新機能】複数候補から最高信頼度を選択
             let bestTranscript = e.results[i][0].transcript;
             bestConfidence = e.results[i][0].confidence || 1.0;
             
-            // 候補が複数ある場合、最も信頼度が高いものを選択
             for(let j=0; j<Math.min(e.results[i].length, 10); j++) {
               const alt = e.results[i][j];
               if(alt.confidence > bestConfidence) {
@@ -679,7 +802,6 @@
             
             final += bestTranscript;
             
-            // デバッグ情報
             if(e.results[i].length > 1) {
               console.log(`📊 認識候補数: ${e.results[i].length}`);
               for(let j=0; j<Math.min(e.results[i].length, 3); j++) {
@@ -697,7 +819,6 @@
         }
         
         if(final){
-          // 【新機能】信頼度を表示
           const confidencePercent = Math.round(bestConfidence * 100);
           console.log(`✅ 最終認識: "${final}" (信頼度: ${confidencePercent}%)`);
           
@@ -732,41 +853,108 @@
         }
       };
       
-      this.rec.onstart=()=>{ this.isRec=true; this.updateUI(); };
-      this.rec.onend=()=>{ if(this.isRec){ try{ this.rec.start(); }catch(_e){ setTimeout(()=>{ if(this.isRec){ try{ this.rec.start(); }catch{} }}, 500); } } else { this.updateUI(); } };
+      this.rec.onstart=()=>{ 
+        this.isRec=true; 
+        this.lastSoundTime=Date.now();
+        this.updateUI(); 
+        this.ensureRecording();
+        console.log('🎤 音声認識開始 - バックグラウンド継続対応');
+      };
+      
+      this.rec.onend=()=>{ 
+        console.log('🔄 音声認識終了イベント');
+        if(this.isRec){ 
+          console.log('📡 録音継続のため自動再起動');
+          setTimeout(()=>{
+            if(this.isRec){
+              try{ 
+                this.rec.start(); 
+                console.log('✅ 自動再起動成功');
+              }catch(e){ 
+                console.error('❌ 再起動失敗:', e);
+                setTimeout(()=>{ if(this.isRec){ try{ this.rec.start(); }catch{} } }, 1000);
+              }
+            }
+          }, 100);
+        } else { 
+          this.updateUI(); 
+          clearTimeout(this.restartTimer);
+        }
+      };
+      
       this.rec.onerror=(e)=>{
+        console.error('⚠️ 音声認識エラー:', e.error);
         const st=document.getElementById('voiceStatusText');
-        if(e.error==='no-speech'){ return; }
+        if(e.error==='no-speech'){ 
+          this.lastSoundTime=Date.now();
+          return;
+        }
         if(e.error==='audio-capture'){ st.textContent='❌ マイクなし'; this.stop(); }
         else if(e.error==='not-allowed'){ st.textContent='❌ 許可なし'; this.stop(); }
-        else if(e.error==='network'){ st.textContent='⚠️ ネットワークエラー'; }
+        else if(e.error==='network'){ 
+          st.textContent='⚠️ ネットワークエラー'; 
+          setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 2000);
+        }
+        else if(e.error==='aborted'){
+          console.log('⚠️ 認識が中断されました');
+          if(this.isRec){
+            setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 500);
+          }
+        }
       };
-      this.rec.onsoundstart=()=>{ document.getElementById('voiceStatusText').textContent='🎤 音声検出中...'; };
-      this.rec.onsoundend = ()=>{ if(this.isRec && !this.interim){ document.getElementById('voiceStatusText').textContent='待機中...'; } };
-      this.rec.onspeechstart=()=>{ document.getElementById('voiceStatusText').textContent='🗣️ 認識中...'; };
-      this.rec.onspeechend =()=>{ if(this.isRec){ document.getElementById('voiceStatusText').textContent='待機中...'; } };
+      
+      this.rec.onsoundstart=()=>{ 
+        this.lastSoundTime=Date.now();
+        document.getElementById('voiceStatusText').textContent='🎤 音声検出中...'; 
+      };
+      
+      this.rec.onsoundend = ()=>{ 
+        this.lastSoundTime=Date.now();
+        if(this.isRec && !this.interim){ document.getElementById('voiceStatusText').textContent='待機中...'; } 
+      };
+      
+      this.rec.onspeechstart=()=>{ 
+        this.lastSoundTime=Date.now();
+        document.getElementById('voiceStatusText').textContent='🗣️ 認識中...'; 
+      };
+      
+      this.rec.onspeechend =()=>{ 
+        this.lastSoundTime=Date.now();
+        if(this.isRec){ document.getElementById('voiceStatusText').textContent='待機中...'; } 
+      };
     }
     
-    start(){
+    async start(){
       if(!this.rec){ alert('音声認識未対応'); return; }
       if(this.isRec) return;
       try{
-        this.isRec=true; this.rec.start();
+        this.isRec=true; 
+        this.lastSoundTime=Date.now();
+        this.rec.start();
+        await this.requestWakeLock();
         document.getElementById('voiceStatusText').textContent='🎤 話してください';
         this.updateUI();
-        console.log('🎤 高精度録音開始');
-      }catch(e){ this.isRec=false; alert('開始に失敗しました'); }
+        console.log('🎤 高精度録音開始 - バックグラウンドでも継続します');
+      }catch(e){ 
+        this.isRec=false; 
+        console.error('❌ 開始失敗:', e);
+        alert('開始に失敗しました'); 
+      }
     }
     
     stop(){
       if(!this.rec || !this.isRec) return;
-      this.isRec=false; try{ this.rec.stop(); }catch{}
+      this.isRec=false; 
+      clearTimeout(this.restartTimer);
+      this.releaseWakeLock();
+      try{ this.rec.stop(); }catch{}
       this.interim=''; 
       document.getElementById('voiceInterim').textContent=''; 
       document.getElementById('voiceStatusText').textContent='タップで開始';
       document.getElementById('voiceStatusText').style.color = '#7f8c8d';
       updateConfidenceBar(0);
       this.updateUI();
+      console.log('⏸️ 録音停止');
     }
     
     toggle(){ if(this.isRec) this.stop(); else this.start(); }
@@ -776,7 +964,7 @@
       const title=document.getElementById('voiceStatusTitle');
       if(this.isRec){ 
         btn.classList.add('active'); 
-        title.textContent='🔴 録音中 (高精度)'; 
+        title.textContent='🔴 録音中 (継続)'; 
       } else { 
         btn.classList.remove('active'); 
         title.textContent='停止中'; 
@@ -819,12 +1007,22 @@
     new BeatLog(document.getElementById('input')).start();
     const voice=new VoiceRec(); document.getElementById('voiceBtn').onclick=()=>voice.toggle();
     updateClock(); setInterval(updateClock,1000);
-    console.log('🚑 起動完了 (高精度音声認識版)');
+    console.log('🚑 起動完了 (高精度音声認識版 + バックグラウンド継続強化)');
+    console.log('');
     console.log('📊 改善内容:');
     console.log('  ✅ エコー除去・ノイズ抑制を有効化');
     console.log('  ✅ 認識候補数を10個に増加');
     console.log('  ✅ 医療用語の自動補正辞書を追加');
+    console.log('  ✅ 鹿児島市19カ所の救急隊名を認識');
     console.log('  ✅ 認識信頼度の可視化');
+    console.log('  ✅ バックグラウンド録音継続を強化');
+    console.log('  ✅ Wake Lock API で画面オフを防止');
+    console.log('  ✅ 10秒ごとの定期監視と自動再起動');
+    console.log('');
+    console.log('🏥 鹿児島市救急隊:');
+    console.log('  南林寺, 甲南, 西本署, 中央, 喜入, 谷山, 伊敷,');
+    console.log('  吉野, 吉田, 桜島, 郡山, 東, 南, 西, 北,');
+    console.log('  上福元, 松元, スパーク など');
   }
   init();
 </script>
