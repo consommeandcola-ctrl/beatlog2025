@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - 超高精度AI版 v2.3 (誤認識対策強化版)</title>
+<title>救急記録 - 超高精度AI版 v2.3.3 (症状認識強化)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   body {
@@ -134,7 +134,7 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (AI v2.3<span class="version">誤認識対策強化版</span>)</h1>
+      <h1>🚑 救急記録 (AI v2.3.3<span class="version">症状認識強化</span>)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -232,21 +232,47 @@
   let editingLogId=null;
   let saveDebounceTimer = null; 
 
+  /* ====== 【v2.3.3強化】TAGSに「胸痛」を追加 ====== */
   const TAGS=[
     "救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着",
     "ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","フライトドクター接触","ランデブーポイント着",
     "カー覚知","カー指令","カー出動","カー現着","カー接触","ドッキング","医師接触",
-    "現病歴","既往症","かかりつけ情報",
+    
+    // v2.3.2追加 + v2.3.3「胸痛」追加
+    "主訴","現病歴","既往歴","常用薬","アレルギー","生活歴","ADL", "胸痛",
+    "身体所見",
+
     "気管挿管","人工呼吸","バックバルブマスク換気","酸素投与","酸素投与量","NPPV",
     "ルート確保","生食点滴","ソルアセトF点滴","大腿動脈","大腿静脈","骨髄針",
-    "血ガス","血糖","簡易超音波検査",
+
+    // v2.3.2追加 (一部既存)
+    "血液ガス分析","血糖","簡易超音波検査","12誘導心電図","超音波検査",
+
     "胸骨圧迫","開胸","心臓マッサージ",
     "アドレナリン","ミダゾラム","ジアゼパム","イーケプラ","ノルアドレナリン","レペタン"
   ];
 
-  /* ====== 【v2.3強化】医療用語辞書＋音声誤認識パターン（心肺/意識/隊名強化） ====== */
+  /* ====== 【v2.3.3強化】医療用語辞書に「胸痛」関連を追加 ====== */
   const MEDICAL_CORRECTIONS = {
-    // 重要な同音異義語・誤認識（最優先）
+    // v2.3.3追加: 胸痛
+    "きょうつう": "胸痛", "共通": "胸痛", // 「共通」は文脈判断に任せるが、辞書にも追加
+    "共通が": "胸痛が", "共通を": "胸痛を", "共通の": "胸痛の",
+
+    // v2.3.2追加: 必須医療用語
+    "しゅそ": "主訴", "主訴は": "主訴",
+    "げんびょうれき": "現病歴", "現病歴は": "現病歴",
+    "きおうれき": "既往歴", "既往歴は": "既往歴",
+    "じょうようやく": "常用薬", "常用薬は": "常用薬",
+    "あれるぎー": "アレルギー", "アレルギーは": "アレルギー",
+    "せいかつれき": "生活歴",
+    "えーでぃーえる": "ADL", "adl": "ADL",
+    "しんたいしょけん": "身体所見",
+    "けつがす": "血液ガス分析", // 「血ガス」から「血液ガス分析」に強化
+    "けっとう": "血糖",
+    "12ゆうどうしんでんず": "12誘導心電図", "12誘導": "12誘導心電図",
+    "ちょうおんぱ": "超音波検査", "エコー": "超音波検査", "簡易超音波": "簡易超音波検査",
+
+    // v2.3.1からの継続: 重要な同音異義語・誤認識
     "しーぴーえー":"CPA","心配停止":"心肺停止","心肺蘇生":"心肺停止","心肺装置":"心肺停止","心配装置":"心肺停止",
     "気管総監":"気管挿管","気管創刊":"気管挿管","気管相関":"気管挿管","気管総刊":"気管挿管",
     "るーとかくほ":"ルート確保","るーと確保":"ルート確保","ルート角穂":"ルート確保",
@@ -257,10 +283,10 @@
     "ぼすみん":"ボスミン","さちゅれーしょん":"サチュレーション","えすぴーおーつー":"SpO2","じぇーしーえす":"JCS",
     "じーしーえす":"GCS","生職":"生食","胸骨厚迫":"胸骨圧迫","胸骨あっぱく":"胸骨圧迫",
     "除債動":"除細動","じょさいどう":"除細動","じょさいど":"除細動","除細同":"除細動",
-    "にっぷぶ":"NPPV","けつがす":"血ガス","けっとう":"血糖","びーえす":"BS","簡易超音波検査":"簡易超音波検査",
+    "にっぷぶ":"NPPV",
     "ドクター接触":"医師接触","フライトドクター":"フライトドクター接触",
     
-    // 鹿児島市救急隊名の音声誤認識パターン（最重要）- v2.2と同様に維持
+    // 鹿児島市救急隊名の音声誤認識パターン（最重要）
     "なんりんじ":"南林寺","なんりん":"南林寺","南林":"南林寺","こうなん":"甲南","江南":"甲南","港南":"甲南","湖南":"甲南",
     "かみまち":"上町","かみまち":"上町","よしの":"吉野","よしだ":"吉田","さくらじまひがし":"桜島東",
     "さくらじまにし":"桜島西","いしき":"伊敷","まつもと":"松元","こおりやま":"郡山","たにやま":"谷山",
@@ -279,9 +305,10 @@
     "映画", "ドラマ", "アニメ", "ゲーム", "ショッピング", "買い物"
   ];
 
+  /* v2.3.1で修正済みの関数 */
   function containsBlacklistedWord(text) {
     const lowerText = text.toLowerCase();
-    for (const word of BLACKLISTED_WORDS) {
+    for (const word of BLACKLIST_WORDS) {
       if (lowerText.includes(word.toLowerCase())) {
         return word;
       }
@@ -289,13 +316,12 @@
     return null;
   }
 
-  /* ====== 【v2.3強化】救急隊名パターン検出＆補正（短文強制補正の対象外となるように調整） ====== */
   function detectAndCorrectEmergencyTeam(text) {
     let corrected = text;
     
     const VOICE_COMMON_ERRORS = {
       "江南": "甲南", "港南": "甲南", "湖南": "甲南", "こうなん": "甲南", "意識": "伊敷", "気入れ": "喜入", 
-      "心配": "心肺", "相関": "挿管", "総監": "挿管", "創刊": "挿管", "厚迫": "圧迫", "あっぱく": "圧迫"
+      "心配": "心肺", "相関": "挿管", "総監": "挿管", "創刊": "挿管", "厚迫": "圧迫"
     };
     
     for (const [wrong, correct] of Object.entries(VOICE_COMMON_ERRORS)) {
@@ -345,7 +371,9 @@
       '呼吸', '意識', 'jcs', 'gcs', '胸骨', '圧迫', '除細動',
       'バイタル', '観察', '処置', '投与', '救急', '現着', '覚知',
       '出動', '搬送', '病着', 'hr', 'bp', 'rr', 'bt', '接触',
-      '医師', 'ドクター', 'ヘリ', 'カー', 'ランデブー'
+      '医師', 'ドクター', 'ヘリ', 'カー', 'ランデブー',
+      '主訴', '現病歴', '既往歴', '常用薬', 'アレルギー', 'adl', '身体所見', '血液ガス', '心電図', '超音波',
+      '胸痛' // v2.3.3追加
     ];
     
     for (const keyword of medicalKeywords) {
@@ -364,11 +392,20 @@
     return Math.min(1.0, score);
   }
 
+  /* ====== 【v2.3.3強化】NGRAMSに「胸痛」関連を追加 ====== */
   const NGRAMS = {
     "救急 覚知": 0.95, "救急 現着": 0.95, "気管 挿管": 0.90, "ルート 確保": 0.90, 
     "胸骨 圧迫": 0.95, "血圧 測定": 0.85, "SpO2 測定": 0.85, "JCS 3": 0.80,
     "GCS 15": 0.80, "生食 点滴": 0.85, "医師 接触": 0.90, "車内 収容": 0.90,
-    "心肺 停止": 0.95, "ノル アドレナリン": 0.90, "人工 呼吸": 0.85
+    "心肺 停止": 0.95, "ノル アドレナリン": 0.90, "人工 呼吸": 0.85,
+
+    // v2.3.2追加
+    "主訴 は": 0.9, "現病歴 は": 0.9, "既往歴 に": 0.9, "常用薬 は": 0.9, 
+    "アレルギー は": 0.9, "ADL は": 0.9, "身体所見": 0.9, "血液ガス分析": 0.9, 
+    "12誘導心電図": 0.9, "超音波検査": 0.85,
+
+    // v2.3.3追加
+    "胸痛 が": 0.9, "胸痛 を": 0.9
   };
 
   class ContextEngine {
@@ -393,6 +430,7 @@
       this.updateExpectedNext();
     }
     
+    /* ====== 【v2.3.2強化】ContextEngineのフェーズ認識を強化 ====== */
     updatePhase(text) {
       if (text.includes('覚知') || text.includes('指令')) {
         this.currentPhase = 'dispatch';
@@ -402,10 +440,13 @@
         this.expectedNext = ['現着', '到着', '接触'];
       } else if (text.includes('現着') || text.includes('到着')) {
         this.currentPhase = 'onscene';
-        this.expectedNext = ['接触', '観察', 'バイタル', '処置', '意識'];
-      } else if (text.includes('処置') || text.includes('挿管') || text.includes('ルート')) {
+        this.expectedNext = ['接触', '観察', 'バイタル', '処置', '意識', '主訴', '現病歴', '既往歴', '胸痛'];
+      } else if (text.includes('主訴') || text.includes('現病歴') || text.includes('既往歴') || text.includes('胸痛')) {
+        this.currentPhase = 'onscene'; // 現場での情報収集
+        this.expectedNext = ['バイタル', '処置', '身体所見', '常用薬', 'アレルギー'];
+      } else if (text.includes('処置') || text.includes('挿管') || text.includes('ルート') || text.includes('身体所見')) {
         this.currentPhase = 'treatment';
-        this.expectedNext = ['効果', '改善', '搬送', '病着', 'HR', 'BP', 'JCS'];
+        this.expectedNext = ['効果', '改善', '搬送', '病着', 'HR', 'BP', 'JCS', '血液ガス', '心電図'];
       } else if (text.includes('搬送') || text.includes('車内')) {
         this.currentPhase = 'transport';
         this.expectedNext = ['病着', '到着', '引継'];
@@ -439,11 +480,11 @@
         }
       }
       
-      if (this.currentPhase === 'onscene' && (text.includes('バイタル') || text.includes('観察'))) {
-        score += 0.1;
+      if (this.currentPhase === 'onscene' && (text.includes('バイタル') || text.includes('観察') || text.includes('主訴') || text.includes('既往歴') || text.includes('胸痛'))) {
+        score += 0.15;
       }
-      if (this.currentPhase === 'treatment' && (text.includes('処置') || text.includes('投与'))) {
-        score += 0.1;
+      if (this.currentPhase === 'treatment' && (text.includes('処置') || text.includes('投与') || text.includes('身体所見'))) {
+        score += 0.15;
       }
       
       return Math.min(1.0, score);
@@ -486,14 +527,13 @@
     return 1 - (distance / maxLen);
   }
 
-  /* ====== 【v2.3新規】同音異義語の文脈判定補正 ====== */
+  /* ====== 【v2.3.3強化】「胸痛 vs 共通」の文脈補正を追加 ====== */
   function checkHomophoneContextCorrection(text, contextEngine) {
       let corrected = text;
       let boost = 0;
       
       // 1. 伊敷（地名） vs 意識（意識レベル）
       if (corrected.includes('意識')) {
-          // 出動・移動フェーズで「意識」が出たら地名「伊敷」の可能性が高い
           if (contextEngine.currentPhase === 'dispatch' || contextEngine.currentPhase === 'enroute') {
               if (similarityScore(corrected, '伊敷') > 0.6) {
                   corrected = corrected.replace(/意識/g, '伊敷');
@@ -502,10 +542,8 @@
               }
           }
       } else if (corrected.includes('伊敷')) {
-          // 現場・処置フェーズで「伊敷」が出たら「意識」の可能性も考慮
           if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment') {
               if (similarityScore(corrected, '意識') > 0.6) {
-                  // スコアが僅差の場合、文脈スコアで判断するため、ここでは補正しないがブーストを与える
                   boost += 0.1;
               }
           }
@@ -513,12 +551,24 @@
       
       // 2. 心配 vs 心肺
       if (corrected.includes('心配') && contextEngine.currentPhase !== 'initial') {
-          // 初回以外で「心配」が出たらほぼ「心肺」
           const regex = /心配/g;
           if (regex.test(corrected)) {
               corrected = corrected.replace(regex, '心肺');
-              boost += 0.2; // 強力にブースト
+              boost += 0.2; 
               console.log("  🧠 文脈補正: '心配' → '心肺'");
+          }
+      }
+      
+      // 3. 共通 vs 胸痛 (v2.3.3追加)
+      if (corrected.includes('共通')) {
+          // 現場到着～処置フェーズでの「共通」は「胸痛」の可能性が極めて高い
+          if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment' || contextEngine.currentPhase === 'enroute') {
+              const regex = /共通/g;
+              if (regex.test(corrected)) {
+                  corrected = corrected.replace(regex, '胸痛');
+                  boost += 0.25; // 強力にブースト
+                  console.log("  🧠 文脈補正: '共通' → '胸痛' (症状優先)");
+              }
           }
       }
 
@@ -548,7 +598,7 @@
         };
       }
       
-      console.log('🧠 AI補正エンジン起動 (v2.3 - 誤認識対策強化)');
+      console.log('🧠 AI補正エンジン起動 (v2.3.3 - 症状認識強化)');
       
       const filteredAlternatives = [];
       
@@ -587,29 +637,30 @@
           score += 0.3;
         }
 
-        // 3. 【v2.3強化】短文の強制補正ロジック（最優先）
-        if (text.length <= 6 && score < 0.95) { // 6文字以下で信頼度が低い場合
-            for (const term of ['CPA', '心肺停止', '挿管', 'ルート確保', '甲南', '南林寺']) {
+        // 3. 【v2.3】短文の強制補正ロジック
+        if (text.length <= 6 && score < 0.95) { 
+            const importantTerms = ['CPA', '心肺停止', '挿管', 'ルート確保', '甲南', '南林寺', '主訴', '既往歴', 'ADL', '胸痛']; // v2.3.3「胸痛」追加
+            for (const term of importantTerms) {
                 const sim = similarityScore(text, term);
                 if (sim > 0.8) {
                     console.log(`  💥 短文強制補正: "${text}" → "${term}" (類似度:${sim.toFixed(2)})`);
                     text = term;
-                    score += 0.6; // 極めて大きなブースト
+                    score += 0.6; 
                     break;
                 }
             }
         }
         
-        // 4. 【v2.3強化】同音異義語の文脈判定補正
+        // 4. 【v2.3.3強化】同音異義語の文脈判定補正
         const { corrected: homophoneCorrected, boost: homophoneBoost } = checkHomophoneContextCorrection(text, this.contextEngine);
         if (homophoneCorrected !== text) {
             text = homophoneCorrected;
         }
         score += homophoneBoost;
         
-        // 5. 文脈スコアの加算
+        // 5. 【v2.3.2】文脈スコアの加算
         const contextScore = this.contextEngine.getContextScore(text);
-        score += contextScore * 0.2;
+        score += contextScore * 0.25;
         
         // 6. 医療用語/タグの一致度
         let medicalScore = 0;
@@ -620,14 +671,14 @@
         }
         score += Math.min(0.25, medicalScore);
         
-        // 7. 【v2.3強化】N-gramスコアの加算（重み増）
+        // 7. 【v2.3】N-gramスコアの加算
         let ngramScore = 0;
         for (const [ngram, weight] of Object.entries(NGRAMS)) {
           if (text.includes(ngram.replace(' ', ''))) {
-            ngramScore += weight * 0.2; // v2.2: 0.15 → v2.3: 0.2
+            ngramScore += weight * 0.2; 
           }
         }
-        score += Math.min(0.2, ngramScore); // 最大影響度も少し引き上げ
+        score += Math.min(0.2, ngramScore);
         
         // 8. 救急隊名の一致度（類似度）
         let similarityBest = 0;
@@ -643,14 +694,14 @@
           score += this.userPatterns[text] * 0.15;
         }
         
-        // 9. 【v2.3強化】ドメインスコアの加算（重み増）
+        // 9. 【v2.3】ドメインスコアの加算
         const domainScore = getMedicalDomainScore(text);
-        score += domainScore * 0.25; // v2.2: 0.2 → v2.3: 0.25
+        score += domainScore * 0.25; 
         
-        // 10. 【v2.3強化】救急隊名ボーナス（重み増）
+        // 10. 【v2.3】救急隊名ボーナス
         for (const teamName of KAGOSHIMA_EMERGENCY_TEAMS) {
           if (text.includes(teamName)) {
-            score += 0.4; // v2.2: 0.35 → v2.3: 0.4
+            score += 0.4;
             break;
           }
         }
@@ -728,7 +779,7 @@
       const patterns=JSON.parse(localStorage.getItem(STORE_KEY+'_patterns'));
       if(patterns) aiCorrection.userPatterns = patterns;
       
-      const corrections=JSON.parse(localStorage.getItem(STORE_KEY+'_corrections'));
+      const corrections=JSON.parse(localStorage.getItem(STORE_KEY+'_correCTIONS'));
       if(corrections) aiCorrection.userCorrections = corrections;
     }catch{ 
       logs=[]; startTime=null; aiCorrectionCount=0; userLearnedCount=0;
@@ -811,12 +862,11 @@
     const ctrl = new AbortController();
     const timer = setTimeout(()=>ctrl.abort(), timeoutMs);
     try{
-      // ネットワーク通信を伴うため、URLやヘッダーはv2.3に更新
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1&accept-language=ja`;
       const res = await fetch(url, {
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'EmergencyDoc/2.3 (iOS Safari)' 
+          'User-Agent': 'EmergencyDoc/2.3.3 (iOS Safari)' 
         },
         signal: ctrl.signal
       });
@@ -999,18 +1049,19 @@
     }
   }
 
+  /* ====== 【v2.3.3強化】タグボタンのカテゴリ分けを更新 ====== */
   function renderTagButtons(){
     const box=document.getElementById('tagButtons'); box.innerHTML='';
     const cats={
       '🚑 救急':["救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着"],
       '🚁 ヘリ':["ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","フライトドクター接触","ランデブーポイント着"],
       '🚙 カー':["カー覚知","カー指令","カー出動","カー現着","カー接触","ドッキング","医師接触"],
-      '📋 情報':["現病歴","既往症","かかりつけ情報"],
+      '📋 情報':["主訴", "胸痛", "現病歴","既往歴","常用薬","アレルギー","生活歴","ADL"], // 胸痛を追加
+      '🔬 検査':["身体所見","血液ガス分析","血糖","簡易超音波検査","12誘導心電図","超音波検査"],
       '🫁 呼吸':["気管挿管","人工呼吸","バックバルブマスク換気","酸素投与","酸素投与量","NPPV"],
       '💉 循環':["ルート確保","生食点滴","ソルアセトF点滴","大腿動脈","大腿静脈","骨髄針"],
-      '🔬 検査':["血ガス","血糖","簡易超音波検査"],
       '❤️ 蘇生':["胸骨圧迫","開胸","心臓マッサージ"],
-      '💊 薬剤':["アドレナリン","ミダゾラム","ジアゼパム","イーケプラ","ノルアドレナリン","レベタン"]
+      '💊 薬剤':["アドレナリン","ミダゾラム","ジアゼパム","イーケプラ","ノルアドレナリン","レペタン"]
     };
     Object.entries(cats).forEach(([cat,tags])=>{
       const h=document.createElement('div');
@@ -1079,7 +1130,7 @@
     }
   }
 
-  /* ====== 【v2.3強化】音声認識エンジン（オーディオ処理に特化） ====== */
+  /* ====== 【v2.3】音声認識エンジン ====== */
   class UltraPrecisionVoiceRec{
     constructor(){
       this.rec=null; this.isRec=false; this.interim=''; this.audioStream=null;
@@ -1089,14 +1140,10 @@
         else if('SpeechRecognition' in window) this.rec=new SpeechRecognition();
       }catch(e){ this.rec=null; }
       if(this.rec) this.setup();
-      this.setupEnhancedAudio(); // マイク品質の確保
+      this.setupEnhancedAudio(); 
       this.setupVisibilityHandler();
       this.setupWakeLock();
     }
-    
-    // 省略：setupWakeLock, requestWakeLock, releaseWakeLock, setupVisibilityHandler, ensureRecording, forceRestart
-    // 理由は、これらのロジックはv2.2からの変更がなく、コードの全長を抑えるためです。
-    // ... (v2.2のコードを想定) ...
     
     async setupWakeLock(){
       if('wakeLock' in navigator){
@@ -1169,7 +1216,6 @@
 
     async setupEnhancedAudio() {
       try {
-        // v2.3: ノイズ・エコー除去を強く要求する
         this.audioStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: { ideal: true },
@@ -1180,7 +1226,6 @@
           }
         });
       } catch(e) {
-        // 設定失敗時は標準設定を使用
       }
     }
     
@@ -1268,7 +1313,7 @@
               try{ 
                 this.rec.start(); 
               }catch(e){ 
-                setTimeout(()=>{ if(this.isRec){ try{ this.rec.start(); }catch{} } }, 1000);
+                setTimeout(()=>{ if(this.isRec) this.forceRestart(); } , 1000);
               }
             }
           }, 100);
@@ -1347,7 +1392,7 @@
       const title=document.getElementById('voiceStatusTitle');
       if(this.isRec){ 
         btn.classList.add('active'); 
-        title.textContent='🔴 録音中 (AI v2.3)'; 
+        title.textContent='🔴 録音中 (AI v2.3.3)'; 
       } else { 
         btn.classList.remove('active'); 
         title.textContent='停止中'; 
@@ -1398,19 +1443,20 @@
     document.getElementById('voiceBtn').onclick=()=>voice.toggle();
     updateClock(); setInterval(updateClock,1000);
     
-    console.log('🚑 起動完了 (超高精度AI版 v2.3 - 誤認識対策強化版)');
+    console.log('🚑 起動完了 (超高精度AI版 v2.3.3 - 症状認識強化版)');
     console.log('');
-    console.log('🆕 v2.3の強化点 (誤認識対策):');
-    console.log('  💥 短文強制補正: 重要単語（CPA, 隊名など）を短文で強力に補正');
-    console.log('  🧠 文脈補正強化: 「意識」 vs 「伊敷」、「心配」 vs 「心肺」の文脈判定強化');
-    console.log('  ⭐ スコアリング最適化: N-gram、ドメイン、隊名一致の重み付けを増加');
-    console.log('  🎤 マイク設定: ノイズ・エコー除去の要求を理想値に設定（コード内）');
+    console.log('🆕 v2.3.3の強化点 (症状認識強化):');
+    console.log('  🧠 文脈補正強化: 「共通」を「胸痛」に自動補正するロジックを追加');
+    console.log('  ✅ 辞書(MEDICAL_CORRECTIONS)に「きょうつう」「共通が」などのパターンを追加');
+    console.log('  ✅ 連語(NGRAMS)に「胸痛 が」などのパターンを追加');
+    console.log('  ✅ タグボタンに「胸痛」を追加');
+    console.log('  ✅ 文脈エンジン(ContextEngine)が「胸痛」を認識し、フェーズを更新');
     console.log('');
-    console.log('🧠 AI機能 (v2.1からの継続):');
-    console.log('  ✅ 文脈理解エンジン');
-    console.log('  ✅ 信頼度重み付けアルゴリズム');
+    console.log('🧠 AI機能 (v2.3.2からの継続):');
+    console.log('  ✅ 医療用語（主訴, 既往歴など）の事前学習');
+    console.log('  💥 短文強制補正ロジック');
+    console.log('  🧠 文脈による同音異義語補正（意識/伊敷, 心配/心肺）');
     console.log('  ✅ ユーザー学習機能');
-    console.log('  ✅ 時系列文脈解析');
     console.log('');
   }
   init();
