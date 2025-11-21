@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - ヘリ安定版 v2.4.2</title>
+<title>救急記録 - ヘリ安定版 v2.4.3</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   body {
@@ -55,7 +55,6 @@
   .system-status.error { background: #f8d7da; border-left-color: #e74c3c; color: #721c24; }
   .system-status.success { background: #d4edda; border-left-color: #27ae60; color: #155724; }
   
-  /* v2.4.2 新機能: 権限エラー表示 */
   .permission-alert {
     display: none; background: #fff3cd; border: 2px solid #f39c12; border-radius: 8px;
     padding: 12px; margin-bottom: 8px;
@@ -216,7 +215,7 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (ヘリ安定版 v2.4.2<span class="version">権限改善版</span>)</h1>
+      <h1>🚑 救急記録 (ヘリ安定版 v2.4.3<span class="version">音声品質最適化</span>)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -232,7 +231,6 @@
       <section class="card">
         <h2>📝 入力</h2>
         <div class="body">
-          <!-- v2.4.2 新機能: マイク権限エラー表示 -->
           <div id="permissionAlert" class="permission-alert">
             <div class="permission-alert-title">
               🎤 マイクへのアクセス許可が必要です
@@ -427,7 +425,6 @@
     "映画", "ドラマ", "アニメ", "ゲーム", "ショッピング", "買い物"
   ];
 
-  /* v2.4.2 新機能: 権限アラート表示・非表示 */
   function showPermissionAlert() {
     document.getElementById('permissionAlert').classList.add('show');
     document.getElementById('voiceBtn').disabled = true;
@@ -466,25 +463,11 @@
       }
     }
 
-    vibrateRecordingStart() {
-      this.vibrate([100, 50, 100]);
-    }
-
-    vibrateRecordingStop() {
-      this.vibrate([100, 50, 100, 50, 100]);
-    }
-
-    vibrateLogConfirmed() {
-      this.vibrate([200]);
-    }
-
-    vibrateError() {
-      this.vibrate([200, 100, 200]);
-    }
-
-    vibrateRecovery() {
-      this.vibrate([50, 50, 50]);
-    }
+    vibrateRecordingStart() { this.vibrate([100, 50, 100]); }
+    vibrateRecordingStop() { this.vibrate([100, 50, 100, 50, 100]); }
+    vibrateLogConfirmed() { this.vibrate([200]); }
+    vibrateError() { this.vibrate([200, 100, 200]); }
+    vibrateRecovery() { this.vibrate([50, 50, 50]); }
 
     playBeep(frequency = 880, duration = 100) {
       if (!this.audioContext) {
@@ -512,20 +495,17 @@
       if (!this.speechSynth) return;
 
       this.speechSynth.cancel();
-
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ja-JP';
       utterance.rate = 1.1;
       utterance.pitch = 1.0;
       utterance.volume = 0.8;
-
       this.speechSynth.speak(utterance);
     }
 
     notifyRecordingActive() {
       const now = Date.now();
       const interval = (+document.getElementById('voiceNotifyInterval')?.value || 30) * 1000;
-      
       if (now - this.lastVoiceNotify >= interval) {
         this.speak('録音中');
         this.playBeep(1200, 50);
@@ -578,45 +558,28 @@
       this.noSleepVideo.style.top = '0';
       this.noSleepVideo.style.width = '1px';
       this.noSleepVideo.style.height = '1px';
-      
       this.noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAA1m1vb3YAAABsbXZoZAAAAAAAAAAAAAAAAAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU2LjQwLjEwMQ==';
-      
       document.body.appendChild(this.noSleepVideo);
     }
 
     async request() {
       if (!document.getElementById('keepScreenOn')?.checked) return;
-
       if ('wakeLock' in navigator) {
         try {
           this.wakeLock = await navigator.wakeLock.request('screen');
-          this.wakeLock.addEventListener('release', () => {
-            console.log('Wake Lock解放');
-            this.wakeLock = null;
-          });
-          console.log('Wake Lock取得成功');
+          this.wakeLock.addEventListener('release', () => { this.wakeLock = null; });
           return;
-        } catch (err) {
-          console.log('Wake Lock失敗、フォールバックを使用');
-        }
+        } catch (err) {}
       }
-
       try {
         await this.noSleepVideo.play();
-        console.log('NoSleep動画再生開始');
-      } catch (err) {
-        console.log('NoSleep動画再生失敗:', err);
-      }
+      } catch (err) {}
     }
 
     async release() {
       if (this.wakeLock) {
-        try {
-          await this.wakeLock.release();
-          this.wakeLock = null;
-        } catch (err) {}
+        try { await this.wakeLock.release(); this.wakeLock = null; } catch (err) {}
       }
-
       if (this.noSleepVideo) {
         this.noSleepVideo.pause();
       }
@@ -628,63 +591,48 @@
   function containsBlacklistedWord(text) {
     const lowerText = text.toLowerCase();
     for (const word of BLACKLIST_WORDS) {
-      if (lowerText.includes(word.toLowerCase())) {
-        return word;
-      }
+      if (lowerText.includes(word.toLowerCase())) return word;
     }
     return null;
   }
 
   function detectAndCorrectEmergencyTeam(text) {
     let corrected = text;
-    
     const VOICE_COMMON_ERRORS = {
       "江南": "甲南", "港南": "甲南", "湖南": "甲南", "こうなん": "甲南", "意識": "伊敷", "気入れ": "喜入", 
       "心配": "心肺", "相関": "挿管", "総監": "挿管", "創刊": "挿管", "厚迫": "圧迫"
     };
-    
     for (const [wrong, correct] of Object.entries(VOICE_COMMON_ERRORS)) {
       const regex = new RegExp(wrong, 'gi');
       if (regex.test(corrected)) {
         corrected = corrected.replace(regex, correct);
       }
     }
-    
-    const patterns = [
-      /(.{2,4}?)(救急|隊|消防)/g,
-      /(.{2,4}?)救急車/g
-    ];
-    
+    const patterns = [ /(.{2,4}?)(救急|隊|消防)/g, /(.{2,4}?)救急車/g ];
     for (const pattern of patterns) {
       const matches = [...corrected.matchAll(pattern)];
-      
       for (const match of matches) {
         const teamNamePart = match[1].trim();
         let bestMatch = null;
         let bestScore = 0;
-        
         for (const validTeam of KAGOSHIMA_EMERGENCY_TEAMS) {
           const score = similarityScore(teamNamePart, validTeam);
-          
           if (score > bestScore && score > 0.35) {
             bestScore = score;
             bestMatch = validTeam;
           }
         }
-        
         if (bestMatch) {
           corrected = corrected.replace(match[0], bestMatch + (match[2] || ''));
         }
       }
     }
-    
     return corrected;
   }
 
   function getMedicalDomainScore(text) {
     let score = 0;
     const lowerText = text.toLowerCase();
-    
     const medicalKeywords = [
       'cpa', '心肺停止', '挿管', 'ルート', '点滴', '血圧', 'spo2',
       '呼吸', '意識', 'jcs', 'gcs', '胸骨', '圧迫', '除細動',
@@ -694,20 +642,15 @@
       '主訴', '現病歴', '既往歴', '常用薬', 'アレルギー', 'adl', '身体所見', '血液ガス', '心電図', '超音波',
       '胸痛'
     ];
-    
     for (const keyword of medicalKeywords) {
-      if (lowerText.includes(keyword)) {
-        score += 0.08;
-      }
+      if (lowerText.includes(keyword)) score += 0.08;
     }
-    
     for (const team of KAGOSHIMA_EMERGENCY_TEAMS) {
       if (text.includes(team)) {
         score += 0.2;
         break;
       }
     }
-    
     return Math.min(1.0, score);
   }
 
@@ -730,16 +673,8 @@
     }
     
     addToHistory(text) {
-      this.history.push({
-        text: text,
-        time: Date.now(),
-        phase: this.currentPhase
-      });
-      
-      if (this.history.length > 50) {
-        this.history.shift();
-      }
-      
+      this.history.push({ text: text, time: Date.now(), phase: this.currentPhase });
+      if (this.history.length > 50) this.history.shift();
       this.updatePhase(text);
       this.updateExpectedNext();
     }
@@ -771,65 +706,44 @@
     
     updateExpectedNext() {
       const recent = this.history.slice(-5).map(h => h.text).join(' ');
-      
       if (recent.includes('血圧') || recent.includes('HR')) {
         this.expectedNext.push('SpO2', 'RR', 'BT', 'JCS');
       }
-      
       if (recent.includes('挿管') || recent.includes('ルート') || recent.includes('点滴')) {
         this.expectedNext.push('確認', '成功', '良好', '改善');
       }
-      
       this.expectedNext = [...new Set(this.expectedNext)];
     }
     
     getContextScore(text) {
       let score = 0.5;
-      
       for (const expected of this.expectedNext) {
-        if (text.includes(expected)) {
-          score += 0.1;
-        }
+        if (text.includes(expected)) score += 0.1;
       }
-      
       if (this.currentPhase === 'onscene' && (text.includes('バイタル') || text.includes('観察') || text.includes('主訴') || text.includes('既往歴') || text.includes('胸痛'))) {
         score += 0.15;
       }
       if (this.currentPhase === 'treatment' && (text.includes('処置') || text.includes('投与') || text.includes('身体所見'))) {
         score += 0.15;
       }
-      
       return Math.min(1.0, score);
     }
   }
 
   function levenshteinDistance(str1, str2) {
-    const len1 = str1.length;
-    const len2 = str2.length;
+    const len1 = str1.length, len2 = str2.length;
     const matrix = [];
-    
-    for (let i = 0; i <= len1; i++) {
-      matrix[i] = [i];
-    }
-    
-    for (let j = 0; j <= len2; j++) {
-      matrix[0][j] = j;
-    }
-    
+    for (let i = 0; i <= len1; i++) matrix[i] = [i];
+    for (let j = 0; j <= len2; j++) matrix[0][j] = j;
     for (let i = 1; i <= len1; i++) {
       for (let j = 1; j <= len2; j++) {
         if (str1.charAt(i - 1) === str2.charAt(j - 1)) {
           matrix[i][j] = matrix[i - 1][j - 1];
         } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
+          matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
         }
       }
     }
-    
     return matrix[len1][len2];
   }
 
@@ -842,43 +756,30 @@
   function checkHomophoneContextCorrection(text, contextEngine) {
     let corrected = text;
     let boost = 0;
-    
     if (corrected.includes('意識')) {
       if (contextEngine.currentPhase === 'dispatch' || contextEngine.currentPhase === 'enroute') {
         if (similarityScore(corrected, '伊敷') > 0.6) {
           corrected = corrected.replace(/意識/g, '伊敷');
           boost += 0.25;
-          console.log("  🧠 文脈補正: '意識' → '伊敷' (地名優先)");
-        }
-      }
-    } else if (corrected.includes('伊敷')) {
-      if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment') {
-        if (similarityScore(corrected, '意識') > 0.6) {
-          boost += 0.1;
         }
       }
     }
-    
     if (corrected.includes('心配') && contextEngine.currentPhase !== 'initial') {
       const regex = /心配/g;
       if (regex.test(corrected)) {
         corrected = corrected.replace(regex, '心肺');
         boost += 0.2; 
-        console.log("  🧠 文脈補正: '心配' → '心肺'");
       }
     }
-    
     if (corrected.includes('共通')) {
       if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment' || contextEngine.currentPhase === 'enroute') {
         const regex = /共通/g;
         if (regex.test(corrected)) {
           corrected = corrected.replace(regex, '胸痛');
           boost += 0.25;
-          console.log("  🧠 文脈補正: '共通' → '胸痛' (症状優先)");
         }
       }
     }
-
     return { corrected, boost };
   }
 
@@ -891,10 +792,8 @@
     
     selectBestCandidate(alternatives, interimText='') {
       if (!alternatives || alternatives.length === 0) return null;
-      
       let bestScore = -1;
       let bestCandidate = alternatives[0];
-      
       const aiMode = document.getElementById('aiMode')?.checked;
       if (!aiMode) {
         return {
@@ -905,20 +804,12 @@
         };
       }
       
-      console.log('🧠 AI補正エンジン起動 (v2.4.2 - 権限改善版)');
-      
       const filteredAlternatives = [];
-      
       for (let i = 0; i < alternatives.length; i++) {
         const alt = alternatives[i];
         const text = alt.transcript;
-        
         const blacklisted = containsBlacklistedWord(text);
-        if (blacklisted) {
-          console.log(`  🚫 候補${i+1}: "${text}" - 禁止ワード検出 (${blacklisted})`);
-          continue;
-        }
-        
+        if (blacklisted) continue;
         filteredAlternatives.push(alt);
       }
       
@@ -927,7 +818,6 @@
       for (let i = 0; i < candidatesToEvaluate.length; i++) {
         const alt = candidatesToEvaluate[i];
         let score = alt.confidence || 0.5;
-        
         let text = alt.transcript;
         
         if (this.userCorrections[text]) {
@@ -947,7 +837,6 @@
           for (const term of importantTerms) {
             const sim = similarityScore(text, term);
             if (sim > 0.8) {
-              console.log(`  💥 短文強制補正: "${text}" → "${term}" (類似度:${sim.toFixed(2)})`);
               text = term;
               score += 0.6; 
               break;
@@ -966,9 +855,7 @@
         
         let medicalScore = 0;
         for (const term of TAGS) {
-          if (text.includes(term)) {
-            medicalScore += 0.1;
-          }
+          if (text.includes(term)) medicalScore += 0.1;
         }
         score += Math.min(0.25, medicalScore);
         
@@ -983,9 +870,7 @@
         let similarityBest = 0;
         for (const teamName of KAGOSHIMA_EMERGENCY_TEAMS) {
           const sim = similarityScore(text, teamName);
-          if (sim > similarityBest) {
-            similarityBest = sim;
-          }
+          if (sim > similarityBest) similarityBest = sim;
         }
         score += similarityBest * 0.2;
         
@@ -1010,7 +895,6 @@
       }
       
       const aiCorrected = bestCandidate.transcript !== alternatives[0].transcript;
-      
       if (aiCorrected) {
         aiCorrectionCount++;
         document.getElementById('aiCorrections').textContent = aiCorrectionCount;
@@ -1034,11 +918,9 @@
     
     learnCorrection(original, corrected) {
       if (!document.getElementById('learnMode')?.checked) return;
-      
       this.userCorrections[original] = corrected;
       userLearnedCount++;
       document.getElementById('userLearned').textContent = userLearnedCount;
-      
       save(); 
     }
   }
@@ -1074,7 +956,6 @@
       }
       const patterns=JSON.parse(localStorage.getItem(STORE_KEY+'_patterns'));
       if(patterns) aiCorrection.userPatterns = patterns;
-      
       const corrections=JSON.parse(localStorage.getItem(STORE_KEY+'_corrections'));
       if(corrections) aiCorrection.userCorrections = corrections;
     }catch{ 
@@ -1084,54 +965,37 @@
 
   function formatVitalSigns(text) {
     let formatted = text;
-    
     formatted = formatted.replace(/(?:血圧|BP|ビーピー)\s*(\d{2,3})\s+(\d{2,3})(?:\s|$)/gi, 'NIBP $1/$2 mmHg');
     formatted = formatted.replace(/(?:血圧|BP|ビーピー)\s*(\d+)\s*(?:の|\/|ー)\s*(\d+)/gi, 'NIBP $1/$2 mmHg');
     formatted = formatted.replace(/^(\d{2,3})\s*(?:の|\/|ー)\s*(\d{2,3})(?:\s|$)/gm, 'NIBP $1/$2 mmHg');
-    
     formatted = formatted.replace(/(?:脈拍|心拍|脈|HR|エイチアール)\s*(\d+)/gi, 'HR $1回/分');
-    
     formatted = formatted.replace(/(?:サチュレーション|サチュ|SpO2|エスピーオーツー|酸素飽和度)\s*(\d+)/gi, 'SpO2 $1%');
-    
     formatted = formatted.replace(/(?:呼吸数|呼吸|RR|アールアール)\s*(\d+)/gi, 'RR $1回/分');
-    
     formatted = formatted.replace(/(?:体温|BT|ビーティー)\s*(\d+\.?\d*)/gi, 'BT $1℃');
-    
     formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*([1-3])(?!\d)/gi, (_m,num)=>`JCS I-${num}`);
     formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*(10|20|30)\b/gi, (_m,num)=>`JCS II-${num}`);
     formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*(100|200|300)\b/gi, (_m,num)=>`JCS III-${num}`);
-
     formatted = formatted.replace(/(?:GCS|ジーシーエス)\s*([3-9]|1[0-5])\b/gi, 'GCS $1点');
-    
     formatted = formatted.replace(/瞳孔(?:径)?\s*(\d+\.?\d*)\s*(?:ミリ|mm)?/gi, '瞳孔径 $1mm');
-    
     formatted = formatted.replace(/対光反射\s*(?:あり|陽性|\+|プラス)/gi, '対光反射 +');
     formatted = formatted.replace(/対光反射\s*(?:なし|陰性|\-|マイナス)/gi, '対光反射 -');
-    
     formatted = formatted.replace(/(?:血糖値?|BS|ビーエス)\s*(\d+)/gi, '血糖 $1mg/dL');
-    
     formatted = formatted.replace(/酸素(?:投与)?\s*(\d+\.?\d*)\s*(?:リットル|L|リッター)/gi, 'O2 $1L/分');
-    
     return formatted;
   }
 
   function enhancedNormalize(t){
     let n=t;
-    
     Object.entries(MEDICAL_CORRECTIONS).forEach(([wrong, correct])=>{
       const escaped=wrong.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
       const regex=new RegExp(escaped, 'gi');
       n=n.replace(regex, correct);
     });
-    
     n = n.replace(/(\d+)の(\d+)/g,'$1/$2');
-    
     n = formatVitalSigns(n);
-    
     n = n.replace(/(\d+)時(\d+)分/g,'$1:$2');
     n = n.replace(/(\d+)\s*パーセント/g,'$1%');
     n = n.replace(/(\d+)\s*(?:ミリグラム|mg)/g,'$1mg');
-    
     return n;
   }
 
@@ -1148,27 +1012,19 @@
     try{
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1&accept-language=ja`;
       const res = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'EmergencyDoc/2.4.2 (iOS Safari)' 
-        },
+        headers: { 'Accept': 'application/json', 'User-Agent': 'EmergencyDoc/2.4.3 (iOS Safari)' },
         signal: ctrl.signal
       });
       const data = await res.json();
-      
       if(data && data.address){
         const addr = data.address;
         let result = '';
-        
         if(addr.city) { result = addr.city; } else if(addr.town) { result = addr.town; } 
         else if(addr.county) { result = addr.county; } else if(addr.state) { result = addr.state; }
-        
         if(addr.suburb) { result += addr.suburb; } else if(addr.neighbourhood) { result += addr.neighbourhood; } 
         else if(addr.quarter) { result += addr.quarter; } else if(addr.hamlet) { result += addr.hamlet; }
-        
         return result || `${lat.toFixed(5)},${lon.toFixed(5)}`;
       }
-      
       return `${lat.toFixed(5)},${lon.toFixed(5)}`;
     }catch(e){
       return '';
@@ -1204,18 +1060,14 @@
       aiCorrected: aiCorrected,
       userLearned: userLearned
     });
-    
     aiCorrection.learn(t, true);
-    
     feedbackManager.notifyLogSaved();
-    
     save(); render(); updateStats();
   }
 
   function openEditModal(logId) {
     const log = logs.find(l => l.id === logId);
     if (!log) return;
-    
     editingLogId = logId;
     document.getElementById('editText').value = log.text;
     document.getElementById('editModal').classList.add('show');
@@ -1228,21 +1080,17 @@
 
   function saveEdit() {
     if (!editingLogId) return;
-    
     const log = logs.find(l => l.id === editingLogId);
     if (!log) return;
-    
     const newText = document.getElementById('editText').value.trim();
     if (!newText) {
       alert('空白の記録は保存できません');
       return;
     }
-    
     if (log.text !== newText && document.getElementById('learnMode')?.checked) {
       aiCorrection.learnCorrection(log.text, newText);
       log.userLearned = true;
     }
-    
     log.text = newText;
     save();
     render();
@@ -1251,7 +1099,6 @@
 
   document.getElementById('btnSaveEdit').onclick = saveEdit;
   document.getElementById('btnCancelEdit').onclick = closeEditModal;
-  
   document.getElementById('editModal').onclick = function(e) {
     if (e.target === this) {
       closeEditModal();
@@ -1387,7 +1234,6 @@
     const fill = document.getElementById('confidenceFill');
     const percent = Math.round(confidence * 100);
     fill.style.width = `${percent}%`;
-    
     if(confidence >= 0.8) {
       fill.className = 'confidence-fill confidence-high';
     } else if(confidence >= 0.6) {
@@ -1402,7 +1248,6 @@
     statusEl.textContent = message;
     statusEl.className = 'system-status ' + type;
     statusEl.style.display = 'block';
-    
     setTimeout(() => {
       statusEl.style.display = 'none';
     }, 5000);
@@ -1426,7 +1271,7 @@
     }
   }
 
-  /* v2.4.2 マイク権限改善版 音声認識エンジン */
+  /* v2.4.3 音声品質最適化エンジン */
   class UltraPrecisionVoiceRec{
     constructor(){
       this.rec=null; 
@@ -1438,42 +1283,35 @@
       this.recordingStartTime = null;
       this.recordingTimeUpdateInterval = null;
       this.voiceNotifyInterval = null;
-      this.recoveryAttempts = 0;
-      this.maxRecoveryAttempts = 3;
-      
       this.setupVisibilityHandler();
-      this.setupLifecycleHandlers();
     }
 
     async requestMicPermission() {
       try {
         this.audioStream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            echoCancellation: { ideal: true },
-            noiseSuppression: { ideal: true },
-            autoGainControl: { ideal: true },
-            sampleRate: 48000,
-            channelCount: 1
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
           }
         });
-        
-        console.log('🎤 マイク権限取得成功');
         micPermissionGranted = true;
-        
         try{
           if('webkitSpeechRecognition' in window) this.rec=new webkitSpeechRecognition();
           else if('SpeechRecognition' in window) this.rec=new SpeechRecognition();
         }catch(e){ 
           throw new Error('音声認識APIが利用できません');
         }
-        
-        if(this.rec) this.setup();
-        
+        if(this.rec) {
+          this.rec.lang='ja-JP'; 
+          this.rec.continuous=true; 
+          this.rec.interimResults=true; 
+          this.rec.maxAlternatives=10;
+          this.setupRecognitionHandlers();
+        }
         return true;
       } catch(e) {
-        console.error('🚫 マイク権限エラー:', e.name, e.message);
         micPermissionGranted = false;
-        
         if(e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
           showPermissionAlert();
           throw new Error('マイクへのアクセスが拒否されました');
@@ -1488,112 +1326,31 @@
     }
     
     setupVisibilityHandler(){
+      let wasRecording = false;
       document.addEventListener('visibilitychange', async ()=>{
-        if(!document.hidden && this.isRec){
-          console.log('📱 画面復帰検出');
-          showSystemStatus('画面復帰を検出しました', 'info');
-          await this.ensureRecognitionRestored();
+        if(document.hidden){
+          wasRecording = this.isRec;
+        } else if(wasRecording && document.getElementById('autoRecovery')?.checked){
+          console.log('📱 画面復帰 - 音声認識を再起動');
+          showSystemStatus('音声認識を復帰中...', 'info');
+          setTimeout(async ()=>{
+            if(this.isRec){
+              try {
+                if(this.rec) this.rec.stop();
+              } catch(e){}
+              await new Promise(r=>setTimeout(r,500));
+              try {
+                if(this.rec) this.rec.start();
+                this.lastSoundTime=Date.now();
+                showSystemStatus('音声認識を復帰しました', 'success');
+                feedbackManager.notifySystemRecovery();
+              } catch(e) {
+                console.error('再起動失敗:', e);
+              }
+            }
+          }, 300);
         }
       });
-    }
-
-    setupLifecycleHandlers(){
-      window.addEventListener('pageshow', async (e)=>{
-        if(e.persisted && this.isRec){
-          console.log('📱 bfcacheから復帰');
-          showSystemStatus('バックグラウンドから復帰しました', 'info');
-          await this.ensureRecognitionRestored();
-        }
-      });
-
-      window.addEventListener('resume', async ()=>{
-        if(this.isRec){
-          console.log('📱 resumeイベント検出');
-          showSystemStatus('アプリケーションを再開しました', 'info');
-          await this.ensureRecognitionRestored();
-        }
-      });
-
-      document.addEventListener('pause', ()=>{
-        console.log('📱 pauseイベント検出');
-      });
-    }
-
-    async ensureRecognitionRestored(){
-      if(!document.getElementById('autoRecovery')?.checked){
-        console.log('⚠️ 自動復帰機能が無効です');
-        return;
-      }
-
-      console.log('🔧 システム復帰処理を開始...');
-      showSystemStatus('音声認識を復帰中...', 'warning');
-      
-      try {
-        if(feedbackManager.audioContext && feedbackManager.audioContext.state === 'suspended'){
-          console.log('  📢 AudioContext復帰中...');
-          await feedbackManager.audioContext.resume();
-          console.log('  ✅ AudioContext復帰完了');
-        }
-
-        let micOK = false;
-        if(this.audioStream){
-          const tracks = this.audioStream.getAudioTracks();
-          if(tracks.length && tracks[0].readyState === 'live'){
-            micOK = true;
-            console.log('  🎤 マイクストリーム: 正常');
-          }
-        }
-
-        if(!micOK){
-          console.log('  🎤 マイクストリーム再取得中...');
-          await this.resetMicStream();
-          console.log('  ✅ マイクストリーム再取得完了');
-        }
-
-        if(this.rec){
-          try{ 
-            this.rec.stop(); 
-            console.log('  🛑 旧Recognition停止');
-          }catch(e){}
-          this.rec = null;
-        }
-
-        this.setup();
-        console.log('  🆕 新しいRecognitionを生成');
-
-        if(this.isRec){
-          await this.startRecognition();
-          console.log('  ▶️ 録音再開完了');
-          showSystemStatus('音声認識を復帰しました', 'success');
-          feedbackManager.notifySystemRecovery();
-          this.recoveryAttempts = 0;
-        }
-
-      } catch(error) {
-        console.error('❌ 復帰処理エラー:', error);
-        this.recoveryAttempts++;
-        
-        if(this.recoveryAttempts < this.maxRecoveryAttempts){
-          showSystemStatus(`復帰を再試行中 (${this.recoveryAttempts}/${this.maxRecoveryAttempts})`, 'warning');
-          setTimeout(()=>{
-            this.ensureRecognitionRestored();
-          }, 2000);
-        } else {
-          showSystemStatus('音声認識の復帰に失敗しました', 'error');
-          feedbackManager.vibrateError();
-          this.recoveryAttempts = 0;
-        }
-      }
-    }
-
-    async resetMicStream(){
-      if(this.audioStream){
-        const tracks = this.audioStream.getAudioTracks();
-        tracks.forEach(track => track.stop());
-        this.audioStream = null;
-      }
-
-      await this.requestMicPermission();
     }
     
     ensureRecording(){
@@ -1602,15 +1359,14 @@
       this.restartTimer = setTimeout(()=>{
         if(this.isRec){
           const timeSinceLastSound = Date.now() - this.lastSoundTime;
-          if(timeSinceLastSound > 15000){
-            console.log('⚠️ 15秒以上無音、強制再起動');
-            showSystemStatus('無音検出、音声認識を再起動します', 'warning');
+          if(timeSinceLastSound > 20000){
+            console.log('⚠️ 20秒以上無音、強制再起動');
             this.forceRestart();
           }else{
             this.ensureRecording();
           }
         }
-      }, 10000);
+      }, 15000);
     }
     
     forceRestart(){
@@ -1623,40 +1379,23 @@
             this.rec.start(); 
             this.lastSoundTime=Date.now(); 
           }catch(e){ 
-            console.log('再起動失敗、1秒後に再試行');
-            setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 1000);
+            setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 2000);
           }
         }
-      }, 100);
+      }, 500);
     }
     
     updateRecordingTime() {
       if (!this.recordingStartTime) return;
-      
       const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
       const minutes = Math.floor(elapsed / 60);
       const seconds = elapsed % 60;
-      
       const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
       document.getElementById('recordingTime').textContent = timeStr;
     }
     
-    setup(){
+    setupRecognitionHandlers(){
       if(!this.rec) return;
-
-      try{ 
-        this.rec = ('webkitSpeechRecognition' in window) ? 
-          new webkitSpeechRecognition() : 
-          new SpeechRecognition();
-        
-        this.rec.lang='ja-JP'; 
-        this.rec.continuous=true; 
-        this.rec.interimResults=true; 
-        this.rec.maxAlternatives=10;
-      }catch(e){
-        console.error('Recognition設定エラー:', e);
-        return;
-      }
       
       this.rec.onresult=async (e)=>{
         this.lastSoundTime = Date.now();
@@ -1673,9 +1412,7 @@
             
             if(bestResult){
               final += bestResult.text;
-              
               const confidencePercent = Math.round(bestResult.confidence * 100);
-              
               updateConfidenceBar(bestResult.confidence);
               
               const aiInd = document.getElementById('aiIndicator');
@@ -1706,39 +1443,24 @@
         document.getElementById('voiceInterim').textContent = interim ? `… ${interim}` : '';
       };
 
-      this.rec.onstart = ()=>{
-        console.log('🎤 音声認識開始');
-      };
+      this.rec.onstart = ()=>{};
       this.rec.onend = ()=>{
-        console.log('🎤 音声認識終了イベント');
         if(this.isRec){
-          this.forceRestart();
+          setTimeout(()=>{
+            if(this.isRec) this.forceRestart();
+          }, 100);
         }
       };
       this.rec.onerror = (e)=>{
-        console.log('⚠️ 音声認識エラー:', e.error);
         if(e.error === 'not-allowed'){
           showPermissionAlert();
           this.stop();
         } else if(e.error === 'aborted' || e.error === 'network'){
-          showSystemStatus('音声認識エラー、再起動します', 'warning');
           if(this.isRec){
-            this.forceRestart();
+            setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 500);
           }
         }
       };
-    }
-
-    async startRecognition(){
-      if(!this.rec) return;
-      try{
-        this.rec.start();
-        this.lastSoundTime=Date.now();
-        this.ensureRecording();
-      }catch(e){
-        console.error('録音開始エラー:', e);
-        throw e;
-      }
     }
 
     async start(){
@@ -1755,7 +1477,6 @@
         this.isRec=true;
         this.lastSoundTime=Date.now();
         this.recordingStartTime = Date.now();
-        this.recoveryAttempts = 0;
         
         document.getElementById('voiceBtn').classList.add('active');
         document.getElementById('voiceStatusTitle').textContent='録音中';
@@ -1772,9 +1493,9 @@
           feedbackManager.notifyRecordingActive();
         }, 1000);
 
-        await this.startRecognition();
+        this.rec.start();
+        this.ensureRecording();
       }catch(e){
-        console.log('録音開始失敗', e);
         this.isRec=false;
         document.getElementById('voiceBtn').classList.remove('active');
         document.getElementById('voiceStatusTitle').textContent='エラー';
@@ -1790,14 +1511,11 @@
     async stop(){
       if(!this.isRec) return;
       this.isRec=false;
-      try{
-        this.rec.stop();
-      }catch(e){}
+      try{ this.rec.stop(); }catch(e){}
       clearTimeout(this.restartTimer);
       if(this.recordingTimeUpdateInterval) clearInterval(this.recordingTimeUpdateInterval);
       if(this.voiceNotifyInterval) clearInterval(this.voiceNotifyInterval);
       this.recordingStartTime = null;
-      this.recoveryAttempts = 0;
       
       document.getElementById('voiceBtn').classList.remove('active');
       document.getElementById('voiceStatusTitle').textContent='停止中';
@@ -1854,7 +1572,6 @@
       alert('コピーしました');
       feedbackManager.playBeep(1200,80);
     }catch(e){
-      console.log('クリップボードコピー失敗', e);
       alert('コピーに失敗しました');
     }
   }
@@ -1897,7 +1614,6 @@
     document.getElementById('btnCopy').addEventListener('click', ()=>copyLogs(false));
     document.getElementById('btnCopyAddr').addEventListener('click', ()=>copyLogs(true));
     document.getElementById('btnClear').addEventListener('click', clearAll);
-
     document.getElementById('voiceBtn').addEventListener('click', ()=>voiceRec.toggle());
   });
 </script>
