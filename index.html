@@ -309,6 +309,7 @@
   let logs=[]; let selectedId=null; let startTime=null; let aiCorrectionCount=0; let userLearnedCount=0;
   let editingLogId=null;
   let saveDebounceTimer = null; 
+  let beatLogInstance = null;
 
   const TAGS=[
     "救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着",
@@ -422,7 +423,6 @@
       if (!document.getElementById('audioFeedback')?.checked) return;
       if (!this.speechSynth) return;
 
-      // 既存の発話をキャンセル
       this.speechSynth.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
@@ -475,7 +475,6 @@
     }
 
     setupNoSleepVideo() {
-      // iOS Safari用のフォールバック（Wake Lock API未対応の場合）
       this.noSleepVideo = document.createElement('video');
       this.noSleepVideo.setAttribute('playsinline', '');
       this.noSleepVideo.setAttribute('muted', '');
@@ -487,7 +486,6 @@
       this.noSleepVideo.style.width = '1px';
       this.noSleepVideo.style.height = '1px';
       
-      // 無音動画データ（Base64エンコード）
       this.noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAA1m1vb3YAAABsbXZoZAAAAAAAAAAAAAAAAAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU2LjQwLjEwMQ==';
       
       document.body.appendChild(this.noSleepVideo);
@@ -496,7 +494,6 @@
     async request() {
       if (!document.getElementById('keepScreenOn')?.checked) return;
 
-      // Wake Lock API（対応ブラウザ）
       if ('wakeLock' in navigator) {
         try {
           this.wakeLock = await navigator.wakeLock.request('screen');
@@ -511,7 +508,6 @@
         }
       }
 
-      // フォールバック: 無音動画再生（iOS Safari用）
       try {
         await this.noSleepVideo.play();
         console.log('NoSleep動画再生開始');
@@ -521,7 +517,6 @@
     }
 
     async release() {
-      // Wake Lock API
       if (this.wakeLock) {
         try {
           await this.wakeLock.release();
@@ -529,7 +524,6 @@
         } catch (err) {}
       }
 
-      // フォールバック停止
       if (this.noSleepVideo) {
         this.noSleepVideo.pause();
       }
@@ -753,46 +747,46 @@
   }
 
   function checkHomophoneContextCorrection(text, contextEngine) {
-      let corrected = text;
-      let boost = 0;
-      
-      if (corrected.includes('意識')) {
-          if (contextEngine.currentPhase === 'dispatch' || contextEngine.currentPhase === 'enroute') {
-              if (similarityScore(corrected, '伊敷') > 0.6) {
-                  corrected = corrected.replace(/意識/g, '伊敷');
-                  boost += 0.25;
-                  console.log("  🧠 文脈補正: '意識' → '伊敷' (地名優先)");
-              }
-          }
-      } else if (corrected.includes('伊敷')) {
-          if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment') {
-              if (similarityScore(corrected, '意識') > 0.6) {
-                  boost += 0.1;
-              }
-          }
+    let corrected = text;
+    let boost = 0;
+    
+    if (corrected.includes('意識')) {
+      if (contextEngine.currentPhase === 'dispatch' || contextEngine.currentPhase === 'enroute') {
+        if (similarityScore(corrected, '伊敷') > 0.6) {
+          corrected = corrected.replace(/意識/g, '伊敷');
+          boost += 0.25;
+          console.log("  🧠 文脈補正: '意識' → '伊敷' (地名優先)");
+        }
       }
-      
-      if (corrected.includes('心配') && contextEngine.currentPhase !== 'initial') {
-          const regex = /心配/g;
-          if (regex.test(corrected)) {
-              corrected = corrected.replace(regex, '心肺');
-              boost += 0.2; 
-              console.log("  🧠 文脈補正: '心配' → '心肺'");
-          }
+    } else if (corrected.includes('伊敷')) {
+      if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment') {
+        if (similarityScore(corrected, '意識') > 0.6) {
+          boost += 0.1;
+        }
       }
-      
-      if (corrected.includes('共通')) {
-          if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment' || contextEngine.currentPhase === 'enroute') {
-              const regex = /共通/g;
-              if (regex.test(corrected)) {
-                  corrected = corrected.replace(regex, '胸痛');
-                  boost += 0.25;
-                  console.log("  🧠 文脈補正: '共通' → '胸痛' (症状優先)");
-              }
-          }
+    }
+    
+    if (corrected.includes('心配') && contextEngine.currentPhase !== 'initial') {
+      const regex = /心配/g;
+      if (regex.test(corrected)) {
+        corrected = corrected.replace(regex, '心肺');
+        boost += 0.2; 
+        console.log("  🧠 文脈補正: '心配' → '心肺'");
       }
+    }
+    
+    if (corrected.includes('共通')) {
+      if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment' || contextEngine.currentPhase === 'enroute') {
+        const regex = /共通/g;
+        if (regex.test(corrected)) {
+          corrected = corrected.replace(regex, '胸痛');
+          boost += 0.25;
+          console.log("  🧠 文脈補正: '共通' → '胸痛' (症状優先)");
+        }
+      }
+    }
 
-      return { corrected, boost };
+    return { corrected, boost };
   }
 
   class AICorrection {
@@ -812,7 +806,7 @@
       if (!aiMode) {
         return {
           text: alternatives[0].transcript,
-          confidence: alternatives[0].confidence,
+          confidence: alternatives[0].confidence || 0.5,
           aiCorrected: false,
           method: 'basic'
         };
@@ -856,21 +850,21 @@
         }
 
         if (text.length <= 6 && score < 0.95) { 
-            const importantTerms = ['CPA', '心肺停止', '挿管', 'ルート確保', '甲南', '南林寺', '主訴', '既往歴', 'ADL', '胸痛'];
-            for (const term of importantTerms) {
-                const sim = similarityScore(text, term);
-                if (sim > 0.8) {
-                    console.log(`  💥 短文強制補正: "${text}" → "${term}" (類似度:${sim.toFixed(2)})`);
-                    text = term;
-                    score += 0.6; 
-                    break;
-                }
+          const importantTerms = ['CPA', '心肺停止', '挿管', 'ルート確保', '甲南', '南林寺', '主訴', '既往歴', 'ADL', '胸痛'];
+          for (const term of importantTerms) {
+            const sim = similarityScore(text, term);
+            if (sim > 0.8) {
+              console.log(`  💥 短文強制補正: "${text}" → "${term}" (類似度:${sim.toFixed(2)})`);
+              text = term;
+              score += 0.6; 
+              break;
             }
+          }
         }
         
         const { corrected: homophoneCorrected, boost: homophoneBoost } = checkHomophoneContextCorrection(text, this.contextEngine);
         if (homophoneCorrected !== text) {
-            text = homophoneCorrected;
+          text = homophoneCorrected;
         }
         score += homophoneBoost;
         
@@ -1120,7 +1114,6 @@
     
     aiCorrection.learn(t, true);
     
-    // v2.4.0 新機能: 記録確定時の通知
     feedbackManager.notifyLogSaved();
     
     save(); render(); updateStats();
@@ -1333,7 +1326,7 @@
   class UltraPrecisionVoiceRec{
     constructor(){
       this.rec=null; this.isRec=false; this.interim=''; this.audioStream=null;
-      this.wakeLock=null; this.restartTimer=null; this.lastSoundTime=Date.now();
+      this.restartTimer=null; this.lastSoundTime=Date.now();
       this.recordingStartTime = null;
       this.recordingTimeUpdateInterval = null;
       this.voiceNotifyInterval = null;
@@ -1350,11 +1343,7 @@
     setupVisibilityHandler(){
       document.addEventListener('visibilitychange', ()=>{
         if(this.isRec){
-          if(document.hidden){
-            this.ensureRecording();
-          }else{
-            this.ensureRecording();
-          }
+          this.ensureRecording();
         }
       });
     }
@@ -1454,271 +1443,189 @@
               }else{
                 aiInd.textContent = '';
               }
-              
-              if(bestResult.confidence < 0.6) {
-                document.getElementById('voiceStatusText').textContent = `⚠️ 低精度 (${confidencePercent}%)`;
-                document.getElementById('voiceStatusText').style.color = '#e74c3c';
-              } else if(bestResult.confidence < 0.8) {
-                document.getElementById('voiceStatusText').textContent = `📝 認識中 (${confidencePercent}%)`;
-                document.getElementById('voiceStatusText').style.color = '#f39c12';
+
+              const inputEl = document.getElementById('input');
+              inputEl.value = bestResult.text;
+              if (beatLogInstance) {
+                beatLogInstance.commitNow();
               } else {
-                document.getElementById('voiceStatusText').textContent = `✅ 認識完了 (${confidencePercent}%)`;
-                document.getElementById('voiceStatusText').style.color = '#27ae60';
+                addLine(enhancedNormalize(bestResult.text), '');
               }
-              
-              const norm = enhancedNormalize(bestResult.text);
-              document.getElementById('voiceStatusText').textContent = '📡 位置情報取得中...';
-              
-              const addr = await fetchAddressFromGPS();
-              addLine(norm, addr, bestResult.aiCorrected);
-              
-              this.interim=''; 
-              document.getElementById('voiceInterim').textContent='';
-              document.getElementById('voiceStatusText').textContent='待機中...';
-              document.getElementById('voiceStatusText').style.color = '#7f8c8d';
-              document.getElementById('aiIndicator').textContent = '';
+
+              document.getElementById('voiceStatusTitle').textContent = '確定';
+              document.getElementById('voiceStatusText').textContent = `信頼度 ${confidencePercent}%`;
             }
           } else {
             interim += e.results[i][0].transcript;
           }
         }
-        
-        if(interim){ 
-          this.interim=interim; 
-          document.getElementById('voiceInterim').textContent=`認識中: ${interim}`; 
+
+        this.interim = interim;
+        document.getElementById('voiceInterim').textContent = interim ? `… ${interim}` : '';
+      };
+
+      this.rec.onstart = ()=>{
+        console.log('音声認識開始');
+      };
+      this.rec.onend = ()=>{
+        console.log('音声認識終了イベント');
+        if(this.isRec){
+          this.forceRestart();
         }
       };
-      
-      this.rec.onstart=()=>{ 
-        this.isRec=true; 
-        this.lastSoundTime=Date.now();
-        this.recordingStartTime = Date.now();
-        
-        // v2.4.0 新機能: 録音時間の更新
-        this.recordingTimeUpdateInterval = setInterval(() => {
-          this.updateRecordingTime();
-        }, 1000);
-        
-        // v2.4.0 新機能: 定期的な音声通知
-        const notifyInterval = (+document.getElementById('voiceNotifyInterval')?.value || 30) * 1000;
-        this.voiceNotifyInterval = setInterval(() => {
-          feedbackManager.notifyRecordingActive();
-        }, notifyInterval);
-        
-        this.updateUI(); 
-        this.ensureRecording();
-      };
-      
-      this.rec.onend=()=>{ 
-        if(this.isRec){ 
-          setTimeout(()=>{
-            if(this.isRec){
-              try{ 
-                this.rec.start(); 
-              }catch(e){ 
-                console.log('再起動失敗:', e);
-                setTimeout(()=>{ if(this.isRec) this.forceRestart(); } , 1000);
-              }
-            }
-          }, 100);
-        } else { 
-          this.updateUI(); 
-          clearTimeout(this.restartTimer);
-          clearInterval(this.recordingTimeUpdateInterval);
-          clearInterval(this.voiceNotifyInterval);
-        }
-      };
-      
-      this.rec.onerror=(e)=>{
-        const st=document.getElementById('voiceStatusText');
-        if(e.error==='no-speech'){ 
-          this.lastSoundTime=Date.now();
-          return;
-        }
-        if(e.error==='audio-capture'){ 
-          st.textContent='❌ マイクなし'; 
-          feedbackManager.vibrateError();
-          this.stop(); 
-        }
-        else if(e.error==='not-allowed'){ 
-          st.textContent='❌ 許可なし'; 
-          feedbackManager.vibrateError();
-          this.stop(); 
-        }
-        else if(e.error==='network'){ 
-          st.textContent='⚠️ ネットワークエラー (再試行中)'; 
-          setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 2000);
-        }
-        else if(e.error==='aborted'){
-          if(this.isRec){
-            setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 500);
-          }
-        }
-      };
-      
-      this.rec.onsoundstart=()=>{ 
-        this.lastSoundTime=Date.now(); 
-        document.getElementById('voiceStatusText').textContent='🎤 音声検出中...'; 
-      };
-      this.rec.onsoundend = ()=>{ 
-        this.lastSoundTime=Date.now(); 
-        if(this.isRec && !this.interim){ 
-          document.getElementById('voiceStatusText').textContent='待機中...'; 
-        } 
-      };
-      this.rec.onspeechstart=()=>{ 
-        this.lastSoundTime=Date.now(); 
-        document.getElementById('voiceStatusText').textContent='🗣️ 認識中...'; 
-      };
-      this.rec.onspeechend =()=>{ 
-        this.lastSoundTime=Date.now(); 
-        if(this.isRec){ 
-          document.getElementById('voiceStatusText').textContent='待機中...'; 
-        } 
-      };
-    }
-    
-    async start(){
-      if(!this.rec){ alert('音声認識未対応'); return; }
-      if(this.isRec) return;
-      try{
-        this.isRec=true; 
-        this.lastSoundTime=Date.now();
-        this.recordingStartTime = Date.now();
-        
-        this.rec.start();
-        
-        // v2.4.0 新機能: Wake Lock取得
-        await enhancedWakeLock.request();
-        
-        // v2.4.0 新機能: 開始通知
-        feedbackManager.notifyRecordingStarted();
-        
-        document.getElementById('voiceStatusText').textContent='🎤 話してください';
-        this.updateUI();
-      }catch(e){ 
-        this.isRec=false; 
+      this.rec.onerror = (e)=>{
+        console.log('音声認識エラー', e);
         feedbackManager.vibrateError();
-        alert('開始に失敗しました: ' + e.message); 
+        if(this.isRec){
+          this.forceRestart();
+        }
+      };
+    }
+
+    async start(){
+      if(this.isRec || !this.rec) return;
+      try{
+        this.isRec=true;
+        this.lastSoundTime=Date.now();
+        this.recordingStartTime = Date.now();
+        document.getElementById('voiceBtn').classList.add('active');
+        document.getElementById('voiceStatusTitle').textContent='録音中';
+        document.getElementById('voiceStatusText').textContent='話しかけてください';
+        document.getElementById('voiceInterim').textContent='';
+        document.getElementById('recordingBanner').classList.add('show');
+        this.updateRecordingTime();
+        this.recordingTimeUpdateInterval = setInterval(()=>this.updateRecordingTime(), 1000);
+
+        feedbackManager.notifyRecordingStarted();
+        await enhancedWakeLock.request();
+
+        this.voiceNotifyInterval = setInterval(()=>{
+          feedbackManager.notifyRecordingActive();
+        }, 1000);
+
+        this.rec.start();
+        this.ensureRecording();
+      }catch(e){
+        console.log('録音開始失敗', e);
+        this.isRec=false;
+        document.getElementById('voiceBtn').classList.remove('active');
+        document.getElementById('voiceStatusTitle').textContent='エラー';
+        document.getElementById('voiceStatusText').textContent='音声認識を開始できません';
+        document.getElementById('recordingBanner').classList.remove('show');
+        if(this.recordingTimeUpdateInterval) clearInterval(this.recordingTimeUpdateInterval);
+        if(this.voiceNotifyInterval) clearInterval(this.voiceNotifyInterval);
+        feedbackManager.vibrateError();
       }
     }
-    
-    stop(){
-      if(!this.rec || !this.isRec) return;
-      this.isRec=false; 
+
+    async stop(){
+      if(!this.isRec) return;
+      this.isRec=false;
+      try{
+        this.rec.stop();
+      }catch(e){}
       clearTimeout(this.restartTimer);
-      clearInterval(this.recordingTimeUpdateInterval);
-      clearInterval(this.voiceNotifyInterval);
-      
-      // v2.4.0 新機能: Wake Lock解放
-      enhancedWakeLock.release();
-      
-      // v2.4.0 新機能: 停止通知
-      feedbackManager.notifyRecordingStopped();
-
-      try{ this.rec.stop(); }catch{}
-      if (this.audioStream) {
-        this.audioStream.getTracks().forEach(track => track.stop());
-        this.audioStream = null;
-      }
-      
-      this.interim=''; 
+      if(this.recordingTimeUpdateInterval) clearInterval(this.recordingTimeUpdateInterval);
+      if(this.voiceNotifyInterval) clearInterval(this.voiceNotifyInterval);
       this.recordingStartTime = null;
-      document.getElementById('voiceInterim').textContent=''; 
+      document.getElementById('voiceBtn').classList.remove('active');
+      document.getElementById('voiceStatusTitle').textContent='停止中';
       document.getElementById('voiceStatusText').textContent='タップで開始';
-      document.getElementById('voiceStatusText').style.color = '#7f8c8d';
-      document.getElementById('aiIndicator').textContent = '';
-      document.getElementById('recordingTime').textContent = '00:00';
+      document.getElementById('voiceInterim').textContent='';
+      document.getElementById('recordingBanner').classList.remove('show');
       updateConfidenceBar(0);
-      this.updateUI();
+      document.getElementById('aiIndicator').textContent='';
+      await enhancedWakeLock.release();
+      feedbackManager.notifyRecordingStopped();
     }
-    
-    toggle(){ if(this.isRec) this.stop(); else this.start(); }
-    
-    updateUI(){
-      const btn=document.getElementById('voiceBtn'); 
-      const title=document.getElementById('voiceStatusTitle');
-      const banner=document.getElementById('recordingBanner');
-      
-      if(this.isRec){ 
-        btn.classList.add('active'); 
-        title.textContent='🔴 録音中 (v2.4.0)'; 
-        banner.classList.add('show');
-      } else { 
-        btn.classList.remove('active'); 
-        title.textContent='停止中'; 
-        banner.classList.remove('show');
+
+    async toggle(){
+      if(!this.rec){
+        alert('このブラウザは音声認識に対応していません');
+        return;
       }
+      if(this.isRec) await this.stop(); else await this.start();
     }
   }
 
-  document.getElementById('btnCopy').onclick=async()=>{
-    if(!logs.length){ alert('コピーするログがありません'); return; }
-    const txt=logs.map(e=>`${e.time} ${e.text}${e.tags.length?' ['+e.tags.join(',')+']':''}`).join('\n');
-    try{ await navigator.clipboard.writeText(txt); alert('✅ コピー完了'); }catch{ alert('❌ コピー失敗'); }
-  };
-  
-  document.getElementById('btnCopyAddr').onclick=async()=>{
-    if(!logs.length){ alert('コピーするログがありません'); return; }
-    const txt=logs.map((e,i)=>{
-      const prev = i>0 ? logs[i-1] : null;
-      const showAddr = e.address && (!prev || e.address !== prev.address);
-      return `${e.time}${showAddr?` [${e.address}]`:''} ${e.text}${e.tags.length?' ['+e.tags.join(',')+']':''}`;
-    }).join('\n');
-    try{ await navigator.clipboard.writeText(txt); alert('✅ コピー完了'); }catch{ alert('❌ コピー失敗'); }
-  };
+  const voiceRec = new UltraPrecisionVoiceRec();
 
-  document.getElementById('btnClear').onclick=()=>{
-    if(!logs.length){ alert('消去するログがありません'); return; }
-    if(confirm('⚠️ 全削除しますか?')){ 
-      logs=[]; selectedId=null; startTime=null; aiCorrectionCount=0; userLearnedCount=0;
-      document.getElementById('aiCorrections').textContent = '0';
-      document.getElementById('userLearned').textContent = '0';
-      save(); render(); updateStats(); 
-    }
-  };
-
-  function updateClock(){ document.getElementById('clock').textContent = nowHHMMSS(); }
-
-  function init(){
-    load(); render(); updateStats(); renderTagButtons();
-    const sel=document.getElementById('idleSec');
-    for(let i=0.5;i<=10;i+=0.5){ 
-      const opt=document.createElement('option'); 
-      opt.value=i.toFixed(1); 
-      opt.textContent=`${i.toFixed(1)}秒`; 
-      if(Math.abs(i-1.2)<0.01) opt.selected=true; 
-      sel.appendChild(opt); 
-    }
-    new BeatLog(document.getElementById('input')).start();
-    const voice=new UltraPrecisionVoiceRec(); 
-    document.getElementById('voiceBtn').onclick=()=>voice.toggle();
-    updateClock(); setInterval(updateClock,1000);
-    
-    console.log('🚑 起動完了 (ヘリ安定版 v2.4.0)');
-    console.log('');
-    console.log('🆕 v2.4.0の新機能 (ヘリ運用最適化):');
-    console.log('  📳 バイブレーション通知 - 録音開始/停止/記録確定を振動で通知');
-    console.log('  🔊 音声フィードバック - 「録音中」「記録しました」を音声で通知');
-    console.log('  💡 画面常時点灯 - 録音中は画面が消えない（Wake Lock API + フォールバック）');
-    console.log('  ⏱️ 録音時間表示 - 大きなバナーで録音経過時間をリアルタイム表示');
-    console.log('  🔄 強制再起動強化 - 15秒以上無音で自動再起動');
-    console.log('  🔔 定期音声通知 - 設定した間隔で「録音中」と通知（デフォルト30秒）');
-    console.log('');
-    console.log('🎛️ 設定可能な項目:');
-    console.log('  ✅ バイブレーション ON/OFF');
-    console.log('  ✅ 音声フィードバック ON/OFF');
-    console.log('  ✅ 画面常時点灯 ON/OFF');
-    console.log('  ✅ 定期音声通知の間隔（10～120秒）');
-    console.log('');
-    console.log('💡 ヘリ運用のポイント:');
-    console.log('  ✈️ ポケットに入れても録音状態が分かる（バイブ+音声）');
-    console.log('  ✈️ 画面が自動で消えない（バッテリー消費に注意）');
-    console.log('  ✈️ 定期的に「録音中」と通知（安心感UP）');
-    console.log('  ✈️ 記録確定時にバイブ+音声で確認');
-    console.log('');
+  function initIdleSelect(){
+    const sel = document.getElementById('idleSec');
+    const options = [0.7, 1.0, 1.2, 1.5, 2.0, 3.0];
+    options.forEach(v=>{
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = `停止 ${v.toFixed(1)}秒`;
+      if(v===1.2) opt.selected = true;
+      sel.appendChild(opt);
+    });
   }
-  init();
+
+  async function copyLogs(includeAddress){
+    if(!logs.length){
+      alert('コピーする記録がありません');
+      return;
+    }
+    const lines = logs.map(l=>{
+      const base = `${l.time} ${l.text}`;
+      if(includeAddress && l.address){
+        return `${base} / ${l.address}`;
+      }
+      return base;
+    });
+    const txt = lines.join('\n');
+    try{
+      await navigator.clipboard.writeText(txt);
+      alert('コピーしました');
+      feedbackManager.playBeep(1200,80);
+    }catch(e){
+      console.log('クリップボードコピー失敗', e);
+      alert('コピーに失敗しました');
+    }
+  }
+
+  function clearAll(){
+    if(!confirm('全ての記録と学習データを削除しますか？')) return;
+    logs=[]; selectedId=null; startTime=null; aiCorrectionCount=0; userLearnedCount=0;
+    aiCorrection.userPatterns = {};
+    aiCorrection.userCorrections = {};
+    localStorage.removeItem(STORE_KEY);
+    localStorage.removeItem(STORE_KEY+'_patterns');
+    localStorage.removeItem(STORE_KEY+'_corrections');
+    document.getElementById('aiCorrections').textContent='0';
+    document.getElementById('userLearned').textContent='0';
+    render();
+    updateStats();
+  }
+
+  function initClock(){
+    const clock = document.getElementById('clock');
+    const tick = ()=>{
+      clock.textContent = nowHHMMSS();
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    initClock();
+    initIdleSelect();
+    load();
+    render();
+    updateStats();
+    renderTagButtons();
+
+    const inputEl = document.getElementById('input');
+    beatLogInstance = new BeatLog(inputEl);
+    beatLogInstance.start();
+
+    document.getElementById('btnCopy').addEventListener('click', ()=>copyLogs(false));
+    document.getElementById('btnCopyAddr').addEventListener('click', ()=>copyLogs(true));
+    document.getElementById('btnClear').addEventListener('click', clearAll);
+
+    document.getElementById('voiceBtn').addEventListener('click', ()=>voiceRec.toggle());
+  });
 </script>
 </body>
 </html>
