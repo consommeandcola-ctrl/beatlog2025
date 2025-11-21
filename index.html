@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - 超高精度AI版 v2.3.3 (症状認識強化)</title>
+<title>救急記録 - ヘリ安定版 v2.4.0</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   body {
@@ -27,6 +27,27 @@
   .card { background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .card h2 { padding: 6px 10px; border-bottom: 2px solid #3498db; font-size: 12px; font-weight: 700; color: #2c3e50; background: #ecf0f1; }
   .card .body { padding: 8px; }
+  
+  /* ====== v2.4.0 新機能: 大型録音状態表示 ====== */
+  .recording-banner {
+    display: none; position: fixed; top: 50px; left: 0; right: 0; 
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    color: #fff; text-align: center; padding: 15px; z-index: 99;
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+    animation: banner-pulse 2s infinite;
+  }
+  .recording-banner.show { display: block; }
+  .recording-banner .main-text { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
+  .recording-banner .sub-text { font-size: 14px; opacity: 0.9; }
+  .recording-time { 
+    font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums;
+    color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  @keyframes banner-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+  
   .voice-control {
     display: flex; gap: 8px; align-items: center; padding: 8px; background: #ecf0f1; border-radius: 6px; margin-bottom: 6px;
   }
@@ -36,8 +57,15 @@
     color: #fff; font-size: 22px; box-shadow: 0 2px 6px rgba(231,76,60,0.3);
   }
   .voice-btn:active { transform: scale(0.95); }
-  .voice-btn.active { background: linear-gradient(135deg, #27ae60 0%, #229954 100%); animation: pulse-voice 1.5s infinite; }
-  @keyframes pulse-voice { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .voice-btn.active { 
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%); 
+    animation: pulse-voice 1.5s infinite;
+    box-shadow: 0 0 20px rgba(39, 174, 96, 0.6);
+  }
+  @keyframes pulse-voice { 
+    0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(39, 174, 96, 0.6); } 
+    50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(39, 174, 96, 0.8); } 
+  }
   .voice-status { flex: 1; min-width: 0; }
   .voice-status-title { font-size: 10px; font-weight: 600; color: #2c3e50; margin-bottom: 2px; }
   .voice-status-text { font-size: 9px; color: #7f8c8d; line-height: 1.2; }
@@ -48,6 +76,29 @@
   .confidence-medium { background: #f39c12; }
   .confidence-low { background: #e74c3c; }
   .ai-indicator { margin-top: 3px; font-size: 8px; color: #9b59b6; font-weight: 600; }
+  
+  /* ====== v2.4.0 新機能: 設定セクション ====== */
+  .settings-section {
+    background: #fff3cd; border: 2px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+  }
+  .settings-title {
+    font-size: 11px; font-weight: 700; color: #856404; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .setting-row {
+    display: flex; align-items: center; gap: 8px; margin: 6px 0; padding: 6px;
+    background: #fff; border-radius: 4px;
+  }
+  .setting-row label {
+    flex: 1; font-size: 11px; color: #2c3e50; font-weight: 500;
+  }
+  .setting-row input[type="checkbox"] {
+    width: 20px; height: 20px; cursor: pointer;
+  }
+  .setting-row input[type="number"] {
+    width: 60px; padding: 4px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 11px;
+  }
+  
   textarea {
     width: 100%; min-height: 50px; border: 2px solid #bdc3c7; border-radius: 6px; padding: 6px;
     font-size: 13px; line-height: 1.4; resize: vertical; font-family: inherit; background: #fff;
@@ -113,7 +164,6 @@
   .ai-badge { font-size: 7px; background: #9b59b6; color: #fff; padding: 1px 4px; border-radius: 4px; margin-left: 4px; }
   .learn-badge { font-size: 7px; background: #f39c12; color: #fff; padding: 1px 4px; border-radius: 4px; margin-left: 4px; }
   
-  /* 編集モーダル */
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
   .modal.show { display: flex; align-items: center; justify-content: center; }
   .modal-content { background: #fff; border-radius: 8px; padding: 16px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
@@ -134,16 +184,44 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (AI v2.3.3<span class="version">症状認識強化</span>)</h1>
+      <h1>🚑 救急記録 (ヘリ安定版 v2.4.0<span class="version">バイブ/音声通知</span>)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
+
+  <!-- ====== v2.4.0 新機能: 録音中バナー ====== -->
+  <div id="recordingBanner" class="recording-banner">
+    <div class="main-text">🔴 録音中</div>
+    <div class="recording-time" id="recordingTime">00:00</div>
+    <div class="sub-text">ポケットに入れても安心</div>
+  </div>
 
   <div class="wrap">
     <div class="grid">
       <section class="card">
         <h2>📝 入力</h2>
         <div class="body">
+          <!-- ====== v2.4.0 新機能: ヘリ運用設定 ====== -->
+          <div class="settings-section">
+            <div class="settings-title">🚁 ヘリ運用設定</div>
+            <div class="setting-row">
+              <label>バイブレーション通知</label>
+              <input type="checkbox" id="vibrateEnabled" checked>
+            </div>
+            <div class="setting-row">
+              <label>音声フィードバック</label>
+              <input type="checkbox" id="audioFeedback" checked>
+            </div>
+            <div class="setting-row">
+              <label>画面常時点灯（録音中）</label>
+              <input type="checkbox" id="keepScreenOn" checked>
+            </div>
+            <div class="setting-row">
+              <label>定期音声通知 (秒)</label>
+              <input type="number" id="voiceNotifyInterval" min="10" max="120" value="30">
+            </div>
+          </div>
+
           <div class="voice-control">
             <button id="voiceBtn" type="button" class="voice-btn">🎤</button>
             <div class="voice-status">
@@ -232,33 +310,22 @@
   let editingLogId=null;
   let saveDebounceTimer = null; 
 
-  /* ====== 【v2.3.3強化】TAGSに「胸痛」を追加 ====== */
   const TAGS=[
     "救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着",
     "ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","フライトドクター接触","ランデブーポイント着",
     "カー覚知","カー指令","カー出動","カー現着","カー接触","ドッキング","医師接触",
-    
-    // v2.3.2追加 + v2.3.3「胸痛」追加
     "主訴","現病歴","既往歴","常用薬","アレルギー","生活歴","ADL", "胸痛",
     "身体所見",
-
     "気管挿管","人工呼吸","バックバルブマスク換気","酸素投与","酸素投与量","NPPV",
     "ルート確保","生食点滴","ソルアセトF点滴","大腿動脈","大腿静脈","骨髄針",
-
-    // v2.3.2追加 (一部既存)
     "血液ガス分析","血糖","簡易超音波検査","12誘導心電図","超音波検査",
-
     "胸骨圧迫","開胸","心臓マッサージ",
     "アドレナリン","ミダゾラム","ジアゼパム","イーケプラ","ノルアドレナリン","レペタン"
   ];
 
-  /* ====== 【v2.3.3強化】医療用語辞書に「胸痛」関連を追加 ====== */
   const MEDICAL_CORRECTIONS = {
-    // v2.3.3追加: 胸痛
-    "きょうつう": "胸痛", "共通": "胸痛", // 「共通」は文脈判断に任せるが、辞書にも追加
+    "きょうつう": "胸痛", "共通": "胸痛",
     "共通が": "胸痛が", "共通を": "胸痛を", "共通の": "胸痛の",
-
-    // v2.3.2追加: 必須医療用語
     "しゅそ": "主訴", "主訴は": "主訴",
     "げんびょうれき": "現病歴", "現病歴は": "現病歴",
     "きおうれき": "既往歴", "既往歴は": "既往歴",
@@ -267,26 +334,20 @@
     "せいかつれき": "生活歴",
     "えーでぃーえる": "ADL", "adl": "ADL",
     "しんたいしょけん": "身体所見",
-    "けつがす": "血液ガス分析", // 「血ガス」から「血液ガス分析」に強化
+    "けつがす": "血液ガス分析",
     "けっとう": "血糖",
     "12ゆうどうしんでんず": "12誘導心電図", "12誘導": "12誘導心電図",
     "ちょうおんぱ": "超音波検査", "エコー": "超音波検査", "簡易超音波": "簡易超音波検査",
-
-    // v2.3.1からの継続: 重要な同音異義語・誤認識
     "しーぴーえー":"CPA","心配停止":"心肺停止","心肺蘇生":"心肺停止","心肺装置":"心肺停止","心配装置":"心肺停止",
     "気管総監":"気管挿管","気管創刊":"気管挿管","気管相関":"気管挿管","気管総刊":"気管挿管",
     "るーとかくほ":"ルート確保","るーと確保":"ルート確保","ルート角穂":"ルート確保",
     "意識レベル":"JCS","いしきれべる":"JCS",
-    "意識":"伊敷", // 通常の誤認識パターンとして残す
-
-    // 一般的な医療用語の誤認識
+    "意識":"伊敷",
     "ぼすみん":"ボスミン","さちゅれーしょん":"サチュレーション","えすぴーおーつー":"SpO2","じぇーしーえす":"JCS",
     "じーしーえす":"GCS","生職":"生食","胸骨厚迫":"胸骨圧迫","胸骨あっぱく":"胸骨圧迫",
     "除債動":"除細動","じょさいどう":"除細動","じょさいど":"除細動","除細同":"除細動",
     "にっぷぶ":"NPPV",
     "ドクター接触":"医師接触","フライトドクター":"フライトドクター接触",
-    
-    // 鹿児島市救急隊名の音声誤認識パターン（最重要）
     "なんりんじ":"南林寺","なんりん":"南林寺","南林":"南林寺","こうなん":"甲南","江南":"甲南","港南":"甲南","湖南":"甲南",
     "かみまち":"上町","かみまち":"上町","よしの":"吉野","よしだ":"吉田","さくらじまひがし":"桜島東",
     "さくらじまにし":"桜島西","いしき":"伊敷","まつもと":"松元","こおりやま":"郡山","たにやま":"谷山",
@@ -305,7 +366,178 @@
     "映画", "ドラマ", "アニメ", "ゲーム", "ショッピング", "買い物"
   ];
 
-  /* v2.3.1で修正済みの関数 */
+  /* ====== v2.4.0 新機能: バイブレーション・音声通知 ====== */
+  class FeedbackManager {
+    constructor() {
+      this.audioContext = null;
+      this.speechSynth = window.speechSynthesis;
+      this.lastVoiceNotify = 0;
+    }
+
+    vibrate(pattern) {
+      if (!document.getElementById('vibrateEnabled')?.checked) return;
+      if ('vibrate' in navigator) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    vibrateRecordingStart() {
+      this.vibrate([100, 50, 100]); // 短・短
+    }
+
+    vibrateRecordingStop() {
+      this.vibrate([100, 50, 100, 50, 100]); // 短・短・短
+    }
+
+    vibrateLogConfirmed() {
+      this.vibrate([200]); // 長い1回
+    }
+
+    vibrateError() {
+      this.vibrate([200, 100, 200]); // 長・長
+    }
+
+    playBeep(frequency = 880, duration = 100) {
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+      
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration / 1000);
+      
+      oscillator.start(this.audioContext.currentTime);
+      oscillator.stop(this.audioContext.currentTime + duration / 1000);
+    }
+
+    speak(text) {
+      if (!document.getElementById('audioFeedback')?.checked) return;
+      if (!this.speechSynth) return;
+
+      // 既存の発話をキャンセル
+      this.speechSynth.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 1.1;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.8;
+
+      this.speechSynth.speak(utterance);
+    }
+
+    notifyRecordingActive() {
+      const now = Date.now();
+      const interval = (+document.getElementById('voiceNotifyInterval')?.value || 30) * 1000;
+      
+      if (now - this.lastVoiceNotify >= interval) {
+        this.speak('録音中');
+        this.playBeep(1200, 50);
+        this.lastVoiceNotify = now;
+      }
+    }
+
+    notifyLogSaved() {
+      this.speak('記録しました');
+      this.vibrateLogConfirmed();
+      this.playBeep(1760, 100);
+    }
+
+    notifyRecordingStarted() {
+      this.speak('録音を開始します');
+      this.vibrateRecordingStart();
+      this.playBeep(880, 100);
+    }
+
+    notifyRecordingStopped() {
+      this.speak('録音を停止しました');
+      this.vibrateRecordingStop();
+      this.playBeep(440, 200);
+    }
+  }
+
+  const feedbackManager = new FeedbackManager();
+
+  /* ====== v2.4.0 新機能: Wake Lock強化 ====== */
+  class EnhancedWakeLock {
+    constructor() {
+      this.wakeLock = null;
+      this.noSleepVideo = null;
+      this.setupNoSleepVideo();
+    }
+
+    setupNoSleepVideo() {
+      // iOS Safari用のフォールバック（Wake Lock API未対応の場合）
+      this.noSleepVideo = document.createElement('video');
+      this.noSleepVideo.setAttribute('playsinline', '');
+      this.noSleepVideo.setAttribute('muted', '');
+      this.noSleepVideo.style.position = 'fixed';
+      this.noSleepVideo.style.opacity = '0';
+      this.noSleepVideo.style.pointerEvents = 'none';
+      this.noSleepVideo.style.left = '0';
+      this.noSleepVideo.style.top = '0';
+      this.noSleepVideo.style.width = '1px';
+      this.noSleepVideo.style.height = '1px';
+      
+      // 無音動画データ（Base64エンコード）
+      this.noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAA1m1vb3YAAABsbXZoZAAAAAAAAAAAAAAAAAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU2LjQwLjEwMQ==';
+      
+      document.body.appendChild(this.noSleepVideo);
+    }
+
+    async request() {
+      if (!document.getElementById('keepScreenOn')?.checked) return;
+
+      // Wake Lock API（対応ブラウザ）
+      if ('wakeLock' in navigator) {
+        try {
+          this.wakeLock = await navigator.wakeLock.request('screen');
+          this.wakeLock.addEventListener('release', () => {
+            console.log('Wake Lock解放');
+            this.wakeLock = null;
+          });
+          console.log('Wake Lock取得成功');
+          return;
+        } catch (err) {
+          console.log('Wake Lock失敗、フォールバックを使用');
+        }
+      }
+
+      // フォールバック: 無音動画再生（iOS Safari用）
+      try {
+        await this.noSleepVideo.play();
+        console.log('NoSleep動画再生開始');
+      } catch (err) {
+        console.log('NoSleep動画再生失敗:', err);
+      }
+    }
+
+    async release() {
+      // Wake Lock API
+      if (this.wakeLock) {
+        try {
+          await this.wakeLock.release();
+          this.wakeLock = null;
+        } catch (err) {}
+      }
+
+      // フォールバック停止
+      if (this.noSleepVideo) {
+        this.noSleepVideo.pause();
+      }
+    }
+  }
+
+  const enhancedWakeLock = new EnhancedWakeLock();
+
   function containsBlacklistedWord(text) {
     const lowerText = text.toLowerCase();
     for (const word of BLACKLIST_WORDS) {
@@ -373,7 +605,7 @@
       '出動', '搬送', '病着', 'hr', 'bp', 'rr', 'bt', '接触',
       '医師', 'ドクター', 'ヘリ', 'カー', 'ランデブー',
       '主訴', '現病歴', '既往歴', '常用薬', 'アレルギー', 'adl', '身体所見', '血液ガス', '心電図', '超音波',
-      '胸痛' // v2.3.3追加
+      '胸痛'
     ];
     
     for (const keyword of medicalKeywords) {
@@ -392,19 +624,14 @@
     return Math.min(1.0, score);
   }
 
-  /* ====== 【v2.3.3強化】NGRAMSに「胸痛」関連を追加 ====== */
   const NGRAMS = {
     "救急 覚知": 0.95, "救急 現着": 0.95, "気管 挿管": 0.90, "ルート 確保": 0.90, 
     "胸骨 圧迫": 0.95, "血圧 測定": 0.85, "SpO2 測定": 0.85, "JCS 3": 0.80,
     "GCS 15": 0.80, "生食 点滴": 0.85, "医師 接触": 0.90, "車内 収容": 0.90,
     "心肺 停止": 0.95, "ノル アドレナリン": 0.90, "人工 呼吸": 0.85,
-
-    // v2.3.2追加
     "主訴 は": 0.9, "現病歴 は": 0.9, "既往歴 に": 0.9, "常用薬 は": 0.9, 
     "アレルギー は": 0.9, "ADL は": 0.9, "身体所見": 0.9, "血液ガス分析": 0.9, 
     "12誘導心電図": 0.9, "超音波検査": 0.85,
-
-    // v2.3.3追加
     "胸痛 が": 0.9, "胸痛 を": 0.9
   };
 
@@ -430,7 +657,6 @@
       this.updateExpectedNext();
     }
     
-    /* ====== 【v2.3.2強化】ContextEngineのフェーズ認識を強化 ====== */
     updatePhase(text) {
       if (text.includes('覚知') || text.includes('指令')) {
         this.currentPhase = 'dispatch';
@@ -442,7 +668,7 @@
         this.currentPhase = 'onscene';
         this.expectedNext = ['接触', '観察', 'バイタル', '処置', '意識', '主訴', '現病歴', '既往歴', '胸痛'];
       } else if (text.includes('主訴') || text.includes('現病歴') || text.includes('既往歴') || text.includes('胸痛')) {
-        this.currentPhase = 'onscene'; // 現場での情報収集
+        this.currentPhase = 'onscene';
         this.expectedNext = ['バイタル', '処置', '身体所見', '常用薬', 'アレルギー'];
       } else if (text.includes('処置') || text.includes('挿管') || text.includes('ルート') || text.includes('身体所見')) {
         this.currentPhase = 'treatment';
@@ -467,7 +693,6 @@
         this.expectedNext.push('確認', '成功', '良好', '改善');
       }
       
-      // 重複を削除
       this.expectedNext = [...new Set(this.expectedNext)];
     }
     
@@ -527,12 +752,10 @@
     return 1 - (distance / maxLen);
   }
 
-  /* ====== 【v2.3.3強化】「胸痛 vs 共通」の文脈補正を追加 ====== */
   function checkHomophoneContextCorrection(text, contextEngine) {
       let corrected = text;
       let boost = 0;
       
-      // 1. 伊敷（地名） vs 意識（意識レベル）
       if (corrected.includes('意識')) {
           if (contextEngine.currentPhase === 'dispatch' || contextEngine.currentPhase === 'enroute') {
               if (similarityScore(corrected, '伊敷') > 0.6) {
@@ -549,7 +772,6 @@
           }
       }
       
-      // 2. 心配 vs 心肺
       if (corrected.includes('心配') && contextEngine.currentPhase !== 'initial') {
           const regex = /心配/g;
           if (regex.test(corrected)) {
@@ -559,14 +781,12 @@
           }
       }
       
-      // 3. 共通 vs 胸痛 (v2.3.3追加)
       if (corrected.includes('共通')) {
-          // 現場到着～処置フェーズでの「共通」は「胸痛」の可能性が極めて高い
           if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment' || contextEngine.currentPhase === 'enroute') {
               const regex = /共通/g;
               if (regex.test(corrected)) {
                   corrected = corrected.replace(regex, '胸痛');
-                  boost += 0.25; // 強力にブースト
+                  boost += 0.25;
                   console.log("  🧠 文脈補正: '共通' → '胸痛' (症状優先)");
               }
           }
@@ -598,7 +818,7 @@
         };
       }
       
-      console.log('🧠 AI補正エンジン起動 (v2.3.3 - 症状認識強化)');
+      console.log('🧠 AI補正エンジン起動 (v2.4.0 - ヘリ安定版)');
       
       const filteredAlternatives = [];
       
@@ -623,23 +843,20 @@
         
         let text = alt.transcript;
         
-        // 1. ユーザー学習済み修正を適用
         if (this.userCorrections[text]) {
           const learnedCorrection = this.userCorrections[text];
           text = learnedCorrection;
           score += 0.4;
         }
         
-        // 2. 救急隊名パターン検出＆補正
         const correctedTeamText = detectAndCorrectEmergencyTeam(text);
         if (correctedTeamText !== text) {
           text = correctedTeamText;
           score += 0.3;
         }
 
-        // 3. 【v2.3】短文の強制補正ロジック
         if (text.length <= 6 && score < 0.95) { 
-            const importantTerms = ['CPA', '心肺停止', '挿管', 'ルート確保', '甲南', '南林寺', '主訴', '既往歴', 'ADL', '胸痛']; // v2.3.3「胸痛」追加
+            const importantTerms = ['CPA', '心肺停止', '挿管', 'ルート確保', '甲南', '南林寺', '主訴', '既往歴', 'ADL', '胸痛'];
             for (const term of importantTerms) {
                 const sim = similarityScore(text, term);
                 if (sim > 0.8) {
@@ -651,18 +868,15 @@
             }
         }
         
-        // 4. 【v2.3.3強化】同音異義語の文脈判定補正
         const { corrected: homophoneCorrected, boost: homophoneBoost } = checkHomophoneContextCorrection(text, this.contextEngine);
         if (homophoneCorrected !== text) {
             text = homophoneCorrected;
         }
         score += homophoneBoost;
         
-        // 5. 【v2.3.2】文脈スコアの加算
         const contextScore = this.contextEngine.getContextScore(text);
         score += contextScore * 0.25;
         
-        // 6. 医療用語/タグの一致度
         let medicalScore = 0;
         for (const term of TAGS) {
           if (text.includes(term)) {
@@ -671,7 +885,6 @@
         }
         score += Math.min(0.25, medicalScore);
         
-        // 7. 【v2.3】N-gramスコアの加算
         let ngramScore = 0;
         for (const [ngram, weight] of Object.entries(NGRAMS)) {
           if (text.includes(ngram.replace(' ', ''))) {
@@ -680,7 +893,6 @@
         }
         score += Math.min(0.2, ngramScore);
         
-        // 8. 救急隊名の一致度（類似度）
         let similarityBest = 0;
         for (const teamName of KAGOSHIMA_EMERGENCY_TEAMS) {
           const sim = similarityScore(text, teamName);
@@ -694,11 +906,9 @@
           score += this.userPatterns[text] * 0.15;
         }
         
-        // 9. 【v2.3】ドメインスコアの加算
         const domainScore = getMedicalDomainScore(text);
         score += domainScore * 0.25; 
         
-        // 10. 【v2.3】救急隊名ボーナス
         for (const teamName of KAGOSHIMA_EMERGENCY_TEAMS) {
           if (text.includes(teamName)) {
             score += 0.4;
@@ -748,7 +958,6 @@
 
   const aiCorrection = new AICorrection();
 
-  /* ====== ユーティリティ ====== */
   function nowHHMMSS(){ const d=new Date(); return d.toLocaleTimeString('ja-JP',{hour12:false}); }
   function getElapsedMinutes(t1,t2){
     const [h1,m1,s1]=t1.split(':').map(Number); const [h2,m2,s2]=t2.split(':').map(Number);
@@ -779,53 +988,41 @@
       const patterns=JSON.parse(localStorage.getItem(STORE_KEY+'_patterns'));
       if(patterns) aiCorrection.userPatterns = patterns;
       
-      const corrections=JSON.parse(localStorage.getItem(STORE_KEY+'_correCTIONS'));
+      const corrections=JSON.parse(localStorage.getItem(STORE_KEY+'_corrections'));
       if(corrections) aiCorrection.userCorrections = corrections;
     }catch{ 
       logs=[]; startTime=null; aiCorrectionCount=0; userLearnedCount=0;
     } 
   }
 
-  /* ====== バイタルサインのフォーマット強化（v2.2同様） ====== */
   function formatVitalSigns(text) {
     let formatted = text;
     
-    // 血圧は2つの数値を含むパターン（区切り文字なしのスペース区切り）を優先的に処理
     formatted = formatted.replace(/(?:血圧|BP|ビーピー)\s*(\d{2,3})\s+(\d{2,3})(?:\s|$)/gi, 'NIBP $1/$2 mmHg');
     formatted = formatted.replace(/(?:血圧|BP|ビーピー)\s*(\d+)\s*(?:の|\/|ー)\s*(\d+)/gi, 'NIBP $1/$2 mmHg');
     formatted = formatted.replace(/^(\d{2,3})\s*(?:の|\/|ー)\s*(\d{2,3})(?:\s|$)/gm, 'NIBP $1/$2 mmHg');
     
-    // 脈拍・心拍数
     formatted = formatted.replace(/(?:脈拍|心拍|脈|HR|エイチアール)\s*(\d+)/gi, 'HR $1回/分');
     
-    // サチュレーション
     formatted = formatted.replace(/(?:サチュレーション|サチュ|SpO2|エスピーオーツー|酸素飽和度)\s*(\d+)/gi, 'SpO2 $1%');
     
-    // 呼吸数
     formatted = formatted.replace(/(?:呼吸数|呼吸|RR|アールアール)\s*(\d+)/gi, 'RR $1回/分');
     
-    // 体温
     formatted = formatted.replace(/(?:体温|BT|ビーティー)\s*(\d+\.?\d*)/gi, 'BT $1℃');
     
-    // JCS (3-3-9度方式に合わせて分類)
     formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*([1-3])(?!\d)/gi, (_m,num)=>`JCS I-${num}`);
     formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*(10|20|30)\b/gi, (_m,num)=>`JCS II-${num}`);
     formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*(100|200|300)\b/gi, (_m,num)=>`JCS III-${num}`);
 
-    // GCS
     formatted = formatted.replace(/(?:GCS|ジーシーエス)\s*([3-9]|1[0-5])\b/gi, 'GCS $1点');
     
-    // 瞳孔
     formatted = formatted.replace(/瞳孔(?:径)?\s*(\d+\.?\d*)\s*(?:ミリ|mm)?/gi, '瞳孔径 $1mm');
     
-    // 対光反射
     formatted = formatted.replace(/対光反射\s*(?:あり|陽性|\+|プラス)/gi, '対光反射 +');
     formatted = formatted.replace(/対光反射\s*(?:なし|陰性|\-|マイナス)/gi, '対光反射 -');
     
-    // 血糖値
     formatted = formatted.replace(/(?:血糖値?|BS|ビーエス)\s*(\d+)/gi, '血糖 $1mg/dL');
     
-    // 酸素投与
     formatted = formatted.replace(/酸素(?:投与)?\s*(\d+\.?\d*)\s*(?:リットル|L|リッター)/gi, 'O2 $1L/分');
     
     return formatted;
@@ -866,7 +1063,7 @@
       const res = await fetch(url, {
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'EmergencyDoc/2.3.3 (iOS Safari)' 
+          'User-Agent': 'EmergencyDoc/2.4.0 (iOS Safari)' 
         },
         signal: ctrl.signal
       });
@@ -922,6 +1119,9 @@
     });
     
     aiCorrection.learn(t, true);
+    
+    // v2.4.0 新機能: 記録確定時の通知
+    feedbackManager.notifyLogSaved();
     
     save(); render(); updateStats();
   }
@@ -1049,14 +1249,13 @@
     }
   }
 
-  /* ====== 【v2.3.3強化】タグボタンのカテゴリ分けを更新 ====== */
   function renderTagButtons(){
     const box=document.getElementById('tagButtons'); box.innerHTML='';
     const cats={
       '🚑 救急':["救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着"],
       '🚁 ヘリ':["ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","フライトドクター接触","ランデブーポイント着"],
       '🚙 カー':["カー覚知","カー指令","カー出動","カー現着","カー接触","ドッキング","医師接触"],
-      '📋 情報':["主訴", "胸痛", "現病歴","既往歴","常用薬","アレルギー","生活歴","ADL"], // 胸痛を追加
+      '📋 情報':["主訴", "胸痛", "現病歴","既往歴","常用薬","アレルギー","生活歴","ADL"],
       '🔬 検査':["身体所見","血液ガス分析","血糖","簡易超音波検査","12誘導心電図","超音波検査"],
       '🫁 呼吸':["気管挿管","人工呼吸","バックバルブマスク換気","酸素投与","酸素投与量","NPPV"],
       '💉 循環':["ルート確保","生食点滴","ソルアセトF点滴","大腿動脈","大腿静脈","骨髄針"],
@@ -1130,11 +1329,15 @@
     }
   }
 
-  /* ====== 【v2.3】音声認識エンジン ====== */
+  /* ====== v2.4.0 強化版音声認識エンジン ====== */
   class UltraPrecisionVoiceRec{
     constructor(){
       this.rec=null; this.isRec=false; this.interim=''; this.audioStream=null;
       this.wakeLock=null; this.restartTimer=null; this.lastSoundTime=Date.now();
+      this.recordingStartTime = null;
+      this.recordingTimeUpdateInterval = null;
+      this.voiceNotifyInterval = null;
+      
       try{
         if('webkitSpeechRecognition' in window) this.rec=new webkitSpeechRecognition();
         else if('SpeechRecognition' in window) this.rec=new SpeechRecognition();
@@ -1142,34 +1345,6 @@
       if(this.rec) this.setup();
       this.setupEnhancedAudio(); 
       this.setupVisibilityHandler();
-      this.setupWakeLock();
-    }
-    
-    async setupWakeLock(){
-      if('wakeLock' in navigator){
-        try{
-          document.addEventListener('visibilitychange', async ()=>{
-            if(this.isRec && document.visibilityState === 'visible' && !this.wakeLock){
-              await this.requestWakeLock();
-            }
-          });
-        }catch(e){ console.log('Wake Lock未対応'); }
-      }
-    }
-    
-    async requestWakeLock(){
-      if('wakeLock' in navigator && this.isRec){
-        try{
-          this.wakeLock = await navigator.wakeLock.request('screen');
-          this.wakeLock.addEventListener('release', ()=>{ this.wakeLock=null; });
-        }catch(e){ }
-      }
-    }
-    
-    async releaseWakeLock(){
-      if(this.wakeLock){
-        try{ await this.wakeLock.release(); this.wakeLock=null; }catch{}
-      }
     }
     
     setupVisibilityHandler(){
@@ -1191,6 +1366,7 @@
         if(this.isRec){
           const timeSinceLastSound = Date.now() - this.lastSoundTime;
           if(timeSinceLastSound > 15000){
+            console.log('⚠️ 15秒以上無音、強制再起動');
             this.forceRestart();
           }else{
             this.ensureRecording();
@@ -1201,6 +1377,7 @@
     
     forceRestart(){
       if(!this.rec || !this.isRec) return;
+      console.log('🔄 音声認識を強制再起動');
       try{ this.rec.stop(); }catch{}
       setTimeout(()=>{
         if(this.isRec){
@@ -1208,6 +1385,7 @@
             this.rec.start(); 
             this.lastSoundTime=Date.now(); 
           }catch(e){ 
+            console.log('再起動失敗、1秒後に再試行');
             setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 1000);
           }
         }
@@ -1226,7 +1404,19 @@
           }
         });
       } catch(e) {
+        console.log('高度な音声設定に失敗、標準設定を使用');
       }
+    }
+    
+    updateRecordingTime() {
+      if (!this.recordingStartTime) return;
+      
+      const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      
+      const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      document.getElementById('recordingTime').textContent = timeStr;
     }
     
     setup(){
@@ -1302,6 +1492,19 @@
       this.rec.onstart=()=>{ 
         this.isRec=true; 
         this.lastSoundTime=Date.now();
+        this.recordingStartTime = Date.now();
+        
+        // v2.4.0 新機能: 録音時間の更新
+        this.recordingTimeUpdateInterval = setInterval(() => {
+          this.updateRecordingTime();
+        }, 1000);
+        
+        // v2.4.0 新機能: 定期的な音声通知
+        const notifyInterval = (+document.getElementById('voiceNotifyInterval')?.value || 30) * 1000;
+        this.voiceNotifyInterval = setInterval(() => {
+          feedbackManager.notifyRecordingActive();
+        }, notifyInterval);
+        
         this.updateUI(); 
         this.ensureRecording();
       };
@@ -1313,6 +1516,7 @@
               try{ 
                 this.rec.start(); 
               }catch(e){ 
+                console.log('再起動失敗:', e);
                 setTimeout(()=>{ if(this.isRec) this.forceRestart(); } , 1000);
               }
             }
@@ -1320,6 +1524,8 @@
         } else { 
           this.updateUI(); 
           clearTimeout(this.restartTimer);
+          clearInterval(this.recordingTimeUpdateInterval);
+          clearInterval(this.voiceNotifyInterval);
         }
       };
       
@@ -1329,8 +1535,16 @@
           this.lastSoundTime=Date.now();
           return;
         }
-        if(e.error==='audio-capture'){ st.textContent='❌ マイクなし'; this.stop(); }
-        else if(e.error==='not-allowed'){ st.textContent='❌ 許可なし'; this.stop(); }
+        if(e.error==='audio-capture'){ 
+          st.textContent='❌ マイクなし'; 
+          feedbackManager.vibrateError();
+          this.stop(); 
+        }
+        else if(e.error==='not-allowed'){ 
+          st.textContent='❌ 許可なし'; 
+          feedbackManager.vibrateError();
+          this.stop(); 
+        }
         else if(e.error==='network'){ 
           st.textContent='⚠️ ネットワークエラー (再試行中)'; 
           setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 2000);
@@ -1342,10 +1556,26 @@
         }
       };
       
-      this.rec.onsoundstart=()=>{ this.lastSoundTime=Date.now(); document.getElementById('voiceStatusText').textContent='🎤 音声検出中...'; };
-      this.rec.onsoundend = ()=>{ this.lastSoundTime=Date.now(); if(this.isRec && !this.interim){ document.getElementById('voiceStatusText').textContent='待機中...'; } };
-      this.rec.onspeechstart=()=>{ this.lastSoundTime=Date.now(); document.getElementById('voiceStatusText').textContent='🗣️ 認識中...'; };
-      this.rec.onspeechend =()=>{ this.lastSoundTime=Date.now(); if(this.isRec){ document.getElementById('voiceStatusText').textContent='待機中...'; } };
+      this.rec.onsoundstart=()=>{ 
+        this.lastSoundTime=Date.now(); 
+        document.getElementById('voiceStatusText').textContent='🎤 音声検出中...'; 
+      };
+      this.rec.onsoundend = ()=>{ 
+        this.lastSoundTime=Date.now(); 
+        if(this.isRec && !this.interim){ 
+          document.getElementById('voiceStatusText').textContent='待機中...'; 
+        } 
+      };
+      this.rec.onspeechstart=()=>{ 
+        this.lastSoundTime=Date.now(); 
+        document.getElementById('voiceStatusText').textContent='🗣️ 認識中...'; 
+      };
+      this.rec.onspeechend =()=>{ 
+        this.lastSoundTime=Date.now(); 
+        if(this.isRec){ 
+          document.getElementById('voiceStatusText').textContent='待機中...'; 
+        } 
+      };
     }
     
     async start(){
@@ -1354,13 +1584,22 @@
       try{
         this.isRec=true; 
         this.lastSoundTime=Date.now();
+        this.recordingStartTime = Date.now();
+        
         this.rec.start();
-        await this.requestWakeLock();
+        
+        // v2.4.0 新機能: Wake Lock取得
+        await enhancedWakeLock.request();
+        
+        // v2.4.0 新機能: 開始通知
+        feedbackManager.notifyRecordingStarted();
+        
         document.getElementById('voiceStatusText').textContent='🎤 話してください';
         this.updateUI();
       }catch(e){ 
         this.isRec=false; 
-        alert('開始に失敗しました'); 
+        feedbackManager.vibrateError();
+        alert('開始に失敗しました: ' + e.message); 
       }
     }
     
@@ -1368,7 +1607,14 @@
       if(!this.rec || !this.isRec) return;
       this.isRec=false; 
       clearTimeout(this.restartTimer);
-      this.releaseWakeLock();
+      clearInterval(this.recordingTimeUpdateInterval);
+      clearInterval(this.voiceNotifyInterval);
+      
+      // v2.4.0 新機能: Wake Lock解放
+      enhancedWakeLock.release();
+      
+      // v2.4.0 新機能: 停止通知
+      feedbackManager.notifyRecordingStopped();
 
       try{ this.rec.stop(); }catch{}
       if (this.audioStream) {
@@ -1377,10 +1623,12 @@
       }
       
       this.interim=''; 
+      this.recordingStartTime = null;
       document.getElementById('voiceInterim').textContent=''; 
       document.getElementById('voiceStatusText').textContent='タップで開始';
       document.getElementById('voiceStatusText').style.color = '#7f8c8d';
       document.getElementById('aiIndicator').textContent = '';
+      document.getElementById('recordingTime').textContent = '00:00';
       updateConfidenceBar(0);
       this.updateUI();
     }
@@ -1390,12 +1638,16 @@
     updateUI(){
       const btn=document.getElementById('voiceBtn'); 
       const title=document.getElementById('voiceStatusTitle');
+      const banner=document.getElementById('recordingBanner');
+      
       if(this.isRec){ 
         btn.classList.add('active'); 
-        title.textContent='🔴 録音中 (AI v2.3.3)'; 
+        title.textContent='🔴 録音中 (v2.4.0)'; 
+        banner.classList.add('show');
       } else { 
         btn.classList.remove('active'); 
         title.textContent='停止中'; 
+        banner.classList.remove('show');
       }
     }
   }
@@ -1443,20 +1695,27 @@
     document.getElementById('voiceBtn').onclick=()=>voice.toggle();
     updateClock(); setInterval(updateClock,1000);
     
-    console.log('🚑 起動完了 (超高精度AI版 v2.3.3 - 症状認識強化版)');
+    console.log('🚑 起動完了 (ヘリ安定版 v2.4.0)');
     console.log('');
-    console.log('🆕 v2.3.3の強化点 (症状認識強化):');
-    console.log('  🧠 文脈補正強化: 「共通」を「胸痛」に自動補正するロジックを追加');
-    console.log('  ✅ 辞書(MEDICAL_CORRECTIONS)に「きょうつう」「共通が」などのパターンを追加');
-    console.log('  ✅ 連語(NGRAMS)に「胸痛 が」などのパターンを追加');
-    console.log('  ✅ タグボタンに「胸痛」を追加');
-    console.log('  ✅ 文脈エンジン(ContextEngine)が「胸痛」を認識し、フェーズを更新');
+    console.log('🆕 v2.4.0の新機能 (ヘリ運用最適化):');
+    console.log('  📳 バイブレーション通知 - 録音開始/停止/記録確定を振動で通知');
+    console.log('  🔊 音声フィードバック - 「録音中」「記録しました」を音声で通知');
+    console.log('  💡 画面常時点灯 - 録音中は画面が消えない（Wake Lock API + フォールバック）');
+    console.log('  ⏱️ 録音時間表示 - 大きなバナーで録音経過時間をリアルタイム表示');
+    console.log('  🔄 強制再起動強化 - 15秒以上無音で自動再起動');
+    console.log('  🔔 定期音声通知 - 設定した間隔で「録音中」と通知（デフォルト30秒）');
     console.log('');
-    console.log('🧠 AI機能 (v2.3.2からの継続):');
-    console.log('  ✅ 医療用語（主訴, 既往歴など）の事前学習');
-    console.log('  💥 短文強制補正ロジック');
-    console.log('  🧠 文脈による同音異義語補正（意識/伊敷, 心配/心肺）');
-    console.log('  ✅ ユーザー学習機能');
+    console.log('🎛️ 設定可能な項目:');
+    console.log('  ✅ バイブレーション ON/OFF');
+    console.log('  ✅ 音声フィードバック ON/OFF');
+    console.log('  ✅ 画面常時点灯 ON/OFF');
+    console.log('  ✅ 定期音声通知の間隔（10～120秒）');
+    console.log('');
+    console.log('💡 ヘリ運用のポイント:');
+    console.log('  ✈️ ポケットに入れても録音状態が分かる（バイブ+音声）');
+    console.log('  ✈️ 画面が自動で消えない（バッテリー消費に注意）');
+    console.log('  ✈️ 定期的に「録音中」と通知（安心感UP）');
+    console.log('  ✈️ 記録確定時にバイブ+音声で確認');
     console.log('');
   }
   init();
