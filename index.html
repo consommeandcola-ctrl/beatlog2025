@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - ヘリ安定版 v2.4.0</title>
+<title>救急記録 - ヘリ安定版 v2.4.2</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   body {
@@ -28,7 +28,6 @@
   .card h2 { padding: 6px 10px; border-bottom: 2px solid #3498db; font-size: 12px; font-weight: 700; color: #2c3e50; background: #ecf0f1; }
   .card .body { padding: 8px; }
   
-  /* ====== v2.4.0 新機能: 大型録音状態表示 ====== */
   .recording-banner {
     display: none; position: fixed; top: 50px; left: 0; right: 0; 
     background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
@@ -48,6 +47,37 @@
     50% { opacity: 0.85; }
   }
   
+  .system-status {
+    font-size: 9px; padding: 4px 8px; background: #e8f4f8; border-radius: 4px;
+    color: #2c3e50; margin-top: 4px; border-left: 2px solid #3498db;
+  }
+  .system-status.warning { background: #fff3cd; border-left-color: #f39c12; color: #856404; }
+  .system-status.error { background: #f8d7da; border-left-color: #e74c3c; color: #721c24; }
+  .system-status.success { background: #d4edda; border-left-color: #27ae60; color: #155724; }
+  
+  /* v2.4.2 新機能: 権限エラー表示 */
+  .permission-alert {
+    display: none; background: #fff3cd; border: 2px solid #f39c12; border-radius: 8px;
+    padding: 12px; margin-bottom: 8px;
+  }
+  .permission-alert.show { display: block; }
+  .permission-alert-title {
+    font-size: 13px; font-weight: 700; color: #856404; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .permission-alert-text {
+    font-size: 11px; color: #856404; line-height: 1.5; margin-bottom: 8px;
+  }
+  .permission-alert-steps {
+    background: #fff; border-radius: 4px; padding: 8px; margin-bottom: 8px;
+  }
+  .permission-alert-steps ol {
+    margin-left: 18px; font-size: 10px; color: #856404; line-height: 1.6;
+  }
+  .permission-alert-buttons {
+    display: flex; gap: 6px;
+  }
+  
   .voice-control {
     display: flex; gap: 8px; align-items: center; padding: 8px; background: #ecf0f1; border-radius: 6px; margin-bottom: 6px;
   }
@@ -61,6 +91,9 @@
     background: linear-gradient(135deg, #27ae60 0%, #229954 100%); 
     animation: pulse-voice 1.5s infinite;
     box-shadow: 0 0 20px rgba(39, 174, 96, 0.6);
+  }
+  .voice-btn:disabled {
+    background: #95a5a6; opacity: 0.6; cursor: not-allowed;
   }
   @keyframes pulse-voice { 
     0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(39, 174, 96, 0.6); } 
@@ -77,7 +110,6 @@
   .confidence-low { background: #e74c3c; }
   .ai-indicator { margin-top: 3px; font-size: 8px; color: #9b59b6; font-weight: 600; }
   
-  /* ====== v2.4.0 新機能: 設定セクション ====== */
   .settings-section {
     background: #fff3cd; border: 2px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px;
   }
@@ -184,12 +216,11 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (ヘリ安定版 v2.4.0<span class="version">バイブ/音声通知</span>)</h1>
+      <h1>🚑 救急記録 (ヘリ安定版 v2.4.2<span class="version">権限改善版</span>)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
 
-  <!-- ====== v2.4.0 新機能: 録音中バナー ====== -->
   <div id="recordingBanner" class="recording-banner">
     <div class="main-text">🔴 録音中</div>
     <div class="recording-time" id="recordingTime">00:00</div>
@@ -201,7 +232,30 @@
       <section class="card">
         <h2>📝 入力</h2>
         <div class="body">
-          <!-- ====== v2.4.0 新機能: ヘリ運用設定 ====== -->
+          <!-- v2.4.2 新機能: マイク権限エラー表示 -->
+          <div id="permissionAlert" class="permission-alert">
+            <div class="permission-alert-title">
+              🎤 マイクへのアクセス許可が必要です
+            </div>
+            <div class="permission-alert-text">
+              音声入力を使用するには、マイクへのアクセスを許可してください。
+            </div>
+            <div class="permission-alert-steps">
+              <strong style="font-size: 11px; color: #856404;">📱 iPhoneでの設定方法:</strong>
+              <ol>
+                <li>「設定」アプリを開く</li>
+                <li>「Safari」を選択</li>
+                <li>「マイク」を選択</li>
+                <li>「許可」または「確認」を選択</li>
+                <li>このページを再読み込み</li>
+              </ol>
+            </div>
+            <div class="permission-alert-buttons">
+              <button id="btnRetryPermission" type="button" class="btn warning">🔄 再試行</button>
+              <button id="btnDismissAlert" type="button" class="btn secondary">閉じる</button>
+            </div>
+          </div>
+
           <div class="settings-section">
             <div class="settings-title">🚁 ヘリ運用設定</div>
             <div class="setting-row">
@@ -220,6 +274,10 @@
               <label>定期音声通知 (秒)</label>
               <input type="number" id="voiceNotifyInterval" min="10" max="120" value="30">
             </div>
+            <div class="setting-row">
+              <label>自動復帰機能</label>
+              <input type="checkbox" id="autoRecovery" checked>
+            </div>
           </div>
 
           <div class="voice-control">
@@ -232,6 +290,7 @@
               </div>
               <div class="ai-indicator" id="aiIndicator"></div>
               <div class="voice-interim" id="voiceInterim"></div>
+              <div id="systemStatus" class="system-status" style="display:none;"></div>
             </div>
           </div>
 
@@ -310,6 +369,7 @@
   let editingLogId=null;
   let saveDebounceTimer = null; 
   let beatLogInstance = null;
+  let micPermissionGranted = false;
 
   const TAGS=[
     "救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着",
@@ -367,7 +427,31 @@
     "映画", "ドラマ", "アニメ", "ゲーム", "ショッピング", "買い物"
   ];
 
-  /* ====== v2.4.0 新機能: バイブレーション・音声通知 ====== */
+  /* v2.4.2 新機能: 権限アラート表示・非表示 */
+  function showPermissionAlert() {
+    document.getElementById('permissionAlert').classList.add('show');
+    document.getElementById('voiceBtn').disabled = true;
+  }
+
+  function hidePermissionAlert() {
+    document.getElementById('permissionAlert').classList.remove('show');
+    document.getElementById('voiceBtn').disabled = false;
+  }
+
+  document.getElementById('btnRetryPermission').onclick = async function() {
+    try {
+      await voiceRec.requestMicPermission();
+      hidePermissionAlert();
+      showSystemStatus('マイクへのアクセスが許可されました', 'success');
+    } catch(e) {
+      showSystemStatus('マイクへのアクセスが拒否されました', 'error');
+    }
+  };
+
+  document.getElementById('btnDismissAlert').onclick = function() {
+    hidePermissionAlert();
+  };
+
   class FeedbackManager {
     constructor() {
       this.audioContext = null;
@@ -383,19 +467,23 @@
     }
 
     vibrateRecordingStart() {
-      this.vibrate([100, 50, 100]); // 短・短
+      this.vibrate([100, 50, 100]);
     }
 
     vibrateRecordingStop() {
-      this.vibrate([100, 50, 100, 50, 100]); // 短・短・短
+      this.vibrate([100, 50, 100, 50, 100]);
     }
 
     vibrateLogConfirmed() {
-      this.vibrate([200]); // 長い1回
+      this.vibrate([200]);
     }
 
     vibrateError() {
-      this.vibrate([200, 100, 200]); // 長・長
+      this.vibrate([200, 100, 200]);
+    }
+
+    vibrateRecovery() {
+      this.vibrate([50, 50, 50]);
     }
 
     playBeep(frequency = 880, duration = 100) {
@@ -462,11 +550,16 @@
       this.vibrateRecordingStop();
       this.playBeep(440, 200);
     }
+
+    notifySystemRecovery() {
+      this.speak('システムを復帰しました');
+      this.vibrateRecovery();
+      this.playBeep(1320, 150);
+    }
   }
 
   const feedbackManager = new FeedbackManager();
 
-  /* ====== v2.4.0 新機能: Wake Lock強化 ====== */
   class EnhancedWakeLock {
     constructor() {
       this.wakeLock = null;
@@ -812,7 +905,7 @@
         };
       }
       
-      console.log('🧠 AI補正エンジン起動 (v2.4.0 - ヘリ安定版)');
+      console.log('🧠 AI補正エンジン起動 (v2.4.2 - 権限改善版)');
       
       const filteredAlternatives = [];
       
@@ -1057,7 +1150,7 @@
       const res = await fetch(url, {
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'EmergencyDoc/2.4.0 (iOS Safari)' 
+          'User-Agent': 'EmergencyDoc/2.4.2 (iOS Safari)' 
         },
         signal: ctrl.signal
       });
@@ -1304,6 +1397,17 @@
     }
   }
 
+  function showSystemStatus(message, type = 'info') {
+    const statusEl = document.getElementById('systemStatus');
+    statusEl.textContent = message;
+    statusEl.className = 'system-status ' + type;
+    statusEl.style.display = 'block';
+    
+    setTimeout(() => {
+      statusEl.style.display = 'none';
+    }, 5000);
+  }
+
   class BeatLog{
     constructor(el){ this.el=el; this._idle=null; this._punctRe=/[。.。!?!?]\s*$/; this._onInput=this._onInput.bind(this); this._onBlur=this._onBlur.bind(this); }
     start(){ this.el.addEventListener('input',this._onInput); this.el.addEventListener('blur',this._onBlur); }
@@ -1322,30 +1426,174 @@
     }
   }
 
-  /* ====== v2.4.0 強化版音声認識エンジン ====== */
+  /* v2.4.2 マイク権限改善版 音声認識エンジン */
   class UltraPrecisionVoiceRec{
     constructor(){
-      this.rec=null; this.isRec=false; this.interim=''; this.audioStream=null;
-      this.restartTimer=null; this.lastSoundTime=Date.now();
+      this.rec=null; 
+      this.isRec=false; 
+      this.interim=''; 
+      this.audioStream=null;
+      this.restartTimer=null; 
+      this.lastSoundTime=Date.now();
       this.recordingStartTime = null;
       this.recordingTimeUpdateInterval = null;
       this.voiceNotifyInterval = null;
+      this.recoveryAttempts = 0;
+      this.maxRecoveryAttempts = 3;
       
-      try{
-        if('webkitSpeechRecognition' in window) this.rec=new webkitSpeechRecognition();
-        else if('SpeechRecognition' in window) this.rec=new SpeechRecognition();
-      }catch(e){ this.rec=null; }
-      if(this.rec) this.setup();
-      this.setupEnhancedAudio(); 
       this.setupVisibilityHandler();
+      this.setupLifecycleHandlers();
+    }
+
+    async requestMicPermission() {
+      try {
+        this.audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: { ideal: true },
+            noiseSuppression: { ideal: true },
+            autoGainControl: { ideal: true },
+            sampleRate: 48000,
+            channelCount: 1
+          }
+        });
+        
+        console.log('🎤 マイク権限取得成功');
+        micPermissionGranted = true;
+        
+        try{
+          if('webkitSpeechRecognition' in window) this.rec=new webkitSpeechRecognition();
+          else if('SpeechRecognition' in window) this.rec=new SpeechRecognition();
+        }catch(e){ 
+          throw new Error('音声認識APIが利用できません');
+        }
+        
+        if(this.rec) this.setup();
+        
+        return true;
+      } catch(e) {
+        console.error('🚫 マイク権限エラー:', e.name, e.message);
+        micPermissionGranted = false;
+        
+        if(e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+          showPermissionAlert();
+          throw new Error('マイクへのアクセスが拒否されました');
+        } else if(e.name === 'NotFoundError') {
+          showSystemStatus('マイクが見つかりません', 'error');
+          throw new Error('マイクデバイスが見つかりません');
+        } else {
+          showSystemStatus('マイクの初期化に失敗しました', 'error');
+          throw e;
+        }
+      }
     }
     
     setupVisibilityHandler(){
-      document.addEventListener('visibilitychange', ()=>{
-        if(this.isRec){
-          this.ensureRecording();
+      document.addEventListener('visibilitychange', async ()=>{
+        if(!document.hidden && this.isRec){
+          console.log('📱 画面復帰検出');
+          showSystemStatus('画面復帰を検出しました', 'info');
+          await this.ensureRecognitionRestored();
         }
       });
+    }
+
+    setupLifecycleHandlers(){
+      window.addEventListener('pageshow', async (e)=>{
+        if(e.persisted && this.isRec){
+          console.log('📱 bfcacheから復帰');
+          showSystemStatus('バックグラウンドから復帰しました', 'info');
+          await this.ensureRecognitionRestored();
+        }
+      });
+
+      window.addEventListener('resume', async ()=>{
+        if(this.isRec){
+          console.log('📱 resumeイベント検出');
+          showSystemStatus('アプリケーションを再開しました', 'info');
+          await this.ensureRecognitionRestored();
+        }
+      });
+
+      document.addEventListener('pause', ()=>{
+        console.log('📱 pauseイベント検出');
+      });
+    }
+
+    async ensureRecognitionRestored(){
+      if(!document.getElementById('autoRecovery')?.checked){
+        console.log('⚠️ 自動復帰機能が無効です');
+        return;
+      }
+
+      console.log('🔧 システム復帰処理を開始...');
+      showSystemStatus('音声認識を復帰中...', 'warning');
+      
+      try {
+        if(feedbackManager.audioContext && feedbackManager.audioContext.state === 'suspended'){
+          console.log('  📢 AudioContext復帰中...');
+          await feedbackManager.audioContext.resume();
+          console.log('  ✅ AudioContext復帰完了');
+        }
+
+        let micOK = false;
+        if(this.audioStream){
+          const tracks = this.audioStream.getAudioTracks();
+          if(tracks.length && tracks[0].readyState === 'live'){
+            micOK = true;
+            console.log('  🎤 マイクストリーム: 正常');
+          }
+        }
+
+        if(!micOK){
+          console.log('  🎤 マイクストリーム再取得中...');
+          await this.resetMicStream();
+          console.log('  ✅ マイクストリーム再取得完了');
+        }
+
+        if(this.rec){
+          try{ 
+            this.rec.stop(); 
+            console.log('  🛑 旧Recognition停止');
+          }catch(e){}
+          this.rec = null;
+        }
+
+        this.setup();
+        console.log('  🆕 新しいRecognitionを生成');
+
+        if(this.isRec){
+          await this.startRecognition();
+          console.log('  ▶️ 録音再開完了');
+          showSystemStatus('音声認識を復帰しました', 'success');
+          feedbackManager.notifySystemRecovery();
+          this.recoveryAttempts = 0;
+        }
+
+      } catch(error) {
+        console.error('❌ 復帰処理エラー:', error);
+        this.recoveryAttempts++;
+        
+        if(this.recoveryAttempts < this.maxRecoveryAttempts){
+          showSystemStatus(`復帰を再試行中 (${this.recoveryAttempts}/${this.maxRecoveryAttempts})`, 'warning');
+          setTimeout(()=>{
+            this.ensureRecognitionRestored();
+          }, 2000);
+        } else {
+          showSystemStatus('音声認識の復帰に失敗しました', 'error');
+          feedbackManager.vibrateError();
+          this.recoveryAttempts = 0;
+        }
+      }
+    }
+
+    async resetMicStream(){
+      if(this.audioStream){
+        const tracks = this.audioStream.getAudioTracks();
+        tracks.forEach(track => track.stop());
+        this.audioStream = null;
+      }
+
+      await this.requestMicPermission();
     }
     
     ensureRecording(){
@@ -1356,6 +1604,7 @@
           const timeSinceLastSound = Date.now() - this.lastSoundTime;
           if(timeSinceLastSound > 15000){
             console.log('⚠️ 15秒以上無音、強制再起動');
+            showSystemStatus('無音検出、音声認識を再起動します', 'warning');
             this.forceRestart();
           }else{
             this.ensureRecording();
@@ -1380,22 +1629,6 @@
         }
       }, 100);
     }
-
-    async setupEnhancedAudio() {
-      try {
-        this.audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: { ideal: true },
-            noiseSuppression: { ideal: true },
-            autoGainControl: { ideal: true },
-            sampleRate: 48000,
-            channelCount: 1
-          }
-        });
-      } catch(e) {
-        console.log('高度な音声設定に失敗、標準設定を使用');
-      }
-    }
     
     updateRecordingTime() {
       if (!this.recordingStartTime) return;
@@ -1409,12 +1642,21 @@
     }
     
     setup(){
+      if(!this.rec) return;
+
       try{ 
+        this.rec = ('webkitSpeechRecognition' in window) ? 
+          new webkitSpeechRecognition() : 
+          new SpeechRecognition();
+        
         this.rec.lang='ja-JP'; 
         this.rec.continuous=true; 
         this.rec.interimResults=true; 
         this.rec.maxAlternatives=10;
-      }catch(e){}
+      }catch(e){
+        console.error('Recognition設定エラー:', e);
+        return;
+      }
       
       this.rec.onresult=async (e)=>{
         this.lastSoundTime = Date.now();
@@ -1465,29 +1707,56 @@
       };
 
       this.rec.onstart = ()=>{
-        console.log('音声認識開始');
+        console.log('🎤 音声認識開始');
       };
       this.rec.onend = ()=>{
-        console.log('音声認識終了イベント');
+        console.log('🎤 音声認識終了イベント');
         if(this.isRec){
           this.forceRestart();
         }
       };
       this.rec.onerror = (e)=>{
-        console.log('音声認識エラー', e);
-        feedbackManager.vibrateError();
-        if(this.isRec){
-          this.forceRestart();
+        console.log('⚠️ 音声認識エラー:', e.error);
+        if(e.error === 'not-allowed'){
+          showPermissionAlert();
+          this.stop();
+        } else if(e.error === 'aborted' || e.error === 'network'){
+          showSystemStatus('音声認識エラー、再起動します', 'warning');
+          if(this.isRec){
+            this.forceRestart();
+          }
         }
       };
     }
 
+    async startRecognition(){
+      if(!this.rec) return;
+      try{
+        this.rec.start();
+        this.lastSoundTime=Date.now();
+        this.ensureRecording();
+      }catch(e){
+        console.error('録音開始エラー:', e);
+        throw e;
+      }
+    }
+
     async start(){
+      if(!micPermissionGranted){
+        try {
+          await this.requestMicPermission();
+        } catch(e) {
+          return;
+        }
+      }
+
       if(this.isRec || !this.rec) return;
       try{
         this.isRec=true;
         this.lastSoundTime=Date.now();
         this.recordingStartTime = Date.now();
+        this.recoveryAttempts = 0;
+        
         document.getElementById('voiceBtn').classList.add('active');
         document.getElementById('voiceStatusTitle').textContent='録音中';
         document.getElementById('voiceStatusText').textContent='話しかけてください';
@@ -1503,8 +1772,7 @@
           feedbackManager.notifyRecordingActive();
         }, 1000);
 
-        this.rec.start();
-        this.ensureRecording();
+        await this.startRecognition();
       }catch(e){
         console.log('録音開始失敗', e);
         this.isRec=false;
@@ -1514,6 +1782,7 @@
         document.getElementById('recordingBanner').classList.remove('show');
         if(this.recordingTimeUpdateInterval) clearInterval(this.recordingTimeUpdateInterval);
         if(this.voiceNotifyInterval) clearInterval(this.voiceNotifyInterval);
+        showSystemStatus('音声認識の開始に失敗しました', 'error');
         feedbackManager.vibrateError();
       }
     }
@@ -1528,6 +1797,8 @@
       if(this.recordingTimeUpdateInterval) clearInterval(this.recordingTimeUpdateInterval);
       if(this.voiceNotifyInterval) clearInterval(this.voiceNotifyInterval);
       this.recordingStartTime = null;
+      this.recoveryAttempts = 0;
+      
       document.getElementById('voiceBtn').classList.remove('active');
       document.getElementById('voiceStatusTitle').textContent='停止中';
       document.getElementById('voiceStatusText').textContent='タップで開始';
@@ -1540,9 +1811,12 @@
     }
 
     async toggle(){
-      if(!this.rec){
-        alert('このブラウザは音声認識に対応していません');
-        return;
+      if(!this.rec && !micPermissionGranted){
+        await this.requestMicPermission();
+        if(!this.rec){
+          alert('このブラウザは音声認識に対応していません');
+          return;
+        }
       }
       if(this.isRec) await this.stop(); else await this.start();
     }
