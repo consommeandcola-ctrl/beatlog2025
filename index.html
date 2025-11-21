@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - ヘリ安定版 v2.4.3</title>
+<title>救急記録 - ヘリ安定版 v2.4.4</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   body {
@@ -215,7 +215,7 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (ヘリ安定版 v2.4.3<span class="version">音声品質最適化</span>)</h1>
+      <h1>🚑 救急記録 (ヘリ安定版 v2.4.4<span class="version">学習データ保持</span>)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -314,7 +314,10 @@
           <div class="main-buttons">
             <button id="btnCopy" type="button" class="btn success" title="住所なしでコピー">📋 コピー(住所なし)</button>
             <button id="btnCopyAddr" type="button" class="btn success" title="住所付きでコピー">📋 コピー(住所あり)</button>
-            <button id="btnClear" type="button" class="btn danger">🗑 全消去</button>
+            <button id="btnClear" type="button" class="btn danger">🗑 記録消去</button>
+          </div>
+          <div style="margin-top: 6px;">
+            <button id="btnClearLearning" type="button" class="btn secondary" style="width: 100%; font-size: 10px;">🧠 学習データもクリア</button>
           </div>
         </div>
       </section>
@@ -1577,17 +1580,24 @@
   }
 
   function clearAll(){
-    if(!confirm('全ての記録と学習データを削除しますか？')) return;
+    if(!confirm('全ての記録を削除しますか？\n（学習データは保持されます）')) return;
     logs=[]; selectedId=null; startTime=null; aiCorrectionCount=0; userLearnedCount=0;
-    aiCorrection.userPatterns = {};
-    aiCorrection.userCorrections = {};
-    localStorage.removeItem(STORE_KEY);
-    localStorage.removeItem(STORE_KEY+'_patterns');
-    localStorage.removeItem(STORE_KEY+'_corrections');
+    localStorage.setItem(STORE_KEY, JSON.stringify({logs,startTime,aiCorrectionCount,userLearnedCount}));
     document.getElementById('aiCorrections').textContent='0';
     document.getElementById('userLearned').textContent='0';
     render();
     updateStats();
+    showSystemStatus('記録を削除しました（学習データは保持）', 'success');
+  }
+
+  function clearLearning(){
+    if(!confirm('学習データを削除しますか？\n記録は保持されます。\n\n削除すると音声認識の精度が初期状態に戻ります。')) return;
+    aiCorrection.userPatterns = {};
+    aiCorrection.userCorrections = {};
+    localStorage.removeItem(STORE_KEY+'_patterns');
+    localStorage.removeItem(STORE_KEY+'_corrections');
+    showSystemStatus('学習データを削除しました', 'success');
+    feedbackManager.playBeep(880, 100);
   }
 
   function initClock(){
@@ -1614,6 +1624,7 @@
     document.getElementById('btnCopy').addEventListener('click', ()=>copyLogs(false));
     document.getElementById('btnCopyAddr').addEventListener('click', ()=>copyLogs(true));
     document.getElementById('btnClear').addEventListener('click', clearAll);
+    document.getElementById('btnClearLearning').addEventListener('click', clearLearning);
     document.getElementById('voiceBtn').addEventListener('click', ()=>voiceRec.toggle());
   });
 </script>
