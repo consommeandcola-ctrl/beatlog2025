@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - AI Ultimate v2.6.5 (最終モデル)</title>
+<title>救急記録 - AI Ultimate v2.6.6 (フィードバック復元)</title>
 <style>
   /* v2.4.6のスタイルをベースにAI用の装飾を追加 */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
@@ -192,7 +192,7 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (AI Ultimate v2.6.5)</h1>
+      <h1>🚑 救急記録 (AI Ultimate v2.6.6)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -298,11 +298,53 @@
   let logs=[]; let selectedId=null; let startTime=null; let restartCount=0;
   let editingLogId=null; let saveDebounceTimer = null; let micPermissionGranted = false;
 
-  /* --- Gemini AI Client (最終修正版 v2.6.5 - モデル修正/エラー強化) --- */
+  /* --- Feedback Manager (ビープ音機能) --- */
+  class FeedbackManager {
+    constructor() {
+      this.audioCtx = null;
+    }
+
+    // ユーザー操作に応じてオーディオコンテキストを初期化
+    init() {
+      if (!this.audioCtx) {
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+    }
+
+    // 周波数(Hz)、時間(ms)を指定してビープ音を再生
+    playBeep(frequency, duration) {
+      this.init();
+      if (!this.audioCtx) return;
+
+      const oscillator = this.audioCtx.createOscillator();
+      const gainNode = this.audioCtx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioCtx.destination);
+
+      oscillator.type = 'square'; // 波形
+      oscillator.frequency.setValueAtTime(frequency, this.audioCtx.currentTime);
+
+      // フェードアウト
+      gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration / 1000);
+
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+      }, duration);
+    }
+  }
+  const feedback = new FeedbackManager();
+
+  /* --- Gemini AI Client (最終修正版 v2.6.6) --- */
   class GeminiClient {
     constructor() {
       this.apiKey = localStorage.getItem(API_KEY_STORE) || '';
-      // 【最重要修正箇所】404エラー対策のため、現在最も安定したモデルに固定
+      // 【最重要修正箇所】現在最も互換性の高い最新のモデル名に固定
       this.model = 'gemini-2.5-flash'; 
     }
     
@@ -312,6 +354,7 @@
       this.apiKey = key.trim();
       localStorage.setItem(API_KEY_STORE, this.apiKey);
       showSystemStatus('APIキーを保存しました', 'success');
+      feedback.playBeep(1200, 100); // 復元: APIキー保存時のフィードバック
     }
     
     async correctText(originalText) {
@@ -347,7 +390,6 @@
             
             let statusMessage = `AI通信エラー: ${res.status} ${res.statusText}`;
             if(res.status === 404){
-              // 404が出た場合、モデル名が「gemini-2.5-flash」ではない
               statusMessage = `AI通信エラー: 404 (モデル「${this.model}」が見つかりません。APIキー/モデル名を確認してください)`;
             } else if (res.status === 400){
               statusMessage = 'AI通信エラー: 400 (APIキーが無効、残高不足、またはプロンプトが無効)';
@@ -425,13 +467,19 @@
     
     logs.push(newLog);
     save(); render(); updateStats();
+    feedback.playBeep(440, 50); // 復元: 記録確定時のフィードバック
 
     // AI Processing
     if(useAI && gemini.hasKey()){
       try {
         const corrected = await gemini.correctText(t);
         const target = logs.find(l=>l.id===id);
-        if(target){ target.text = corrected; target.status = 'done'; save(); render(); }
+        if(target){ 
+          target.text = corrected; 
+          target.status = 'done'; 
+          save(); render(); 
+          feedback.playBeep(880, 50); // 復元: AI整形完了時のフィードバック
+        }
       } catch(e){
         const target = logs.find(l=>l.id===id);
         if(target){ target.status = 'done'; save(); render(); }
@@ -560,12 +608,15 @@
         
         this.rec.onresult = (e) => {
           let interim='';
+          let finalFound = false;
           for(let i=e.resultIndex; i<e.results.length; i++){
             if(e.results[i].isFinal){
               const t = e.results[i][0].transcript;
               const useAI = document.getElementById('useAI').checked;
               addLine(t, '', useAI); // 音声のみAI通す
               document.getElementById('voiceStatusText').textContent='確定: '+t.substring(0,8)+'...';
+              feedback.playBeep(600, 50); // 復元: 音声確定時のフィードバック
+              finalFound = true;
             } else {
               interim += e.results[i][0].transcript;
             }
@@ -581,6 +632,7 @@
         document.getElementById('voiceStatusTitle').textContent='録音中';
         document.getElementById('recordingBanner').classList.add('show');
         this.startTimer();
+        feedback.playBeep(1000, 100); // 復元: 録音開始時のフィードバック
       } catch(e){
         alert('マイク起動エラー: '+e.message);
       }
