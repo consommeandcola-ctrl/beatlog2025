@@ -6,8 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - ヘリ安定版 v2.4.4</title>
+<title>救急記録 - AI Ultimate v2.6.0</title>
 <style>
+  /* v2.4.6のスタイルをベースにAI用の装飾を追加 */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   body {
     background: #f8f9fa; min-height: 100vh; color: #212529;
@@ -28,6 +29,7 @@
   .card h2 { padding: 6px 10px; border-bottom: 2px solid #3498db; font-size: 12px; font-weight: 700; color: #2c3e50; background: #ecf0f1; }
   .card .body { padding: 8px; }
   
+  /* 録音バナー */
   .recording-banner {
     display: none; position: fixed; top: 50px; left: 0; right: 0; 
     background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
@@ -42,11 +44,9 @@
     font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums;
     color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   }
-  @keyframes banner-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.85; }
-  }
+  @keyframes banner-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
   
+  /* システム通知 */
   .system-status {
     font-size: 9px; padding: 4px 8px; background: #e8f4f8; border-radius: 4px;
     color: #2c3e50; margin-top: 4px; border-left: 2px solid #3498db;
@@ -55,31 +55,18 @@
   .system-status.error { background: #f8d7da; border-left-color: #e74c3c; color: #721c24; }
   .system-status.success { background: #d4edda; border-left-color: #27ae60; color: #155724; }
   
+  /* 権限アラート */
   .permission-alert {
     display: none; background: #fff3cd; border: 2px solid #f39c12; border-radius: 8px;
     padding: 12px; margin-bottom: 8px;
   }
   .permission-alert.show { display: block; }
-  .permission-alert-title {
-    font-size: 13px; font-weight: 700; color: #856404; margin-bottom: 6px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .permission-alert-text {
-    font-size: 11px; color: #856404; line-height: 1.5; margin-bottom: 8px;
-  }
-  .permission-alert-steps {
-    background: #fff; border-radius: 4px; padding: 8px; margin-bottom: 8px;
-  }
-  .permission-alert-steps ol {
-    margin-left: 18px; font-size: 10px; color: #856404; line-height: 1.6;
-  }
-  .permission-alert-buttons {
-    display: flex; gap: 6px;
-  }
+  .permission-alert-title { font-size: 13px; font-weight: 700; color: #856404; margin-bottom: 6px; }
+  .permission-alert-text { font-size: 11px; color: #856404; line-height: 1.5; margin-bottom: 8px; }
+  .permission-alert-buttons { display: flex; gap: 6px; }
   
-  .voice-control {
-    display: flex; gap: 8px; align-items: center; padding: 8px; background: #ecf0f1; border-radius: 6px; margin-bottom: 6px;
-  }
+  /* ボイスコントロール */
+  .voice-control { display: flex; gap: 8px; align-items: center; padding: 8px; background: #ecf0f1; border-radius: 6px; margin-bottom: 6px; }
   .voice-btn {
     flex-shrink: 0; width: 52px; height: 52px; border: none; border-radius: 50%;
     background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
@@ -91,9 +78,7 @@
     animation: pulse-voice 1.5s infinite;
     box-shadow: 0 0 20px rgba(39, 174, 96, 0.6);
   }
-  .voice-btn:disabled {
-    background: #95a5a6; opacity: 0.6; cursor: not-allowed;
-  }
+  .voice-btn:disabled { background: #95a5a6; opacity: 0.6; cursor: not-allowed; }
   @keyframes pulse-voice { 
     0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(39, 174, 96, 0.6); } 
     50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(39, 174, 96, 0.8); } 
@@ -109,6 +94,7 @@
   .confidence-low { background: #e74c3c; }
   .ai-indicator { margin-top: 3px; font-size: 8px; color: #9b59b6; font-weight: 600; }
   
+  /* 設定セクション */
   .settings-section {
     background: #fff3cd; border: 2px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px;
   }
@@ -120,34 +106,22 @@
     display: flex; align-items: center; gap: 8px; margin: 6px 0; padding: 6px;
     background: #fff; border-radius: 4px;
   }
-  .setting-row label {
-    flex: 1; font-size: 11px; color: #2c3e50; font-weight: 500;
-  }
-  .setting-row input[type="checkbox"] {
-    width: 20px; height: 20px; cursor: pointer;
-  }
-  .setting-row input[type="number"] {
-    width: 60px; padding: 4px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 11px;
-  }
-  
+  .setting-row label { flex: 1; font-size: 11px; color: #2c3e50; font-weight: 500; }
+  .setting-row input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+  .setting-row input[type="number"] { width: 60px; padding: 4px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 11px; }
+  .setting-row input[type="password"] { flex:2; padding:4px; border:1px solid #bdc3c7; border-radius:4px; font-size:10px; }
+
+  /* 入力・ボタン類 */
   textarea {
     width: 100%; min-height: 50px; border: 2px solid #bdc3c7; border-radius: 6px; padding: 6px;
     font-size: 13px; line-height: 1.4; resize: vertical; font-family: inherit; background: #fff;
   }
   textarea:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
-  .suggestions { margin-top: 4px; padding: 4px; background: #e8f4f8; border-radius: 4px; border-left: 2px solid #3498db; max-height: 100px; overflow-y: auto; }
-  .suggestions-title { font-size: 9px; font-weight: 600; color: #2c3e50; margin-bottom: 3px; }
-  .suggestion-item {
-    display: inline-block; padding: 4px 8px; margin: 2px; background: #fff; border: 1px solid #3498db; border-radius: 10px; font-size: 10px; color: #2c3e50; min-height: 28px; line-height: 1.8;
-  }
-  .suggestion-item:active { background: #3498db; color: #fff; }
   .controls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
   .pill {
     display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid #bdc3c7; border-radius: 12px;
     background: #ecf0f1; font-size: 10px; color: #2c3e50; font-weight: 500;
   }
-  .pill select, .pill input[type="number"] { border: none; background: transparent; font-size: 10px; font-weight: 600; color: #2c3e50; }
-  .pill input[type="checkbox"] { width: 14px; height: 14px; }
   .btn {
     border: none; background: #3498db; color: #fff; border-radius: 6px; padding: 8px 12px; font-weight: 600; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     min-height: 40px; display: inline-flex; align-items: center; justify-content: center;
@@ -165,22 +139,27 @@
   }
   .tag-buttons .btn:active { background: #3498db; color: #fff; }
   .main-buttons { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-  .main-buttons .btn { padding: 10px 8px; font-size: 11px; }
+  
+  /* 統計・ログ */
   .stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 8px; border-radius: 6px; text-align: center; }
   .stat-value { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
   .stat-label { font-size: 8px; opacity: 0.9; }
   .timeline { max-height: 35vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   ul.log { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  
+  /* ログ行のスタイル (AI処理状態を含む) */
   .row {
     padding: 6px; border-left: 3px solid #3498db; border-radius: 5px; background: #f8f9fa; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
-  .row:active { background: #fff; }
-  .row.selected {
-    background: #e8f4f8; border-left-color: #e74c3c; box-shadow: 0 2px 4px rgba(231,76,60,0.15);
-  }
-  .row.ai-corrected { border-left-color: #9b59b6; }
-  .row.user-learned { border-left-color: #f39c12; }
+  .row.selected { background: #e8f4f8; border-left-color: #e74c3c; }
+  
+  /* AIステータス */
+  .row.ai-processing { border-left-color: #bdc3c7; background: #fff; opacity: 0.8; }
+  .row.ai-processing .text::after { content: ' 🤖 AI整形中...'; font-size: 10px; color: #9b59b6; animation: blink 1.5s infinite; }
+  .row.ai-done { border-left-color: #9b59b6; }
+  @keyframes blink { 50% { opacity: 0.5; } }
+  
   .time { font-size: 10px; color: #3498db; margin-bottom: 3px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
   .elapsed { font-size: 8px; color: #7f8c8d; font-weight: 500; background: #ecf0f1; padding: 1px 5px; border-radius: 6px; }
   .addr { font-size: 10px; color: #2c3e50; margin: 2px 0 4px; padding-left: 4px; border-left: 2px solid #27ae60; background: #eef9f1; border-radius: 3px; }
@@ -193,7 +172,6 @@
   .tools .btn { font-size: 9px; padding: 3px 6px; min-height: 28px; }
   .empty-state { text-align: center; padding: 25px 12px; color: #7f8c8d; font-size: 12px; }
   .ai-badge { font-size: 7px; background: #9b59b6; color: #fff; padding: 1px 4px; border-radius: 4px; margin-left: 4px; }
-  .learn-badge { font-size: 7px; background: #f39c12; color: #fff; padding: 1px 4px; border-radius: 4px; margin-left: 4px; }
   
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
   .modal.show { display: flex; align-items: center; justify-content: center; }
@@ -208,14 +186,13 @@
     textarea { min-height: 90px; }
     .timeline { max-height: 55vh; }
     h1 { font-size: 16px; }
-    .clock { font-size: 20px; }
   }
 </style>
 </head>
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (ヘリ安定版 v2.4.4<span class="version">学習データ保持</span>)</h1>
+      <h1>🚑 救急記録 (AI Ultimate v2.6.0)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -223,58 +200,39 @@
   <div id="recordingBanner" class="recording-banner">
     <div class="main-text">🔴 録音中</div>
     <div class="recording-time" id="recordingTime">00:00</div>
-    <div class="sub-text">ポケットに入れても安心</div>
+    <div class="sub-text">活動中も継続記録</div>
   </div>
 
   <div class="wrap">
     <div class="grid">
       <section class="card">
-        <h2>📝 入力</h2>
+        <h2>📝 入力・設定</h2>
         <div class="body">
           <div id="permissionAlert" class="permission-alert">
-            <div class="permission-alert-title">
-              🎤 マイクへのアクセス許可が必要です
-            </div>
-            <div class="permission-alert-text">
-              音声入力を使用するには、マイクへのアクセスを許可してください。
-            </div>
-            <div class="permission-alert-steps">
-              <strong style="font-size: 11px; color: #856404;">📱 iPhoneでの設定方法:</strong>
-              <ol>
-                <li>「設定」アプリを開く</li>
-                <li>「Safari」を選択</li>
-                <li>「マイク」を選択</li>
-                <li>「許可」または「確認」を選択</li>
-                <li>このページを再読み込み</li>
-              </ol>
-            </div>
+            <div class="permission-alert-title">🎤 マイク許可が必要です</div>
+            <div class="permission-alert-text">iPhone設定 > Safari > マイクで許可してください。</div>
             <div class="permission-alert-buttons">
               <button id="btnRetryPermission" type="button" class="btn warning">🔄 再試行</button>
-              <button id="btnDismissAlert" type="button" class="btn secondary">閉じる</button>
             </div>
           </div>
 
           <div class="settings-section">
-            <div class="settings-title">🚁 ヘリ運用設定</div>
+            <div class="settings-title">⚙️ 設定 & AIキー (端末保存)</div>
             <div class="setting-row">
-              <label>バイブレーション通知</label>
-              <input type="checkbox" id="vibrateEnabled" checked>
+              <label>Gemini API Key</label>
+              <input type="password" id="apiKeyInput" placeholder="ここにAPIキーを入力">
             </div>
             <div class="setting-row">
-              <label>音声フィードバック</label>
-              <input type="checkbox" id="audioFeedback" checked>
+              <button id="btnSaveKey" type="button" class="btn success" style="width:100%; height:30px; font-size:10px;">APIキーを保存</button>
+            </div>
+            <hr style="border:0; border-top:1px solid #e0a800; margin:8px 0;">
+            <div class="setting-row">
+              <label>AI整形を使用</label>
+              <input type="checkbox" id="useAI" checked>
             </div>
             <div class="setting-row">
-              <label>画面常時点灯（録音中）</label>
+              <label>画面常時点灯</label>
               <input type="checkbox" id="keepScreenOn" checked>
-            </div>
-            <div class="setting-row">
-              <label>定期音声通知 (秒)</label>
-              <input type="number" id="voiceNotifyInterval" min="10" max="120" value="30">
-            </div>
-            <div class="setting-row">
-              <label>自動復帰機能</label>
-              <input type="checkbox" id="autoRecovery" checked>
             </div>
           </div>
 
@@ -283,65 +241,37 @@
             <div class="voice-status">
               <div class="voice-status-title" id="voiceStatusTitle">停止中</div>
               <div class="voice-status-text" id="voiceStatusText">タップで開始</div>
-              <div class="confidence-bar" id="confidenceBar">
-                <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
-              </div>
-              <div class="ai-indicator" id="aiIndicator"></div>
+              <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width: 0%"></div></div>
               <div class="voice-interim" id="voiceInterim"></div>
               <div id="systemStatus" class="system-status" style="display:none;"></div>
             </div>
           </div>
 
-          <textarea id="input" placeholder="録音データはここに一時的に表示されます"></textarea>
-
-          <div id="suggestions" class="suggestions" style="display:none;">
-            <div class="suggestions-title">💡 候補</div>
-            <div id="suggestionItems"></div>
-          </div>
+          <textarea id="input" placeholder="ここにテキストが表示されます"></textarea>
 
           <div class="controls">
-            <label class="pill">⏱ <select id="idleSec"></select></label>
-            <label class="pill">📏 <input id="minLen" type="number" min="1" max="20" value="2"></label>
-            <label class="pill"><input id="punct" type="checkbox" checked> 句点で確定</label>
+            <label class="pill"><input id="punct" type="checkbox" checked> 句点確定</label>
             <label class="pill"><input id="gpsHi" type="checkbox" checked> GPS</label>
-            <label class="pill">⏳ <input id="gpsTimeout" type="number" min="2" max="20" value="6"> 秒</label>
-            <label class="pill"><input id="aiMode" type="checkbox" checked> 🧠 AI補正</label>
-            <label class="pill"><input id="learnMode" type="checkbox" checked> 📚 学習</label>
+            <label class="pill">⏳ <input id="gpsTimeout" type="number" min="2" max="20" value="6">s</label>
           </div>
 
           <div class="tag-buttons" id="tagButtons"></div>
 
           <div class="main-buttons">
-            <button id="btnCopy" type="button" class="btn success" title="住所なしでコピー">📋 コピー(住所なし)</button>
-            <button id="btnCopyAddr" type="button" class="btn success" title="住所付きでコピー">📋 コピー(住所あり)</button>
+            <button id="btnCopy" type="button" class="btn success" title="住所なしでコピー">📋 コピー(住所無)</button>
+            <button id="btnCopyAddr" type="button" class="btn success" title="住所付きでコピー">📋 コピー(住所有)</button>
             <button id="btnClear" type="button" class="btn danger">🗑 記録消去</button>
-          </div>
-          <div style="margin-top: 6px;">
-            <button id="btnClearLearning" type="button" class="btn secondary" style="width: 100%; font-size: 10px;">🧠 学習データもクリア</button>
           </div>
         </div>
       </section>
 
       <section class="card">
-        <h2>⏰ 記録</h2>
+        <h2>⏰ 記録 (AI連携)</h2>
         <div class="body">
           <div class="stats">
-            <div class="stat-card">
-              <div class="stat-value" id="totalLogs">0</div>
-              <div class="stat-label">件数</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="totalTime">0分</div>
-              <div class="stat-label">経過</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="aiCorrections">0</div>
-              <div class="stat-label">AI補正</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="userLearned">0</div>
-              <div class="stat-label">学習</div>
-            </div>
+            <div class="stat-card"><div class="stat-value" id="totalLogs">0</div><div class="stat-label">件数</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalTime">0分</div><div class="stat-label">経過</div></div>
+            <div class="stat-card"><div class="stat-value" id="restartCount">0</div><div class="stat-label">再起動</div></div>
           </div>
           <div class="timeline">
             <ul id="log" class="log"></ul>
@@ -354,863 +284,196 @@
   <div id="editModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">📝 記録を編集</div>
-      <div class="modal-body">
-        <textarea id="editText" placeholder="記録を編集..."></textarea>
-      </div>
+      <div class="modal-body"><textarea id="editText"></textarea></div>
       <div class="modal-buttons">
         <button id="btnSaveEdit" type="button" class="btn success">💾 保存</button>
-        <button id="btnCancelEdit" type="button" class="btn secondary">❌ キャンセル</button>
+        <button id="btnCancelEdit" type="button" class="btn secondary">❌</button>
       </div>
     </div>
   </div>
 
 <script>
-  const STORE_KEY='emergency-doc-ultra-v3';
-  let logs=[]; let selectedId=null; let startTime=null; let aiCorrectionCount=0; let userLearnedCount=0;
-  let editingLogId=null;
-  let saveDebounceTimer = null; 
-  let beatLogInstance = null;
-  let micPermissionGranted = false;
+  const STORE_KEY='emergency-doc-v2-6';
+  const API_KEY_STORE = 'gemini_api_key_local';
+  let logs=[]; let selectedId=null; let startTime=null; let restartCount=0;
+  let editingLogId=null; let saveDebounceTimer = null; let micPermissionGranted = false;
 
-  const TAGS=[
-    "救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着",
-    "ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","フライトドクター接触","ランデブーポイント着",
-    "カー覚知","カー指令","カー出動","カー現着","カー接触","ドッキング","医師接触",
-    "主訴","現病歴","既往歴","常用薬","アレルギー","生活歴","ADL", "胸痛",
-    "身体所見",
-    "気管挿管","人工呼吸","バックバルブマスク換気","酸素投与","酸素投与量","NPPV",
-    "ルート確保","生食点滴","ソルアセトF点滴","大腿動脈","大腿静脈","骨髄針",
-    "血液ガス分析","血糖","簡易超音波検査","12誘導心電図","超音波検査",
-    "胸骨圧迫","開胸","心臓マッサージ",
-    "アドレナリン","ミダゾラム","ジアゼパム","イーケプラ","ノルアドレナリン","レペタン"
-  ];
-
-  const MEDICAL_CORRECTIONS = {
-    "きょうつう": "胸痛", "共通": "胸痛",
-    "共通が": "胸痛が", "共通を": "胸痛を", "共通の": "胸痛の",
-    "しゅそ": "主訴", "主訴は": "主訴",
-    "げんびょうれき": "現病歴", "現病歴は": "現病歴",
-    "きおうれき": "既往歴", "既往歴は": "既往歴",
-    "じょうようやく": "常用薬", "常用薬は": "常用薬",
-    "あれるぎー": "アレルギー", "アレルギーは": "アレルギー",
-    "せいかつれき": "生活歴",
-    "えーでぃーえる": "ADL", "adl": "ADL",
-    "しんたいしょけん": "身体所見",
-    "けつがす": "血液ガス分析",
-    "けっとう": "血糖",
-    "12ゆうどうしんでんず": "12誘導心電図", "12誘導": "12誘導心電図",
-    "ちょうおんぱ": "超音波検査", "エコー": "超音波検査", "簡易超音波": "簡易超音波検査",
-    "しーぴーえー":"CPA","心配停止":"心肺停止","心肺蘇生":"心肺停止","心肺装置":"心肺停止","心配装置":"心肺停止",
-    "気管総監":"気管挿管","気管創刊":"気管挿管","気管相関":"気管挿管","気管総刊":"気管挿管",
-    "るーとかくほ":"ルート確保","るーと確保":"ルート確保","ルート角穂":"ルート確保",
-    "意識レベル":"JCS","いしきれべる":"JCS",
-    "意識":"伊敷",
-    "ぼすみん":"ボスミン","さちゅれーしょん":"サチュレーション","えすぴーおーつー":"SpO2","じぇーしーえす":"JCS",
-    "じーしーえす":"GCS","生職":"生食","胸骨厚迫":"胸骨圧迫","胸骨あっぱく":"胸骨圧迫",
-    "除債動":"除細動","じょさいどう":"除細動","じょさいど":"除細動","除細同":"除細動",
-    "にっぷぶ":"NPPV",
-    "ドクター接触":"医師接触","フライトドクター":"フライトドクター接触",
-    "なんりんじ":"南林寺","なんりん":"南林寺","南林":"南林寺","こうなん":"甲南","江南":"甲南","港南":"甲南","湖南":"甲南",
-    "かみまち":"上町","かみまち":"上町","よしの":"吉野","よしだ":"吉田","さくらじまひがし":"桜島東",
-    "さくらじまにし":"桜島西","いしき":"伊敷","まつもと":"松元","こおりやま":"郡山","たにやま":"谷山",
-    "たにやまきた":"谷山北","こおりもと":"郡元","きいれ":"喜入","中央消防署":"中央消防署","西消防署":"西消防署","南消防署":"南消防署"
-  };
-
-  const KAGOSHIMA_EMERGENCY_TEAMS = [
-    "南林寺", "甲南", "上町", "吉野", "吉田", "桜島東", "桜島西",
-    "伊敷", "松元", "郡山",
-    "谷山", "谷山北", "郡元", "喜入",
-    "中央消防署", "西消防署", "南消防署", "中央本署"
-  ];
-  const BLACKLIST_WORDS = [
-    "江南市", "湖南省", "港南区", "江南区", "名山救急", "明和救急", "田上救急", "脇田救急",
-    "会議", "打ち合わせ", "プレゼン", "営業", "契約", "ランチ", "ディナー", 
-    "映画", "ドラマ", "アニメ", "ゲーム", "ショッピング", "買い物"
-  ];
-
-  function showPermissionAlert() {
-    document.getElementById('permissionAlert').classList.add('show');
-    document.getElementById('voiceBtn').disabled = true;
-  }
-
-  function hidePermissionAlert() {
-    document.getElementById('permissionAlert').classList.remove('show');
-    document.getElementById('voiceBtn').disabled = false;
-  }
-
-  document.getElementById('btnRetryPermission').onclick = async function() {
-    try {
-      await voiceRec.requestMicPermission();
-      hidePermissionAlert();
-      showSystemStatus('マイクへのアクセスが許可されました', 'success');
-    } catch(e) {
-      showSystemStatus('マイクへのアクセスが拒否されました', 'error');
-    }
-  };
-
-  document.getElementById('btnDismissAlert').onclick = function() {
-    hidePermissionAlert();
-  };
-
-  class FeedbackManager {
+  /* --- Gemini AI Client --- */
+  class GeminiClient {
     constructor() {
-      this.audioContext = null;
-      this.speechSynth = window.speechSynthesis;
-      this.lastVoiceNotify = 0;
+      this.apiKey = localStorage.getItem(API_KEY_STORE) || '';
+      this.model = 'gemini-1.5-flash';
     }
-
-    vibrate(pattern) {
-      if (!document.getElementById('vibrateEnabled')?.checked) return;
-      if ('vibrate' in navigator) {
-        navigator.vibrate(pattern);
-      }
+    hasKey() { return !!this.apiKey; }
+    setKey(key) {
+      this.apiKey = key.trim();
+      localStorage.setItem(API_KEY_STORE, this.apiKey);
+      showSystemStatus('APIキーを保存しました', 'success');
     }
-
-    vibrateRecordingStart() { this.vibrate([100, 50, 100]); }
-    vibrateRecordingStop() { this.vibrate([100, 50, 100, 50, 100]); }
-    vibrateLogConfirmed() { this.vibrate([200]); }
-    vibrateError() { this.vibrate([200, 100, 200]); }
-    vibrateRecovery() { this.vibrate([50, 50, 50]); }
-
-    playBeep(frequency = 880, duration = 100) {
-      if (!this.audioContext) {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      
-      const oscillator = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(this.audioContext.destination);
-      
-      oscillator.frequency.value = frequency;
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration / 1000);
-      
-      oscillator.start(this.audioContext.currentTime);
-      oscillator.stop(this.audioContext.currentTime + duration / 1000);
-    }
-
-    speak(text) {
-      if (!document.getElementById('audioFeedback')?.checked) return;
-      if (!this.speechSynth) return;
-
-      this.speechSynth.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ja-JP';
-      utterance.rate = 1.1;
-      utterance.pitch = 1.0;
-      utterance.volume = 0.8;
-      this.speechSynth.speak(utterance);
-    }
-
-    notifyRecordingActive() {
-      const now = Date.now();
-      const interval = (+document.getElementById('voiceNotifyInterval')?.value || 30) * 1000;
-      if (now - this.lastVoiceNotify >= interval) {
-        this.speak('録音中');
-        this.playBeep(1200, 50);
-        this.lastVoiceNotify = now;
-      }
-    }
-
-    notifyLogSaved() {
-      this.speak('記録しました');
-      this.vibrateLogConfirmed();
-      this.playBeep(1760, 100);
-    }
-
-    notifyRecordingStarted() {
-      this.speak('録音を開始します');
-      this.vibrateRecordingStart();
-      this.playBeep(880, 100);
-    }
-
-    notifyRecordingStopped() {
-      this.speak('録音を停止しました');
-      this.vibrateRecordingStop();
-      this.playBeep(440, 200);
-    }
-
-    notifySystemRecovery() {
-      this.speak('システムを復帰しました');
-      this.vibrateRecovery();
-      this.playBeep(1320, 150);
-    }
-  }
-
-  const feedbackManager = new FeedbackManager();
-
-  class EnhancedWakeLock {
-    constructor() {
-      this.wakeLock = null;
-      this.noSleepVideo = null;
-      this.setupNoSleepVideo();
-    }
-
-    setupNoSleepVideo() {
-      this.noSleepVideo = document.createElement('video');
-      this.noSleepVideo.setAttribute('playsinline', '');
-      this.noSleepVideo.setAttribute('muted', '');
-      this.noSleepVideo.style.position = 'fixed';
-      this.noSleepVideo.style.opacity = '0';
-      this.noSleepVideo.style.pointerEvents = 'none';
-      this.noSleepVideo.style.left = '0';
-      this.noSleepVideo.style.top = '0';
-      this.noSleepVideo.style.width = '1px';
-      this.noSleepVideo.style.height = '1px';
-      this.noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAA1m1vb3YAAABsbXZoZAAAAAAAAAAAAAAAAAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU2LjQwLjEwMQ==';
-      document.body.appendChild(this.noSleepVideo);
-    }
-
-    async request() {
-      if (!document.getElementById('keepScreenOn')?.checked) return;
-      if ('wakeLock' in navigator) {
-        try {
-          this.wakeLock = await navigator.wakeLock.request('screen');
-          this.wakeLock.addEventListener('release', () => { this.wakeLock = null; });
-          return;
-        } catch (err) {}
-      }
+    async correctText(originalText) {
+      if (!this.apiKey) return originalText;
+      const prompt = `
+      あなたは救急隊員のアシスタントです。
+      以下の音声入力テキストを、医学的に正しい表記、数値形式、バイタルサインの標準的な記載（例: BP 120/80, SpO2 98%, JCS 1）に整形してください。
+      ルール:
+      1. 意味を変えずに誤字脱字を修正。
+      2. フィラー（「あー」等）削除。
+      3. **最重要: 個人名（患者氏名）が含まれる場合は絶対に削除し、[氏名削除]と置換する。**
+      4. 余計な挨拶は不要。整形後のテキストのみ返すこと。
+      テキスト: ${originalText}
+      `;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
       try {
-        await this.noSleepVideo.play();
-      } catch (err) {}
-    }
-
-    async release() {
-      if (this.wakeLock) {
-        try { await this.wakeLock.release(); this.wakeLock = null; } catch (err) {}
-      }
-      if (this.noSleepVideo) {
-        this.noSleepVideo.pause();
+        const res = await fetch(url, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || originalText;
+      } catch (e) {
+        console.error('AI Error:', e);
+        return originalText;
       }
     }
   }
+  const gemini = new GeminiClient();
 
-  const enhancedWakeLock = new EnhancedWakeLock();
-
-  function containsBlacklistedWord(text) {
-    const lowerText = text.toLowerCase();
-    for (const word of BLACKLIST_WORDS) {
-      if (lowerText.includes(word.toLowerCase())) return word;
-    }
-    return null;
-  }
-
-  function detectAndCorrectEmergencyTeam(text) {
-    let corrected = text;
-    const VOICE_COMMON_ERRORS = {
-      "江南": "甲南", "港南": "甲南", "湖南": "甲南", "こうなん": "甲南", "意識": "伊敷", "気入れ": "喜入", 
-      "心配": "心肺", "相関": "挿管", "総監": "挿管", "創刊": "挿管", "厚迫": "圧迫"
-    };
-    for (const [wrong, correct] of Object.entries(VOICE_COMMON_ERRORS)) {
-      const regex = new RegExp(wrong, 'gi');
-      if (regex.test(corrected)) {
-        corrected = corrected.replace(regex, correct);
-      }
-    }
-    const patterns = [ /(.{2,4}?)(救急|隊|消防)/g, /(.{2,4}?)救急車/g ];
-    for (const pattern of patterns) {
-      const matches = [...corrected.matchAll(pattern)];
-      for (const match of matches) {
-        const teamNamePart = match[1].trim();
-        let bestMatch = null;
-        let bestScore = 0;
-        for (const validTeam of KAGOSHIMA_EMERGENCY_TEAMS) {
-          const score = similarityScore(teamNamePart, validTeam);
-          if (score > bestScore && score > 0.35) {
-            bestScore = score;
-            bestMatch = validTeam;
-          }
-        }
-        if (bestMatch) {
-          corrected = corrected.replace(match[0], bestMatch + (match[2] || ''));
-        }
-      }
-    }
-    return corrected;
-  }
-
-  function getMedicalDomainScore(text) {
-    let score = 0;
-    const lowerText = text.toLowerCase();
-    const medicalKeywords = [
-      'cpa', '心肺停止', '挿管', 'ルート', '点滴', '血圧', 'spo2',
-      '呼吸', '意識', 'jcs', 'gcs', '胸骨', '圧迫', '除細動',
-      'バイタル', '観察', '処置', '投与', '救急', '現着', '覚知',
-      '出動', '搬送', '病着', 'hr', 'bp', 'rr', 'bt', '接触',
-      '医師', 'ドクター', 'ヘリ', 'カー', 'ランデブー',
-      '主訴', '現病歴', '既往歴', '常用薬', 'アレルギー', 'adl', '身体所見', '血液ガス', '心電図', '超音波',
-      '胸痛'
-    ];
-    for (const keyword of medicalKeywords) {
-      if (lowerText.includes(keyword)) score += 0.08;
-    }
-    for (const team of KAGOSHIMA_EMERGENCY_TEAMS) {
-      if (text.includes(team)) {
-        score += 0.2;
-        break;
-      }
-    }
-    return Math.min(1.0, score);
-  }
-
-  const NGRAMS = {
-    "救急 覚知": 0.95, "救急 現着": 0.95, "気管 挿管": 0.90, "ルート 確保": 0.90, 
-    "胸骨 圧迫": 0.95, "血圧 測定": 0.85, "SpO2 測定": 0.85, "JCS 3": 0.80,
-    "GCS 15": 0.80, "生食 点滴": 0.85, "医師 接触": 0.90, "車内 収容": 0.90,
-    "心肺 停止": 0.95, "ノル アドレナリン": 0.90, "人工 呼吸": 0.85,
-    "主訴 は": 0.9, "現病歴 は": 0.9, "既往歴 に": 0.9, "常用薬 は": 0.9, 
-    "アレルギー は": 0.9, "ADL は": 0.9, "身体所見": 0.9, "血液ガス分析": 0.9, 
-    "12誘導心電図": 0.9, "超音波検査": 0.85,
-    "胸痛 が": 0.9, "胸痛 を": 0.9
-  };
-
-  class ContextEngine {
-    constructor() {
-      this.history = [];
-      this.currentPhase = 'initial';
-      this.expectedNext = [];
-    }
-    
-    addToHistory(text) {
-      this.history.push({ text: text, time: Date.now(), phase: this.currentPhase });
-      if (this.history.length > 50) this.history.shift();
-      this.updatePhase(text);
-      this.updateExpectedNext();
-    }
-    
-    updatePhase(text) {
-      if (text.includes('覚知') || text.includes('指令')) {
-        this.currentPhase = 'dispatch';
-        this.expectedNext = ['出動', '現着', '到着'];
-      } else if (text.includes('出動')) {
-        this.currentPhase = 'enroute';
-        this.expectedNext = ['現着', '到着', '接触'];
-      } else if (text.includes('現着') || text.includes('到着')) {
-        this.currentPhase = 'onscene';
-        this.expectedNext = ['接触', '観察', 'バイタル', '処置', '意識', '主訴', '現病歴', '既往歴', '胸痛'];
-      } else if (text.includes('主訴') || text.includes('現病歴') || text.includes('既往歴') || text.includes('胸痛')) {
-        this.currentPhase = 'onscene';
-        this.expectedNext = ['バイタル', '処置', '身体所見', '常用薬', 'アレルギー'];
-      } else if (text.includes('処置') || text.includes('挿管') || text.includes('ルート') || text.includes('身体所見')) {
-        this.currentPhase = 'treatment';
-        this.expectedNext = ['効果', '改善', '搬送', '病着', 'HR', 'BP', 'JCS', '血液ガス', '心電図'];
-      } else if (text.includes('搬送') || text.includes('車内')) {
-        this.currentPhase = 'transport';
-        this.expectedNext = ['病着', '到着', '引継'];
-      } else if (text.includes('病着')) {
-        this.currentPhase = 'complete';
-        this.expectedNext = ['引継', '完了'];
-      }
-    }
-    
-    updateExpectedNext() {
-      const recent = this.history.slice(-5).map(h => h.text).join(' ');
-      if (recent.includes('血圧') || recent.includes('HR')) {
-        this.expectedNext.push('SpO2', 'RR', 'BT', 'JCS');
-      }
-      if (recent.includes('挿管') || recent.includes('ルート') || recent.includes('点滴')) {
-        this.expectedNext.push('確認', '成功', '良好', '改善');
-      }
-      this.expectedNext = [...new Set(this.expectedNext)];
-    }
-    
-    getContextScore(text) {
-      let score = 0.5;
-      for (const expected of this.expectedNext) {
-        if (text.includes(expected)) score += 0.1;
-      }
-      if (this.currentPhase === 'onscene' && (text.includes('バイタル') || text.includes('観察') || text.includes('主訴') || text.includes('既往歴') || text.includes('胸痛'))) {
-        score += 0.15;
-      }
-      if (this.currentPhase === 'treatment' && (text.includes('処置') || text.includes('投与') || text.includes('身体所見'))) {
-        score += 0.15;
-      }
-      return Math.min(1.0, score);
-    }
-  }
-
-  function levenshteinDistance(str1, str2) {
-    const len1 = str1.length, len2 = str2.length;
-    const matrix = [];
-    for (let i = 0; i <= len1; i++) matrix[i] = [i];
-    for (let j = 0; j <= len2; j++) matrix[0][j] = j;
-    for (let i = 1; i <= len1; i++) {
-      for (let j = 1; j <= len2; j++) {
-        if (str1.charAt(i - 1) === str2.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
-        }
-      }
-    }
-    return matrix[len1][len2];
-  }
-
-  function similarityScore(str1, str2) {
-    const distance = levenshteinDistance(str1.toLowerCase(), str2.toLowerCase());
-    const maxLen = Math.max(str1.length, str2.length);
-    return 1 - (distance / maxLen);
-  }
-
-  function checkHomophoneContextCorrection(text, contextEngine) {
-    let corrected = text;
-    let boost = 0;
-    if (corrected.includes('意識')) {
-      if (contextEngine.currentPhase === 'dispatch' || contextEngine.currentPhase === 'enroute') {
-        if (similarityScore(corrected, '伊敷') > 0.6) {
-          corrected = corrected.replace(/意識/g, '伊敷');
-          boost += 0.25;
-        }
-      }
-    }
-    if (corrected.includes('心配') && contextEngine.currentPhase !== 'initial') {
-      const regex = /心配/g;
-      if (regex.test(corrected)) {
-        corrected = corrected.replace(regex, '心肺');
-        boost += 0.2; 
-      }
-    }
-    if (corrected.includes('共通')) {
-      if (contextEngine.currentPhase === 'onscene' || contextEngine.currentPhase === 'treatment' || contextEngine.currentPhase === 'enroute') {
-        const regex = /共通/g;
-        if (regex.test(corrected)) {
-          corrected = corrected.replace(regex, '胸痛');
-          boost += 0.25;
-        }
-      }
-    }
-    return { corrected, boost };
-  }
-
-  class AICorrection {
-    constructor() {
-      this.contextEngine = new ContextEngine();
-      this.userPatterns = {};
-      this.userCorrections = {};
-    }
-    
-    selectBestCandidate(alternatives, interimText='') {
-      if (!alternatives || alternatives.length === 0) return null;
-      let bestScore = -1;
-      let bestCandidate = alternatives[0];
-      const aiMode = document.getElementById('aiMode')?.checked;
-      if (!aiMode) {
-        return {
-          text: alternatives[0].transcript,
-          confidence: alternatives[0].confidence || 0.5,
-          aiCorrected: false,
-          method: 'basic'
-        };
-      }
-      
-      const filteredAlternatives = [];
-      for (let i = 0; i < alternatives.length; i++) {
-        const alt = alternatives[i];
-        const text = alt.transcript;
-        const blacklisted = containsBlacklistedWord(text);
-        if (blacklisted) continue;
-        filteredAlternatives.push(alt);
-      }
-      
-      const candidatesToEvaluate = filteredAlternatives.length > 0 ? filteredAlternatives : alternatives;
-      
-      for (let i = 0; i < candidatesToEvaluate.length; i++) {
-        const alt = candidatesToEvaluate[i];
-        let score = alt.confidence || 0.5;
-        let text = alt.transcript;
-        
-        if (this.userCorrections[text]) {
-          const learnedCorrection = this.userCorrections[text];
-          text = learnedCorrection;
-          score += 0.4;
-        }
-        
-        const correctedTeamText = detectAndCorrectEmergencyTeam(text);
-        if (correctedTeamText !== text) {
-          text = correctedTeamText;
-          score += 0.3;
-        }
-
-        if (text.length <= 6 && score < 0.95) { 
-          const importantTerms = ['CPA', '心肺停止', '挿管', 'ルート確保', '甲南', '南林寺', '主訴', '既往歴', 'ADL', '胸痛'];
-          for (const term of importantTerms) {
-            const sim = similarityScore(text, term);
-            if (sim > 0.8) {
-              text = term;
-              score += 0.6; 
-              break;
-            }
-          }
-        }
-        
-        const { corrected: homophoneCorrected, boost: homophoneBoost } = checkHomophoneContextCorrection(text, this.contextEngine);
-        if (homophoneCorrected !== text) {
-          text = homophoneCorrected;
-        }
-        score += homophoneBoost;
-        
-        const contextScore = this.contextEngine.getContextScore(text);
-        score += contextScore * 0.25;
-        
-        let medicalScore = 0;
-        for (const term of TAGS) {
-          if (text.includes(term)) medicalScore += 0.1;
-        }
-        score += Math.min(0.25, medicalScore);
-        
-        let ngramScore = 0;
-        for (const [ngram, weight] of Object.entries(NGRAMS)) {
-          if (text.includes(ngram.replace(' ', ''))) {
-            ngramScore += weight * 0.2; 
-          }
-        }
-        score += Math.min(0.2, ngramScore);
-        
-        let similarityBest = 0;
-        for (const teamName of KAGOSHIMA_EMERGENCY_TEAMS) {
-          const sim = similarityScore(text, teamName);
-          if (sim > similarityBest) similarityBest = sim;
-        }
-        score += similarityBest * 0.2;
-        
-        if (this.userPatterns[text]) {
-          score += this.userPatterns[text] * 0.15;
-        }
-        
-        const domainScore = getMedicalDomainScore(text);
-        score += domainScore * 0.25; 
-        
-        for (const teamName of KAGOSHIMA_EMERGENCY_TEAMS) {
-          if (text.includes(teamName)) {
-            score += 0.4;
-            break;
-          }
-        }
-        
-        if (score > bestScore) {
-          bestScore = score;
-          bestCandidate = { ...alt, transcript: text };
-        }
-      }
-      
-      const aiCorrected = bestCandidate.transcript !== alternatives[0].transcript;
-      if (aiCorrected) {
-        aiCorrectionCount++;
-        document.getElementById('aiCorrections').textContent = aiCorrectionCount;
-      }
-      
-      return {
-        text: bestCandidate.transcript,
-        confidence: bestScore,
-        originalConfidence: bestCandidate.confidence,
-        aiCorrected: aiCorrected,
-        method: 'ai'
-      };
-    }
-    
-    learn(text, wasAccepted) {
-      if (wasAccepted) {
-        this.userPatterns[text] = (this.userPatterns[text] || 0) + 0.1;
-        this.contextEngine.addToHistory(text);
-      }
-    }
-    
-    learnCorrection(original, corrected) {
-      if (!document.getElementById('learnMode')?.checked) return;
-      this.userCorrections[original] = corrected;
-      userLearnedCount++;
-      document.getElementById('userLearned').textContent = userLearnedCount;
-      save(); 
-    }
-  }
-
-  const aiCorrection = new AICorrection();
-
-  function nowHHMMSS(){ const d=new Date(); return d.toLocaleTimeString('ja-JP',{hour12:false}); }
-  function getElapsedMinutes(t1,t2){
-    const [h1,m1,s1]=t1.split(':').map(Number); const [h2,m2,s2]=t2.split(':').map(Number);
-    return Math.floor(Math.abs((h2*3600+m2*60+s2)-(h1*3600+m1*60+s1))/60);
-  }
-  function formatElapsed(m){ if(m<1)return'開始直後'; const h=Math.floor(m/60),mins=m%60; return h>0?`${h}時間${mins}分`:`${mins}分`; }
-
+  /* --- Core Functions --- */
+  function nowHHMMSS(){ return new Date().toLocaleTimeString('ja-JP',{hour12:false}); }
   function save(){ 
     clearTimeout(saveDebounceTimer);
     saveDebounceTimer = setTimeout(() => {
-      localStorage.setItem(STORE_KEY, JSON.stringify({logs,startTime,aiCorrectionCount,userLearnedCount})); 
-      localStorage.setItem(STORE_KEY+'_patterns', JSON.stringify(aiCorrection.userPatterns));
-      localStorage.setItem(STORE_KEY+'_corrections', JSON.stringify(aiCorrection.userCorrections));
+      localStorage.setItem(STORE_KEY, JSON.stringify({logs,startTime,restartCount})); 
     }, 300); 
   }
-  
   function load(){ 
     try{ 
       const d=JSON.parse(localStorage.getItem(STORE_KEY)); 
-      if(d){ 
-        logs=d.logs||[]; 
-        startTime=d.startTime||null; 
-        aiCorrectionCount=d.aiCorrectionCount||0;
-        userLearnedCount=d.userLearnedCount||0;
-        document.getElementById('aiCorrections').textContent = aiCorrectionCount;
-        document.getElementById('userLearned').textContent = userLearnedCount;
-      }
-      const patterns=JSON.parse(localStorage.getItem(STORE_KEY+'_patterns'));
-      if(patterns) aiCorrection.userPatterns = patterns;
-      const corrections=JSON.parse(localStorage.getItem(STORE_KEY+'_corrections'));
-      if(corrections) aiCorrection.userCorrections = corrections;
-    }catch{ 
-      logs=[]; startTime=null; aiCorrectionCount=0; userLearnedCount=0;
-    } 
+      if(d){ logs=d.logs||[]; startTime=d.startTime||null; restartCount=d.restartCount||0; }
+      document.getElementById('apiKeyInput').value = gemini.apiKey;
+      document.getElementById('restartCount').textContent = restartCount;
+    }catch{ logs=[]; } 
   }
 
-  function formatVitalSigns(text) {
-    let formatted = text;
-    formatted = formatted.replace(/(?:血圧|BP|ビーピー)\s*(\d{2,3})\s+(\d{2,3})(?:\s|$)/gi, 'NIBP $1/$2 mmHg');
-    formatted = formatted.replace(/(?:血圧|BP|ビーピー)\s*(\d+)\s*(?:の|\/|ー)\s*(\d+)/gi, 'NIBP $1/$2 mmHg');
-    formatted = formatted.replace(/^(\d{2,3})\s*(?:の|\/|ー)\s*(\d{2,3})(?:\s|$)/gm, 'NIBP $1/$2 mmHg');
-    formatted = formatted.replace(/(?:脈拍|心拍|脈|HR|エイチアール)\s*(\d+)/gi, 'HR $1回/分');
-    formatted = formatted.replace(/(?:サチュレーション|サチュ|SpO2|エスピーオーツー|酸素飽和度)\s*(\d+)/gi, 'SpO2 $1%');
-    formatted = formatted.replace(/(?:呼吸数|呼吸|RR|アールアール)\s*(\d+)/gi, 'RR $1回/分');
-    formatted = formatted.replace(/(?:体温|BT|ビーティー)\s*(\d+\.?\d*)/gi, 'BT $1℃');
-    formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*([1-3])(?!\d)/gi, (_m,num)=>`JCS I-${num}`);
-    formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*(10|20|30)\b/gi, (_m,num)=>`JCS II-${num}`);
-    formatted = formatted.replace(/(?:JCS|ジェーシーエス)\s*(100|200|300)\b/gi, (_m,num)=>`JCS III-${num}`);
-    formatted = formatted.replace(/(?:GCS|ジーシーエス)\s*([3-9]|1[0-5])\b/gi, 'GCS $1点');
-    formatted = formatted.replace(/瞳孔(?:径)?\s*(\d+\.?\d*)\s*(?:ミリ|mm)?/gi, '瞳孔径 $1mm');
-    formatted = formatted.replace(/対光反射\s*(?:あり|陽性|\+|プラス)/gi, '対光反射 +');
-    formatted = formatted.replace(/対光反射\s*(?:なし|陰性|\-|マイナス)/gi, '対光反射 -');
-    formatted = formatted.replace(/(?:血糖値?|BS|ビーエス)\s*(\d+)/gi, '血糖 $1mg/dL');
-    formatted = formatted.replace(/酸素(?:投与)?\s*(\d+\.?\d*)\s*(?:リットル|L|リッター)/gi, 'O2 $1L/分');
-    return formatted;
-  }
-
-  function enhancedNormalize(t){
-    let n=t;
-    Object.entries(MEDICAL_CORRECTIONS).forEach(([wrong, correct])=>{
-      const escaped=wrong.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      const regex=new RegExp(escaped, 'gi');
-      n=n.replace(regex, correct);
-    });
-    n = n.replace(/(\d+)の(\d+)/g,'$1/$2');
-    n = formatVitalSigns(n);
-    n = n.replace(/(\d+)時(\d+)分/g,'$1:$2');
-    n = n.replace(/(\d+)\s*パーセント/g,'$1%');
-    n = n.replace(/(\d+)\s*(?:ミリグラム|mg)/g,'$1mg');
-    return n;
-  }
-
-  async function getPosition(opts){
-    return new Promise((resolve,reject)=>{
-      if(!navigator.geolocation){ reject(new Error('geolocation unsupported')); return; }
-      navigator.geolocation.getCurrentPosition(resolve,reject,opts);
-    });
-  }
-
-  async function reverseGeocode(lat,lon,timeoutMs=6000){
-    const ctrl = new AbortController();
-    const timer = setTimeout(()=>ctrl.abort(), timeoutMs);
-    try{
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1&accept-language=ja`;
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'EmergencyDoc/2.4.3 (iOS Safari)' },
-        signal: ctrl.signal
-      });
-      const data = await res.json();
-      if(data && data.address){
-        const addr = data.address;
-        let result = '';
-        if(addr.city) { result = addr.city; } else if(addr.town) { result = addr.town; } 
-        else if(addr.county) { result = addr.county; } else if(addr.state) { result = addr.state; }
-        if(addr.suburb) { result += addr.suburb; } else if(addr.neighbourhood) { result += addr.neighbourhood; } 
-        else if(addr.quarter) { result += addr.quarter; } else if(addr.hamlet) { result += addr.hamlet; }
-        return result || `${lat.toFixed(5)},${lon.toFixed(5)}`;
-      }
-      return `${lat.toFixed(5)},${lon.toFixed(5)}`;
-    }catch(e){
-      return '';
-    }finally{
-      clearTimeout(timer);
-    }
-  }
-
+  /* --- GPS --- */
   async function fetchAddressFromGPS(){
+    if(!document.getElementById('gpsHi').checked) return '';
+    const to = Math.max(2, Math.min(20, +document.getElementById('gpsTimeout').value || 6));
     try{
-      const hi = document.getElementById('gpsHi').checked;
-      const to = Math.max(2, Math.min(20, +document.getElementById('gpsTimeout').value || 6));
-      const pos = await getPosition({ enableHighAccuracy: hi, timeout: to*1000, maximumAge: 10000 });
-      const { latitude, longitude } = pos.coords;
-      const addr = await reverseGeocode(latitude, longitude, to*1000);
-      return addr;
-    }catch(e){
-      return '';
-    }
+      const pos = await new Promise((resolve,reject) => {
+        navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true, timeout:to*1000, maximumAge:10000});
+      });
+      const {latitude, longitude} = pos.coords;
+      // Reverse Geocode (OpenStreetMap)
+      try {
+        const ctrl = new AbortController();
+        setTimeout(()=>ctrl.abort(), to*1000);
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
+        const res = await fetch(url, { signal: ctrl.signal });
+        const data = await res.json();
+        const addr = data.address;
+        let resStr = '';
+        if(addr){
+          if(addr.city) resStr += addr.city; else if(addr.town) resStr += addr.town;
+          if(addr.suburb) resStr += addr.suburb; else if(addr.neighbourhood) resStr += addr.neighbourhood;
+        }
+        return resStr || `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+      } catch(e) { return `${latitude.toFixed(4)},${longitude.toFixed(4)}`; }
+    } catch(e){ return ''; }
   }
 
-  function addLine(text, address='', aiCorrected=false, userLearned=false){
-    const minLen = +document.getElementById('minLen').value || 2;
+  /* --- Logging Logic --- */
+  async function addLine(text, address='', useAI=false){
     const t = text.trim();
-    if(!t || t.length<minLen) return;
+    if(!t) return;
     if(logs.length===0) startTime = nowHHMMSS();
-    logs.push({ 
-      id:'L'+Date.now(), 
-      time:nowHHMMSS(), 
-      text:t, 
-      address:address||'', 
-      tags:[], 
-      aiCorrected: aiCorrected,
-      userLearned: userLearned
-    });
-    aiCorrection.learn(t, true);
-    feedbackManager.notifyLogSaved();
+    
+    const id = 'L'+Date.now();
+    const newLog = {
+      id: id, time: nowHHMMSS(), text: t, address: address,
+      tags: [], status: useAI && gemini.hasKey() ? 'processing' : 'done'
+    };
+    
+    logs.push(newLog);
     save(); render(); updateStats();
-  }
 
-  function openEditModal(logId) {
-    const log = logs.find(l => l.id === logId);
-    if (!log) return;
-    editingLogId = logId;
-    document.getElementById('editText').value = log.text;
-    document.getElementById('editModal').classList.add('show');
-  }
-
-  function closeEditModal() {
-    editingLogId = null;
-    document.getElementById('editModal').classList.remove('show');
-  }
-
-  function saveEdit() {
-    if (!editingLogId) return;
-    const log = logs.find(l => l.id === editingLogId);
-    if (!log) return;
-    const newText = document.getElementById('editText').value.trim();
-    if (!newText) {
-      alert('空白の記録は保存できません');
-      return;
+    // AI Processing
+    if(useAI && gemini.hasKey()){
+      try {
+        const corrected = await gemini.correctText(t);
+        const target = logs.find(l=>l.id===id);
+        if(target){ target.text = corrected; target.status = 'done'; save(); render(); }
+      } catch(e){
+        const target = logs.find(l=>l.id===id);
+        if(target){ target.status = 'done'; save(); render(); }
+      }
     }
-    if (log.text !== newText && document.getElementById('learnMode')?.checked) {
-      aiCorrection.learnCorrection(log.text, newText);
-      log.userLearned = true;
-    }
-    log.text = newText;
-    save();
-    render();
-    closeEditModal();
   }
-
-  document.getElementById('btnSaveEdit').onclick = saveEdit;
-  document.getElementById('btnCancelEdit').onclick = closeEditModal;
-  document.getElementById('editModal').onclick = function(e) {
-    if (e.target === this) {
-      closeEditModal();
-    }
-  };
 
   function render(){
     const list=document.getElementById('log'); list.innerHTML='';
-    if(!logs.length){
-      const li=document.createElement('li'); li.className='empty-state'; li.textContent='まだ記録がありません'; list.appendChild(li); return;
-    }
-    const reversed=[...logs].reverse();
-    reversed.forEach(row=>{
+    if(!logs.length){ list.innerHTML='<li class="empty-state">記録なし</li>'; return; }
+    
+    [...logs].reverse().forEach(row=>{
       const li=document.createElement('li'); 
-      li.className='row'; 
-      if(row.aiCorrected) li.classList.add('ai-corrected');
-      if(row.userLearned) li.classList.add('user-learned');
-      li.dataset.id=row.id; 
-      if(row.id===selectedId) li.classList.add('selected');
+      li.className=`row ${row.status==='processing'?'ai-processing':''} ${row.id===selectedId?'selected':''}`;
+      if(row.status==='done' && row.text.match(/[a-zA-Z]/)) li.classList.add('ai-done'); // 簡易AI判定
+      li.dataset.id=row.id;
 
       const time=document.createElement('div'); time.className='time'; 
       time.innerHTML=`🕐 ${row.time}`;
-      if(row.aiCorrected){
-        const badge=document.createElement('span'); 
-        badge.className='ai-badge'; 
-        badge.textContent='AI補正';
-        time.appendChild(badge);
-      }
-      if(row.userLearned){
-        const badge=document.createElement('span'); 
-        badge.className='learn-badge'; 
-        badge.textContent='学習済み';
-        time.appendChild(badge);
-      }
-      if(logs[0].time && row.time !== logs[0].time){
-        const el = getElapsedMinutes(logs[0].time, row.time);
-        const span = document.createElement('span'); span.className='elapsed'; span.textContent = formatElapsed(el);
-        time.appendChild(span);
-      }
-
-      const addrDiv = document.createElement('div'); addrDiv.className='addr';
-      const thisIdx = logs.findIndex(x=>x.id===row.id);
-      const prevAddr = (thisIdx>0 && logs[thisIdx-1].address) ? logs[thisIdx-1].address : '';
-      const showAddr = row.address && row.address !== prevAddr;
       if(row.address){
-        addrDiv.textContent = `📍 ${row.address}`;
-        if(!showAddr) addrDiv.classList.add('muted');
+        const idx = logs.findIndex(x=>x.id===row.id);
+        const prevAddr = (idx>0 && logs[idx-1].address) ? logs[idx-1].address : '';
+        if(row.address !== prevAddr) {
+          const ad=document.createElement('div'); ad.className='addr'; ad.textContent=`📍 ${row.address}`;
+          li.append(ad);
+        }
       }
 
       const text=document.createElement('div'); text.className='text'; text.textContent=row.text;
-
       const tags=document.createElement('div'); tags.className='tags';
-      (row.tags||[]).forEach(tag=>{ const span=document.createElement('span'); span.className='tag'; span.textContent=tag; tags.appendChild(span); });
+      (row.tags||[]).forEach(tag=>{ 
+        const sp=document.createElement('span'); sp.className='tag'; sp.textContent=tag; tags.appendChild(sp); 
+      });
 
       const tools=document.createElement('div'); tools.className='tools';
-      const btnSel=document.createElement('button'); btnSel.type='button'; btnSel.className='btn'; btnSel.textContent = selectedId===row.id?'解除':'選択';
-      btnSel.onclick=()=>{ selectedId = (selectedId===row.id ? null : row.id); render(); };
-      
-      const btnEdit=document.createElement('button'); btnEdit.type='button'; btnEdit.className='btn warning'; btnEdit.textContent='編集';
-      btnEdit.onclick=()=>{ openEditModal(row.id); };
-      
-      const btnDel=document.createElement('button'); btnDel.type='button'; btnDel.className='btn danger'; btnDel.textContent='削除';
-      btnDel.onclick=()=>{ if(confirm('削除しますか?')){ logs = logs.filter(x=>x.id!==row.id); if(selectedId===row.id) selectedId=null; save(); render(); updateStats(); } };
-      tools.append(btnSel,btnEdit,btnDel);
+      tools.innerHTML = `
+        <button class="btn" onclick="selectLog('${row.id}')">${selectedId===row.id?'解除':'選択'}</button>
+        <button class="btn warning" onclick="openEditModal('${row.id}')">編集</button>
+        <button class="btn danger" onclick="delLog('${row.id}')">×</button>
+      `;
 
-      li.append(time);
-      if(row.address){ li.append(addrDiv); }
-      li.append(text,tags,tools);
+      li.append(time, text, tags, tools);
       list.appendChild(li);
     });
-    list.scrollTop=0;
   }
 
-  function updateStats(){
-    document.getElementById('totalLogs').textContent = logs.length;
-    if(logs.length>=2){
-      const el=getElapsedMinutes(logs[0].time, logs[logs.length-1].time);
-      document.getElementById('totalTime').textContent = `${el}分`;
-    }else{
-      document.getElementById('totalTime').textContent = '0分';
-    }
-  }
+  window.selectLog = (id) => { selectedId = (selectedId===id ? null : id); render(); };
+  window.delLog = (id) => { if(confirm('削除?')){ logs=logs.filter(x=>x.id!==id); save(); render(); updateStats(); }};
 
+  /* --- Tag Buttons --- */
   function renderTagButtons(){
     const box=document.getElementById('tagButtons'); box.innerHTML='';
     const cats={
       '🚑 救急':["救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着"],
-      '🚁 ヘリ':["ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","フライトドクター接触","ランデブーポイント着"],
-      '🚙 カー':["カー覚知","カー指令","カー出動","カー現着","カー接触","ドッキング","医師接触"],
-      '📋 情報':["主訴", "胸痛", "現病歴","既往歴","常用薬","アレルギー","生活歴","ADL"],
-      '🔬 検査':["身体所見","血液ガス分析","血糖","簡易超音波検査","12誘導心電図","超音波検査"],
-      '🫁 呼吸':["気管挿管","人工呼吸","バックバルブマスク換気","酸素投与","酸素投与量","NPPV"],
-      '💉 循環':["ルート確保","生食点滴","ソルアセトF点滴","大腿動脈","大腿静脈","骨髄針"],
-      '❤️ 蘇生':["胸骨圧迫","開胸","心臓マッサージ"],
-      '💊 薬剤':["アドレナリン","ミダゾラム","ジアゼパム","イーケプラ","ノルアドレナリン","レペタン"]
+      '🚁 ヘリ':["ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","Dr接触","RP着"],
+      '💉 処置':["ルート確保","酸素投与","気管挿管","アドレナリン","モニター装着"],
+      '📋 情報':["主訴","胸痛","JCS","GCS","バイタル測定"]
     };
     Object.entries(cats).forEach(([cat,tags])=>{
       const h=document.createElement('div');
-      h.style.cssText='width:100%; font-weight:700; font-size:10px; color:#2c3e50; margin:6px 0 3px 0; padding:3px 6px; border-left:3px solid #3498db; background:#ecf0f1;';
+      h.style.cssText='width:100%;font-weight:700;font-size:10px;margin:6px 0 2px;border-left:3px solid #3498db;padding-left:4px;';
       h.textContent=cat; box.appendChild(h);
       tags.forEach(tag=>{
-        const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent=tag;
+        const b=document.createElement('button'); b.className='btn'; b.textContent=tag;
         b.onclick=async ()=>{
           if(selectedId){
             const row=logs.find(r=>r.id===selectedId);
             if(row && !row.tags.includes(tag)){ row.tags.push(tag); save(); render(); }
           }else{
             const addr = await fetchAddressFromGPS();
-            addLine(tag, addr);
+            addLine(tag, addr, false); // タグはAI通さない
           }
         };
         box.appendChild(b);
@@ -1218,415 +481,149 @@
     });
   }
 
-  function showSuggestions(txt){
-    const sug=document.getElementById('suggestions'); const items=document.getElementById('suggestionItems');
-    const matches=new Set();
-    TAGS.forEach(tag=>{ if(!txt.includes(tag)&&tag.length>=2&&txt.includes(tag.substring(0,1))) matches.add(tag); });
-    const arr=Array.from(matches);
-    if(arr.length>0){
-      sug.style.display='block'; items.innerHTML='';
-      arr.slice(0,10).forEach(term=>{
-        const span=document.createElement('span'); span.className='suggestion-item'; span.textContent=term;
-        span.onclick=()=>{ const input=document.getElementById('input'); input.value+=term+' '; input.focus(); sug.style.display='none'; };
-        items.appendChild(span);
-      });
-    }else{ sug.style.display='none'; }
-  }
-
-  function updateConfidenceBar(confidence) {
-    const fill = document.getElementById('confidenceFill');
-    const percent = Math.round(confidence * 100);
-    fill.style.width = `${percent}%`;
-    if(confidence >= 0.8) {
-      fill.className = 'confidence-fill confidence-high';
-    } else if(confidence >= 0.6) {
-      fill.className = 'confidence-fill confidence-medium';
-    } else {
-      fill.className = 'confidence-fill confidence-low';
+  /* --- Wake Lock & Audio Loop (v2.4.6 Logic) --- */
+  class EnhancedWakeLock {
+    constructor() {
+      this.wakeLock = null; this.noSleepVideo = null; this.silentAudioCtx = null;
+      this.setupNoSleepVideo();
+    }
+    setupNoSleepVideo() {
+      this.noSleepVideo = document.createElement('video');
+      this.noSleepVideo.setAttribute('playsinline',''); this.noSleepVideo.setAttribute('muted','');
+      this.noSleepVideo.setAttribute('loop',''); this.noSleepVideo.style.display='none';
+      this.noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAA1m1vb3YAAABsbXZoZAAAAAAAAAAAAAAAAAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU2LjQwLjEwMQ==';
+      document.body.appendChild(this.noSleepVideo);
+    }
+    startSilentAudio() {
+      if (!this.silentAudioCtx) this.silentAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      if (this.silentAudioCtx.state==='suspended') this.silentAudioCtx.resume();
+      const osc=this.silentAudioCtx.createOscillator(); const g=this.silentAudioCtx.createGain();
+      osc.connect(g); g.connect(this.silentAudioCtx.destination);
+      osc.frequency.value=440; g.gain.value=0.001; osc.start();
+    }
+    async request() {
+      if(!document.getElementById('keepScreenOn').checked) return;
+      if('wakeLock' in navigator){ try{ this.wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
+      try{ await this.noSleepVideo.play(); }catch(e){}
+      try{ this.startSilentAudio(); }catch(e){}
+    }
+    async release() {
+      if(this.wakeLock) { this.wakeLock.release(); this.wakeLock=null; }
+      this.noSleepVideo.pause();
+      if(this.silentAudioCtx) { this.silentAudioCtx.close(); this.silentAudioCtx=null; }
     }
   }
+  const enhancedWakeLock = new EnhancedWakeLock();
 
-  function showSystemStatus(message, type = 'info') {
-    const statusEl = document.getElementById('systemStatus');
-    statusEl.textContent = message;
-    statusEl.className = 'system-status ' + type;
-    statusEl.style.display = 'block';
-    setTimeout(() => {
-      statusEl.style.display = 'none';
-    }, 5000);
-  }
-
-  class BeatLog{
-    constructor(el){ this.el=el; this._idle=null; this._punctRe=/[。.。!?!?]\s*$/; this._onInput=this._onInput.bind(this); this._onBlur=this._onBlur.bind(this); }
-    start(){ this.el.addEventListener('input',this._onInput); this.el.addEventListener('blur',this._onBlur); }
-    _onInput(){
-      const raw=this.el.value; showSuggestions(raw);
-      if(document.getElementById('punct').checked && (this._punctRe.test(raw)||raw.endsWith('\n'))){ this.commitNow(); return; }
-      clearTimeout(this._idle);
-      const sec=parseFloat(document.getElementById('idleSec').value)||1.2; const ms=Math.max(300,sec*1000);
-      this._idle=setTimeout(()=>{ if(this.el.value.trim()) this.commitNow(); }, ms);
-    }
-    _onBlur(){ if(this.el.value.trim()) this.commitNow(); clearTimeout(this._idle); }
-    commitNow(){
-      const raw=this.el.value.replace(/\s+/g,' ').trim(); if(!raw) return;
-      this.el.value=''; clearTimeout(this._idle); document.getElementById('suggestions').style.display='none';
-      addLine(enhancedNormalize(raw), '');
-    }
-  }
-
-  /* v2.4.3 音声品質最適化エンジン */
-  class UltraPrecisionVoiceRec{
+  /* --- Voice Recognition --- */
+  class VoiceRec {
     constructor(){
-      this.rec=null; 
-      this.isRec=false; 
-      this.interim=''; 
-      this.audioStream=null;
-      this.restartTimer=null; 
-      this.lastSoundTime=Date.now();
-      this.recordingStartTime = null;
-      this.recordingTimeUpdateInterval = null;
-      this.voiceNotifyInterval = null;
-      this.setupVisibilityHandler();
+      this.rec=null; this.isRec=false; this.timer=null;
     }
-
-    async requestMicPermission() {
-      try {
-        this.audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
-        micPermissionGranted = true;
-        try{
-          if('webkitSpeechRecognition' in window) this.rec=new webkitSpeechRecognition();
-          else if('SpeechRecognition' in window) this.rec=new SpeechRecognition();
-        }catch(e){ 
-          throw new Error('音声認識APIが利用できません');
-        }
-        if(this.rec) {
-          this.rec.lang='ja-JP'; 
-          this.rec.continuous=true; 
-          this.rec.interimResults=true; 
-          this.rec.maxAlternatives=10;
-          this.setupRecognitionHandlers();
-        }
-        return true;
-      } catch(e) {
-        micPermissionGranted = false;
-        if(e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
-          showPermissionAlert();
-          throw new Error('マイクへのアクセスが拒否されました');
-        } else if(e.name === 'NotFoundError') {
-          showSystemStatus('マイクが見つかりません', 'error');
-          throw new Error('マイクデバイスが見つかりません');
-        } else {
-          showSystemStatus('マイクの初期化に失敗しました', 'error');
-          throw e;
-        }
-      }
-    }
-    
-    setupVisibilityHandler(){
-      let wasRecording = false;
-      document.addEventListener('visibilitychange', async ()=>{
-        if(document.hidden){
-          wasRecording = this.isRec;
-        } else if(wasRecording && document.getElementById('autoRecovery')?.checked){
-          console.log('📱 画面復帰 - 音声認識を再起動');
-          showSystemStatus('音声認識を復帰中...', 'info');
-          setTimeout(async ()=>{
-            if(this.isRec){
-              try {
-                if(this.rec) this.rec.stop();
-              } catch(e){}
-              await new Promise(r=>setTimeout(r,500));
-              try {
-                if(this.rec) this.rec.start();
-                this.lastSoundTime=Date.now();
-                showSystemStatus('音声認識を復帰しました', 'success');
-                feedbackManager.notifySystemRecovery();
-              } catch(e) {
-                console.error('再起動失敗:', e);
-              }
-            }
-          }, 300);
-        }
-      });
-    }
-    
-    ensureRecording(){
-      if(!this.isRec) return;
-      clearTimeout(this.restartTimer);
-      this.restartTimer = setTimeout(()=>{
-        if(this.isRec){
-          const timeSinceLastSound = Date.now() - this.lastSoundTime;
-          if(timeSinceLastSound > 20000){
-            console.log('⚠️ 20秒以上無音、強制再起動');
-            this.forceRestart();
-          }else{
-            this.ensureRecording();
-          }
-        }
-      }, 15000);
-    }
-    
-    forceRestart(){
-      if(!this.rec || !this.isRec) return;
-      console.log('🔄 音声認識を強制再起動');
-      try{ this.rec.stop(); }catch{}
-      setTimeout(()=>{
-        if(this.isRec){
-          try{ 
-            this.rec.start(); 
-            this.lastSoundTime=Date.now(); 
-          }catch(e){ 
-            setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 2000);
-          }
-        }
-      }, 500);
-    }
-    
-    updateRecordingTime() {
-      if (!this.recordingStartTime) return;
-      const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
-      const minutes = Math.floor(elapsed / 60);
-      const seconds = elapsed % 60;
-      const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-      document.getElementById('recordingTime').textContent = timeStr;
-    }
-    
-    setupRecognitionHandlers(){
-      if(!this.rec) return;
-      
-      this.rec.onresult=async (e)=>{
-        this.lastSoundTime = Date.now();
-        let interim='', final='';
-        
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          if(e.results[i].isFinal) {
-            const alternatives = [];
-            for(let j=0; j<Math.min(e.results[i].length, 10); j++){
-              alternatives.push(e.results[i][j]);
-            }
-            
-            const bestResult = aiCorrection.selectBestCandidate(alternatives, interim);
-            
-            if(bestResult){
-              final += bestResult.text;
-              const confidencePercent = Math.round(bestResult.confidence * 100);
-              updateConfidenceBar(bestResult.confidence);
-              
-              const aiInd = document.getElementById('aiIndicator');
-              if(bestResult.aiCorrected){
-                aiInd.textContent = '🧠 AI補正適用';
-                aiInd.style.color = '#9b59b6';
-              }else{
-                aiInd.textContent = '';
-              }
-
-              const inputEl = document.getElementById('input');
-              inputEl.value = bestResult.text;
-              if (beatLogInstance) {
-                beatLogInstance.commitNow();
-              } else {
-                addLine(enhancedNormalize(bestResult.text), '');
-              }
-
-              document.getElementById('voiceStatusTitle').textContent = '確定';
-              document.getElementById('voiceStatusText').textContent = `信頼度 ${confidencePercent}%`;
-            }
-          } else {
-            interim += e.results[i][0].transcript;
-          }
-        }
-
-        this.interim = interim;
-        document.getElementById('voiceInterim').textContent = interim ? `… ${interim}` : '';
-      };
-
-      this.rec.onstart = ()=>{};
-      this.rec.onend = ()=>{
-        if(this.isRec){
-          setTimeout(()=>{
-            if(this.isRec) this.forceRestart();
-          }, 100);
-        }
-      };
-      this.rec.onerror = (e)=>{
-        if(e.error === 'not-allowed'){
-          showPermissionAlert();
-          this.stop();
-        } else if(e.error === 'aborted' || e.error === 'network'){
-          if(this.isRec){
-            setTimeout(()=>{ if(this.isRec) this.forceRestart(); }, 500);
-          }
-        }
-      };
-    }
-
     async start(){
-      if(!micPermissionGranted){
-        try {
-          await this.requestMicPermission();
-        } catch(e) {
-          return;
-        }
-      }
-
-      if(this.isRec || !this.rec) return;
       try{
-        this.isRec=true;
-        this.lastSoundTime=Date.now();
-        this.recordingStartTime = Date.now();
+        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(!Speech) throw new Error('No API');
         
+        this.rec = new Speech();
+        this.rec.lang='ja-JP'; this.rec.continuous=true; this.rec.interimResults=true;
+        
+        this.rec.onresult = (e) => {
+          let interim='';
+          for(let i=e.resultIndex; i<e.results.length; i++){
+            if(e.results[i].isFinal){
+              const t = e.results[i][0].transcript;
+              const useAI = document.getElementById('useAI').checked;
+              addLine(t, '', useAI); // 音声のみAI通す
+              document.getElementById('voiceStatusText').textContent='確定: '+t.substring(0,8)+'...';
+            } else {
+              interim += e.results[i][0].transcript;
+            }
+          }
+          document.getElementById('voiceInterim').textContent=interim;
+        };
+        this.rec.onend = () => { if(this.isRec) this.rec.start(); }; // Auto restart
+        
+        this.rec.start();
+        this.isRec=true;
+        enhancedWakeLock.request();
         document.getElementById('voiceBtn').classList.add('active');
         document.getElementById('voiceStatusTitle').textContent='録音中';
-        document.getElementById('voiceStatusText').textContent='話しかけてください';
-        document.getElementById('voiceInterim').textContent='';
         document.getElementById('recordingBanner').classList.add('show');
-        this.updateRecordingTime();
-        this.recordingTimeUpdateInterval = setInterval(()=>this.updateRecordingTime(), 1000);
-
-        feedbackManager.notifyRecordingStarted();
-        await enhancedWakeLock.request();
-
-        this.voiceNotifyInterval = setInterval(()=>{
-          feedbackManager.notifyRecordingActive();
-        }, 1000);
-
-        this.rec.start();
-        this.ensureRecording();
-      }catch(e){
-        this.isRec=false;
-        document.getElementById('voiceBtn').classList.remove('active');
-        document.getElementById('voiceStatusTitle').textContent='エラー';
-        document.getElementById('voiceStatusText').textContent='音声認識を開始できません';
-        document.getElementById('recordingBanner').classList.remove('show');
-        if(this.recordingTimeUpdateInterval) clearInterval(this.recordingTimeUpdateInterval);
-        if(this.voiceNotifyInterval) clearInterval(this.voiceNotifyInterval);
-        showSystemStatus('音声認識の開始に失敗しました', 'error');
-        feedbackManager.vibrateError();
+        this.startTimer();
+      } catch(e){
+        alert('マイク起動エラー: '+e.message);
       }
     }
-
-    async stop(){
-      if(!this.isRec) return;
+    stop(){
       this.isRec=false;
-      try{ this.rec.stop(); }catch(e){}
-      clearTimeout(this.restartTimer);
-      if(this.recordingTimeUpdateInterval) clearInterval(this.recordingTimeUpdateInterval);
-      if(this.voiceNotifyInterval) clearInterval(this.voiceNotifyInterval);
-      this.recordingStartTime = null;
-      
+      if(this.rec) this.rec.stop();
+      enhancedWakeLock.release();
       document.getElementById('voiceBtn').classList.remove('active');
       document.getElementById('voiceStatusTitle').textContent='停止中';
-      document.getElementById('voiceStatusText').textContent='タップで開始';
-      document.getElementById('voiceInterim').textContent='';
       document.getElementById('recordingBanner').classList.remove('show');
-      updateConfidenceBar(0);
-      document.getElementById('aiIndicator').textContent='';
-      await enhancedWakeLock.release();
-      feedbackManager.notifyRecordingStopped();
+      clearInterval(this.timer);
     }
+    toggle(){ if(this.isRec) this.stop(); else this.start(); }
+    startTimer(){
+      const el=document.getElementById('recordingTime'); let s=0;
+      this.timer=setInterval(()=>{ s++; el.textContent=`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },1000);
+    }
+  }
+  const voiceRec = new VoiceRec();
 
-    async toggle(){
-      if(!this.rec && !micPermissionGranted){
-        await this.requestMicPermission();
-        if(!this.rec){
-          alert('このブラウザは音声認識に対応していません');
-          return;
-        }
+  /* --- Init --- */
+  document.getElementById('voiceBtn').onclick = ()=>voiceRec.toggle();
+  document.getElementById('btnSaveKey').onclick = ()=>{ gemini.setKey(document.getElementById('apiKeyInput').value); };
+  document.getElementById('btnCopy').onclick = ()=>copyLogs(false);
+  document.getElementById('btnCopyAddr').onclick = ()=>copyLogs(true);
+  document.getElementById('btnClear').onclick = ()=>{ if(confirm('全消去?')){ logs=[]; save(); render(); updateStats(); } };
+  
+  // 手入力欄
+  let inputTimer;
+  document.getElementById('input').addEventListener('input', (e)=>{
+    clearTimeout(inputTimer);
+    inputTimer = setTimeout(async ()=>{
+      if(e.target.value.trim()){
+        const addr = await fetchAddressFromGPS();
+        addLine(e.target.value, addr, false); // 手入力はAI通さない
+        e.target.value='';
       }
-      if(this.isRec) await this.stop(); else await this.start();
-    }
-  }
-
-  const voiceRec = new UltraPrecisionVoiceRec();
-
-  function initIdleSelect(){
-    const sel = document.getElementById('idleSec');
-    const options = [0.7, 1.0, 1.2, 1.5, 2.0, 3.0];
-    options.forEach(v=>{
-      const opt = document.createElement('option');
-      opt.value = v;
-      opt.textContent = `停止 ${v.toFixed(1)}秒`;
-      if(v===1.2) opt.selected = true;
-      sel.appendChild(opt);
-    });
-  }
-
-  async function copyLogs(includeAddress){
-    if(!logs.length){
-      alert('コピーする記録がありません');
-      return;
-    }
-    const lines = logs.map(l=>{
-      const base = `${l.time} ${l.text}`;
-      if(includeAddress && l.address){
-        return `${base} / ${l.address}`;
-      }
-      return base;
-    });
-    const txt = lines.join('\n');
-    try{
-      await navigator.clipboard.writeText(txt);
-      alert('コピーしました');
-      feedbackManager.playBeep(1200,80);
-    }catch(e){
-      alert('コピーに失敗しました');
-    }
-  }
-
-  function clearAll(){
-    if(!confirm('全ての記録を削除しますか？\n（学習データは保持されます）')) return;
-    logs=[]; selectedId=null; startTime=null; aiCorrectionCount=0; userLearnedCount=0;
-    localStorage.setItem(STORE_KEY, JSON.stringify({logs,startTime,aiCorrectionCount,userLearnedCount}));
-    document.getElementById('aiCorrections').textContent='0';
-    document.getElementById('userLearned').textContent='0';
-    render();
-    updateStats();
-    showSystemStatus('記録を削除しました（学習データは保持）', 'success');
-  }
-
-  function clearLearning(){
-    if(!confirm('学習データを削除しますか？\n記録は保持されます。\n\n削除すると音声認識の精度が初期状態に戻ります。')) return;
-    aiCorrection.userPatterns = {};
-    aiCorrection.userCorrections = {};
-    localStorage.removeItem(STORE_KEY+'_patterns');
-    localStorage.removeItem(STORE_KEY+'_corrections');
-    showSystemStatus('学習データを削除しました', 'success');
-    feedbackManager.playBeep(880, 100);
-  }
-
-  function initClock(){
-    const clock = document.getElementById('clock');
-    const tick = ()=>{
-      clock.textContent = nowHHMMSS();
-    };
-    tick();
-    setInterval(tick, 1000);
-  }
-
-  document.addEventListener('DOMContentLoaded', ()=>{
-    initClock();
-    initIdleSelect();
-    load();
-    render();
-    updateStats();
-    renderTagButtons();
-
-    const inputEl = document.getElementById('input');
-    beatLogInstance = new BeatLog(inputEl);
-    beatLogInstance.start();
-
-    document.getElementById('btnCopy').addEventListener('click', ()=>copyLogs(false));
-    document.getElementById('btnCopyAddr').addEventListener('click', ()=>copyLogs(true));
-    document.getElementById('btnClear').addEventListener('click', clearAll);
-    document.getElementById('btnClearLearning').addEventListener('click', clearLearning);
-    document.getElementById('voiceBtn').addEventListener('click', ()=>voiceRec.toggle());
+    }, 1500); // 1.5秒待機で確定
   });
+
+  /* --- Utils --- */
+  function showSystemStatus(msg, type){
+    const el=document.getElementById('systemStatus');
+    el.textContent=msg; el.className='system-status '+type; el.style.display='block';
+    setTimeout(()=>el.style.display='none',3000);
+  }
+  function updateStats(){
+    document.getElementById('totalLogs').textContent = logs.length;
+    if(logs.length>1){
+      const [h1,m1,s1]=logs[0].time.split(':'); const [h2,m2,s2]=logs[logs.length-1].time.split(':');
+      const diff=Math.floor(((h2*3600+m2*60+s2*1)-(h1*3600+m1*60+s1*1))/60);
+      document.getElementById('totalTime').textContent=diff+'分';
+    }
+  }
+  function copyLogs(addr){
+    const txt = logs.map(l => `${l.time} ${l.text} ${addr&&l.address?'('+l.address+')':''}`).join('\n');
+    navigator.clipboard.writeText(txt); alert('コピー完了');
+  }
+  // Edit Modal
+  window.openEditModal = (id) => {
+    editingLogId=id; const row=logs.find(r=>r.id===id);
+    if(row){ document.getElementById('editText').value=row.text; document.getElementById('editModal').classList.add('show'); }
+  };
+  document.getElementById('btnSaveEdit').onclick = () => {
+    const row=logs.find(r=>r.id===editingLogId);
+    if(row){ row.text=document.getElementById('editText').value; save(); render(); }
+    document.getElementById('editModal').classList.remove('show');
+  };
+  document.getElementById('btnCancelEdit').onclick = ()=>document.getElementById('editModal').classList.remove('show');
+
+  window.onload=()=>{ load(); render(); renderTagButtons(); setInterval(()=>document.getElementById('clock').textContent=nowHHMMSS(),1000); };
 </script>
 </body>
 </html>
