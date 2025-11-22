@@ -6,9 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - AI Ultimate v2.6.0</title>
+<title>救急記録 - AI Ultimate v2.6.1</title>
 <style>
-  /* v2.4.6のスタイルをベースにAI用の装飾を追加 */
+  /* 基本スタイル */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   body {
     background: #f8f9fa; min-height: 100vh; color: #212529;
@@ -92,7 +92,6 @@
   .confidence-high { background: #27ae60; }
   .confidence-medium { background: #f39c12; }
   .confidence-low { background: #e74c3c; }
-  .ai-indicator { margin-top: 3px; font-size: 8px; color: #9b59b6; font-weight: 600; }
   
   /* 設定セクション */
   .settings-section {
@@ -148,22 +147,18 @@
   .timeline { max-height: 35vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   ul.log { list-style: none; display: flex; flex-direction: column; gap: 5px; }
   
-  /* ログ行のスタイル (AI処理状態を含む) */
+  /* ログ行 */
   .row {
     padding: 6px; border-left: 3px solid #3498db; border-radius: 5px; background: #f8f9fa; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
   .row.selected { background: #e8f4f8; border-left-color: #e74c3c; }
-  
-  /* AIステータス */
   .row.ai-processing { border-left-color: #bdc3c7; background: #fff; opacity: 0.8; }
   .row.ai-processing .text::after { content: ' 🤖 AI整形中...'; font-size: 10px; color: #9b59b6; animation: blink 1.5s infinite; }
   .row.ai-done { border-left-color: #9b59b6; }
   @keyframes blink { 50% { opacity: 0.5; } }
   
   .time { font-size: 10px; color: #3498db; margin-bottom: 3px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
-  .elapsed { font-size: 8px; color: #7f8c8d; font-weight: 500; background: #ecf0f1; padding: 1px 5px; border-radius: 6px; }
   .addr { font-size: 10px; color: #2c3e50; margin: 2px 0 4px; padding-left: 4px; border-left: 2px solid #27ae60; background: #eef9f1; border-radius: 3px; }
-  .addr.muted { opacity: 0.35; border-left-color: #bdc3c7; background: #f3f4f6; }
   .text { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin-bottom: 3px; color: #2c3e50; line-height: 1.4; }
   .tags { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 3px; }
   .tag { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 8px; padding: 1px 6px; font-size: 8px; font-weight: 600; }
@@ -171,7 +166,6 @@
   .row.selected .tools { opacity: 1; }
   .tools .btn { font-size: 9px; padding: 3px 6px; min-height: 28px; }
   .empty-state { text-align: center; padding: 25px 12px; color: #7f8c8d; font-size: 12px; }
-  .ai-badge { font-size: 7px; background: #9b59b6; color: #fff; padding: 1px 4px; border-radius: 4px; margin-left: 4px; }
   
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
   .modal.show { display: flex; align-items: center; justify-content: center; }
@@ -192,7 +186,7 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (AI Ultimate v2.6.0)</h1>
+      <h1>🚑 救急記録 (AI Ultimate v2.6.1)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -229,6 +223,10 @@
             <div class="setting-row">
               <label>AI整形を使用</label>
               <input type="checkbox" id="useAI" checked>
+            </div>
+            <div class="setting-row">
+              <label>音声フィードバック</label>
+              <input type="checkbox" id="audioFeedback" checked>
             </div>
             <div class="setting-row">
               <label>画面常時点灯</label>
@@ -293,10 +291,51 @@
   </div>
 
 <script>
-  const STORE_KEY='emergency-doc-v2-6';
+  const STORE_KEY='emergency-doc-v2-6-1';
   const API_KEY_STORE = 'gemini_api_key_local';
   let logs=[]; let selectedId=null; let startTime=null; let restartCount=0;
   let editingLogId=null; let saveDebounceTimer = null; let micPermissionGranted = false;
+
+  /* --- Feedback Manager (Restored) --- */
+  class FeedbackManager {
+    constructor() {
+      this.audioContext = null;
+      this.speechSynth = window.speechSynthesis;
+    }
+    playBeep(frequency=880, duration=100) {
+      try {
+        if (!this.audioContext) this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        osc.connect(gain); gain.connect(this.audioContext.destination);
+        osc.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration/1000);
+        osc.start(); osc.stop(this.audioContext.currentTime + duration/1000);
+      } catch(e){}
+    }
+    speak(text) {
+      if (!document.getElementById('audioFeedback')?.checked || !this.speechSynth) return;
+      this.speechSynth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ja-JP'; u.rate = 1.2; u.volume = 1.0;
+      this.speechSynth.speak(u);
+    }
+    notifyLogSaved() {
+      this.speak('記録しました');
+      this.playBeep(1760, 100);
+    }
+    notifyRecordingStarted() {
+      this.speak('録音を開始します');
+      this.playBeep(880, 150);
+    }
+    notifyRecordingStopped() {
+      this.speak('録音を停止しました');
+      this.playBeep(440, 200);
+    }
+  }
+  const feedback = new FeedbackManager();
 
   /* --- Gemini AI Client --- */
   class GeminiClient {
@@ -309,6 +348,7 @@
       this.apiKey = key.trim();
       localStorage.setItem(API_KEY_STORE, this.apiKey);
       showSystemStatus('APIキーを保存しました', 'success');
+      feedback.playBeep(1200, 100);
     }
     async correctText(originalText) {
       if (!this.apiKey) return originalText;
@@ -364,7 +404,6 @@
         navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true, timeout:to*1000, maximumAge:10000});
       });
       const {latitude, longitude} = pos.coords;
-      // Reverse Geocode (OpenStreetMap)
       try {
         const ctrl = new AbortController();
         setTimeout(()=>ctrl.abort(), to*1000);
@@ -396,6 +435,7 @@
     
     logs.push(newLog);
     save(); render(); updateStats();
+    feedback.notifyLogSaved(); // ★音声フィードバック実行
 
     // AI Processing
     if(useAI && gemini.hasKey()){
@@ -417,7 +457,7 @@
     [...logs].reverse().forEach(row=>{
       const li=document.createElement('li'); 
       li.className=`row ${row.status==='processing'?'ai-processing':''} ${row.id===selectedId?'selected':''}`;
-      if(row.status==='done' && row.text.match(/[a-zA-Z]/)) li.classList.add('ai-done'); // 簡易AI判定
+      if(row.status==='done' && row.text.match(/[a-zA-Z]/)) li.classList.add('ai-done');
       li.dataset.id=row.id;
 
       const time=document.createElement('div'); time.className='time'; 
@@ -481,7 +521,7 @@
     });
   }
 
-  /* --- Wake Lock & Audio Loop (v2.4.6 Logic) --- */
+  /* --- Wake Lock & Audio Loop --- */
   class EnhancedWakeLock {
     constructor() {
       this.wakeLock = null; this.noSleepVideo = null; this.silentAudioCtx = null;
@@ -535,7 +575,7 @@
             if(e.results[i].isFinal){
               const t = e.results[i][0].transcript;
               const useAI = document.getElementById('useAI').checked;
-              addLine(t, '', useAI); // 音声のみAI通す
+              addLine(t, '', useAI); 
               document.getElementById('voiceStatusText').textContent='確定: '+t.substring(0,8)+'...';
             } else {
               interim += e.results[i][0].transcript;
@@ -543,7 +583,7 @@
           }
           document.getElementById('voiceInterim').textContent=interim;
         };
-        this.rec.onend = () => { if(this.isRec) this.rec.start(); }; // Auto restart
+        this.rec.onend = () => { if(this.isRec) this.rec.start(); }; 
         
         this.rec.start();
         this.isRec=true;
@@ -551,6 +591,7 @@
         document.getElementById('voiceBtn').classList.add('active');
         document.getElementById('voiceStatusTitle').textContent='録音中';
         document.getElementById('recordingBanner').classList.add('show');
+        feedback.notifyRecordingStarted(); // ★開始アナウンス
         this.startTimer();
       } catch(e){
         alert('マイク起動エラー: '+e.message);
@@ -563,6 +604,7 @@
       document.getElementById('voiceBtn').classList.remove('active');
       document.getElementById('voiceStatusTitle').textContent='停止中';
       document.getElementById('recordingBanner').classList.remove('show');
+      feedback.notifyRecordingStopped(); // ★停止アナウンス
       clearInterval(this.timer);
     }
     toggle(){ if(this.isRec) this.stop(); else this.start(); }
@@ -590,7 +632,7 @@
         addLine(e.target.value, addr, false); // 手入力はAI通さない
         e.target.value='';
       }
-    }, 1500); // 1.5秒待機で確定
+    }, 1500); 
   });
 
   /* --- Utils --- */
