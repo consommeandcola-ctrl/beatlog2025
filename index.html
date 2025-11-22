@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - AI Ultimate v2.6.8 (フォールバック版)</title>
+<title>救急記録 - AI Ultimate v2.6.6 (フィードバック復元)</title>
 <style>
   /* v2.4.6のスタイルをベースにAI用の装飾を追加 */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
@@ -192,7 +192,7 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (AI Ultimate v2.6.8)</h1>
+      <h1>🚑 救急記録 (AI Ultimate v2.6.6)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -272,7 +272,6 @@
             <div class="stat-card"><div class="stat-value" id="totalLogs">0</div><div class="stat-label">件数</div></div>
             <div class="stat-card"><div class="stat-value" id="totalTime">0分</div><div class="stat-label">経過</div></div>
             <div class="stat-card"><div class="stat-value" id="restartCount">0</div><div class="stat-label">再起動</div></div>
-            <div class="stat-card"><div class="stat-value" id="aiTokens">0</div><div class="stat-label">AIトークン</div></div>
           </div>
           <div class="timeline">
             <ul id="log" class="log"></ul>
@@ -294,12 +293,10 @@
   </div>
 
 <script>
-  const STORE_KEY='emergency-doc-v2-8'; // バージョンアップ
+  const STORE_KEY='emergency-doc-v2-6';
   const API_KEY_STORE = 'gemini_api_key_local';
   let logs=[]; let selectedId=null; let startTime=null; let restartCount=0;
   let editingLogId=null; let saveDebounceTimer = null; let micPermissionGranted = false;
-  let totalTokens = 0;
-  let aiEnabled = true; // AI機能が有効かどうかを管理する新しいフラグ
 
   /* --- Feedback Manager (ビープ音機能) --- */
   class FeedbackManager {
@@ -343,10 +340,11 @@
   }
   const feedback = new FeedbackManager();
 
-  /* --- Gemini AI Client (v2.6.8 - フォールバック対応) --- */
+  /* --- Gemini AI Client (最終修正版 v2.6.6) --- */
   class GeminiClient {
     constructor() {
       this.apiKey = localStorage.getItem(API_KEY_STORE) || '';
+      // 【最重要修正箇所】現在最も互換性の高い最新のモデル名に固定
       this.model = 'gemini-2.5-flash'; 
     }
     
@@ -355,34 +353,28 @@
     setKey(key) {
       this.apiKey = key.trim();
       localStorage.setItem(API_KEY_STORE, this.apiKey);
-      aiEnabled = true; // キーを再設定した場合はAIを有効にする
       showSystemStatus('APIキーを保存しました', 'success');
-      updateVoiceStatusUI();
-      feedback.playBeep(1200, 100); 
+      feedback.playBeep(1200, 100); // 復元: APIキー保存時のフィードバック
     }
     
     async correctText(originalText) {
       if (!this.apiKey) {
         showSystemStatus('AIキーが未入力です。設定を確認してください。', 'error');
-        aiEnabled = false; 
-        updateVoiceStatusUI();
         return originalText;
       }
       
-      // AI機能が既に無効化されていたら、APIコールをスキップし、そのままのテキストを返す（フォールバック）
-      if (!aiEnabled) { 
-        return originalText;
-      }
-      
-      // トークン最適化されたプロンプト
       const prompt = `
-以下の救急音声ログを整形し、整形後のテキストのみを返せ。
-- 医学的表記、数値、バイタルサイン(BP, SpO2, JCS)は標準形式で統一。
-- 誤字脱字、フィラー(あー等)は修正/削除。
-- **個人名が含まれる場合は[氏名削除]に置換すること。**
-ログ: ${originalText}
+      あなたは救急隊員のアシスタントです。
+      以下の音声入力テキストを、医学的に正しい表記、数値形式、バイタルサインの標準的な記載（例: BP 120/80, SpO2 98%, JCS 1）に整形してください。
+      ルール:
+      1. 意味を変えずに誤字脱字を修正。
+      2. フィラー（「あー」等）削除。
+      3. **最重要: 個人名（患者氏名）が含まれる場合は絶対に削除し、[氏名削除]と置換する。**
+      4. 余計な挨拶は不要。整形後のテキストのみ返すこと。
+      テキスト: ${originalText}
       `;
 
+      // 互換性の高い v1beta エンドポイントを使用
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
       
       try {
@@ -397,51 +389,20 @@
             console.error('AI API Error Detail:', errData);
             
             let statusMessage = `AI通信エラー: ${res.status} ${res.statusText}`;
-            let shouldFallback = false;
-
-            if (res.status === 429) {
-                // 🚨 429: クォータ超過またはレート制限
-                statusMessage = `🚨 AI制限到達 (429): 本日のAI整形機能を停止し、ブラウザ認識へ切り替えます。翌日午前9時頃にリセットされます。`;
-                shouldFallback = true;
-            } else if (res.status === 400 && errData.error && errData.error.message.includes("API key")) {
-                // 🚨 400 + APIキー関連のエラーメッセージ
-                statusMessage = `🔑 APIキーが無効か、残高不足の可能性があります。AI機能を停止し、ブラウザ認識へ切り替えます。`;
-                shouldFallback = true;
-            } else if (res.status === 404){
+            if(res.status === 404){
               statusMessage = `AI通信エラー: 404 (モデル「${this.model}」が見つかりません。APIキー/モデル名を確認してください)`;
-              shouldFallback = true;
-            } else {
-              // その他のエラーも一時的にフォールバック
-              statusMessage = `AI通信エラー: ${res.status}。AI機能を一時停止し、ブラウザ認識へ切り替えます。`;
-              shouldFallback = true;
+            } else if (res.status === 400){
+              statusMessage = 'AI通信エラー: 400 (APIキーが無効、残高不足、またはプロンプトが無効)';
             }
-            
-            if (shouldFallback) {
-              aiEnabled = false; // AI機能を無効化
-              showSystemStatus(statusMessage, 'error');
-              updateVoiceStatusUI();
-            }
-            
+            showSystemStatus(statusMessage, 'error');
             return originalText; 
         }
 
         const data = await res.json();
-        const corrected = data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || originalText;
-
-        // トークン数を取得して合計に加算
-        const usage = data.usageMetadata;
-        if(usage && usage.totalTokenCount){
-            totalTokens += usage.totalTokenCount;
-            updateStats(); 
-        }
-
-        return corrected;
+        return data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || originalText;
       } catch (e) {
         console.error('AI Connection Error:', e);
-        // 接続エラーも無効化
-        aiEnabled = false; 
-        showSystemStatus('AI接続失敗: ネットワークを確認。AI機能を停止しブラウザ認識へ切り替えます。', 'error');
-        updateVoiceStatusUI();
+        showSystemStatus('AI接続失敗: ネットワークを確認', 'error');
         return originalText;
       }
     }
@@ -453,24 +414,19 @@
   function save(){ 
     clearTimeout(saveDebounceTimer);
     saveDebounceTimer = setTimeout(() => {
-      // aiEnabledの状態も保存したいが、ページリロードでリトライさせるため、あえて保存しない
-      localStorage.setItem(STORE_KEY, JSON.stringify({logs,startTime,restartCount,totalTokens})); 
+      localStorage.setItem(STORE_KEY, JSON.stringify({logs,startTime,restartCount})); 
     }, 300); 
   }
   function load(){ 
     try{ 
       const d=JSON.parse(localStorage.getItem(STORE_KEY)); 
-      if(d){ logs=d.logs||[]; startTime=d.startTime||null; restartCount=d.restartCount||0; totalTokens=d.totalTokens||0;}
+      if(d){ logs=d.logs||[]; startTime=d.startTime||null; restartCount=d.restartCount||0; }
       document.getElementById('apiKeyInput').value = gemini.apiKey;
       document.getElementById('restartCount').textContent = restartCount;
-      updateStats(); 
-      
-      // ロード時、AIキーがあれば一旦AIを有効状態に戻す（リトライ可能にする）
-      aiEnabled = gemini.hasKey(); 
     }catch{ logs=[]; } 
   }
 
-  /* --- GPS (省略なし) --- */
+  /* --- GPS --- */
   async function fetchAddressFromGPS(){
     if(!document.getElementById('gpsHi').checked) return '';
     const to = Math.max(2, Math.min(20, +document.getElementById('gpsTimeout').value || 6));
@@ -479,6 +435,7 @@
         navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true, timeout:to*1000, maximumAge:10000});
       });
       const {latitude, longitude} = pos.coords;
+      // Reverse Geocode (OpenStreetMap)
       try {
         const ctrl = new AbortController();
         setTimeout(()=>ctrl.abort(), to*1000);
@@ -502,52 +459,31 @@
     if(!t) return;
     if(logs.length===0) startTime = nowHHMMSS();
     
-    // AI整形が有効な場合のみ status: 'processing' にする
-    const isAIProcessing = useAI && gemini.hasKey() && aiEnabled;
-    
     const id = 'L'+Date.now();
     const newLog = {
       id: id, time: nowHHMMSS(), text: t, address: address,
-      tags: [], status: isAIProcessing ? 'processing' : 'done'
+      tags: [], status: useAI && gemini.hasKey() ? 'processing' : 'done'
     };
     
     logs.push(newLog);
     save(); render(); updateStats();
-    feedback.playBeep(440, 50); // 記録確定時のフィードバック
+    feedback.playBeep(440, 50); // 復元: 記録確定時のフィードバック
 
     // AI Processing
-    if(isAIProcessing){ 
+    if(useAI && gemini.hasKey()){
       try {
-        const corrected = await gemini.correctText(t); // gemini.correctText内でaiEnabledがfalseになる可能性がある
+        const corrected = await gemini.correctText(t);
         const target = logs.find(l=>l.id===id);
-        
-        if(aiEnabled){
-          // 成功時: AI整形を適用
-          if(target){ 
-            target.text = corrected; 
-            target.status = 'done'; 
-            save(); render(); 
-            feedback.playBeep(880, 50); 
-          }
-        } else {
-          // 失敗時（フォールバック発生時）: raw textを保持し、statusをdoneに戻す
-          if(target){ 
-            target.status = 'done'; 
-            save(); render(); 
-          }
+        if(target){ 
+          target.text = corrected; 
+          target.status = 'done'; 
+          save(); render(); 
+          feedback.playBeep(880, 50); // 復元: AI整形完了時のフィードバック
         }
-        
       } catch(e){
-        // 処理中に予期せぬエラーが発生した場合
         const target = logs.find(l=>l.id===id);
         if(target){ target.status = 'done'; save(); render(); }
-        aiEnabled = false;
-        showSystemStatus('AI処理中に予期せぬエラーが発生しました。ブラウザ認識へ切り替えます。', 'warning');
-        updateVoiceStatusUI();
       }
-    } else if (useAI && gemini.hasKey() && !aiEnabled) {
-        // AIリクエストがあったが、機能がオフの場合（フォールバック状態）
-        showSystemStatus('🤖 AI機能停止中: ブラウザ認識(精度低)で記録を継続します。', 'warning');
     }
   }
 
@@ -558,7 +494,7 @@
     [...logs].reverse().forEach(row=>{
       const li=document.createElement('li'); 
       li.className=`row ${row.status==='processing'?'ai-processing':''} ${row.id===selectedId?'selected':''}`;
-      if(row.status==='done' && row.text.match(/[a-zA-Z]/)) li.classList.add('ai-done'); 
+      if(row.status==='done' && row.text.match(/[a-zA-Z]/)) li.classList.add('ai-done'); // 簡易AI判定
       li.dataset.id=row.id;
 
       const time=document.createElement('div'); time.className='time'; 
@@ -593,7 +529,7 @@
   window.selectLog = (id) => { selectedId = (selectedId===id ? null : id); render(); };
   window.delLog = (id) => { if(confirm('削除?')){ logs=logs.filter(x=>x.id!==id); save(); render(); updateStats(); }};
 
-  /* --- Tag Buttons (省略なし) --- */
+  /* --- Tag Buttons --- */
   function renderTagButtons(){
     const box=document.getElementById('tagButtons'); box.innerHTML='';
     const cats={
@@ -622,7 +558,7 @@
     });
   }
 
-  /* --- Wake Lock & Audio Loop (省略なし) --- */
+  /* --- Wake Lock & Audio Loop (v2.4.6 Logic) --- */
   class EnhancedWakeLock {
     constructor() {
       this.wakeLock = null; this.noSleepVideo = null; this.silentAudioCtx = null;
@@ -656,15 +592,13 @@
   }
   const enhancedWakeLock = new EnhancedWakeLock();
 
-  /* --- Voice Recognition (省略なし) --- */
+  /* --- Voice Recognition --- */
   class VoiceRec {
     constructor(){
       this.rec=null; this.isRec=false; this.timer=null;
     }
     async start(){
       try{
-        feedback.init(); 
-        
         const stream = await navigator.mediaDevices.getUserMedia({audio:true});
         const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
         if(!Speech) throw new Error('No API');
@@ -674,32 +608,33 @@
         
         this.rec.onresult = (e) => {
           let interim='';
+          let finalFound = false;
           for(let i=e.resultIndex; i<e.results.length; i++){
             if(e.results[i].isFinal){
               const t = e.results[i][0].transcript;
               const useAI = document.getElementById('useAI').checked;
-              addLine(t, '', useAI); 
+              addLine(t, '', useAI); // 音声のみAI通す
               document.getElementById('voiceStatusText').textContent='確定: '+t.substring(0,8)+'...';
-              feedback.playBeep(600, 50); 
+              feedback.playBeep(600, 50); // 復元: 音声確定時のフィードバック
+              finalFound = true;
             } else {
               interim += e.results[i][0].transcript;
             }
           }
           document.getElementById('voiceInterim').textContent=interim;
         };
-        this.rec.onend = () => { if(this.isRec) this.rec.start(); }; 
+        this.rec.onend = () => { if(this.isRec) this.rec.start(); }; // Auto restart
         
         this.rec.start();
         this.isRec=true;
         enhancedWakeLock.request();
         document.getElementById('voiceBtn').classList.add('active');
+        document.getElementById('voiceStatusTitle').textContent='録音中';
         document.getElementById('recordingBanner').classList.add('show');
         this.startTimer();
-        updateVoiceStatusUI(); // UI更新
-        feedback.playBeep(1000, 100); 
+        feedback.playBeep(1000, 100); // 復元: 録音開始時のフィードバック
       } catch(e){
         alert('マイク起動エラー: '+e.message);
-        updateVoiceStatusUI();
       }
     }
     stop(){
@@ -707,9 +642,9 @@
       if(this.rec) this.rec.stop();
       enhancedWakeLock.release();
       document.getElementById('voiceBtn').classList.remove('active');
+      document.getElementById('voiceStatusTitle').textContent='停止中';
       document.getElementById('recordingBanner').classList.remove('show');
       clearInterval(this.timer);
-      updateVoiceStatusUI(); // UI更新
     }
     toggle(){ if(this.isRec) this.stop(); else this.start(); }
     startTimer(){
@@ -719,16 +654,12 @@
   }
   const voiceRec = new VoiceRec();
 
-  /* --- Init & Handlers --- */
+  /* --- Init --- */
   document.getElementById('voiceBtn').onclick = ()=>voiceRec.toggle();
   document.getElementById('btnSaveKey').onclick = ()=>{ gemini.setKey(document.getElementById('apiKeyInput').value); };
   document.getElementById('btnCopy').onclick = ()=>copyLogs(false);
   document.getElementById('btnCopyAddr').onclick = ()=>copyLogs(true);
-  document.getElementById('btnClear').onclick = ()=>{ 
-    if(confirm('全消去?')){ 
-      logs=[]; totalTokens=0; save(); render(); updateStats(); 
-    } 
-  };
+  document.getElementById('btnClear').onclick = ()=>{ if(confirm('全消去?')){ logs=[]; save(); render(); updateStats(); } };
   
   // 手入力欄
   let inputTimer;
@@ -747,45 +678,21 @@
   function showSystemStatus(msg, type){
     const el=document.getElementById('systemStatus');
     el.textContent=msg; el.className='system-status '+type; el.style.display='block';
-    setTimeout(()=>el.style.display='none',5000); // 5秒表示に延長
+    setTimeout(()=>el.style.display='none',3000);
   }
-  
-  // 音声ステータスUIを更新する関数
-  function updateVoiceStatusUI() {
-      const titleEl = document.getElementById('voiceStatusTitle');
-      const textEl = document.getElementById('voiceStatusText');
-      
-      if (voiceRec.isRec) {
-          titleEl.textContent = '録音中';
-          // textElはonresultで更新されるため、ここでは何もしない
-      } else if (!gemini.hasKey()) {
-          titleEl.textContent = '停止中';
-          textEl.textContent = '🔑 APIキーを入力してください';
-      } else if (!aiEnabled) {
-          titleEl.textContent = '🚨 AI機能停止中';
-          textEl.textContent = 'フォールバックモード。ブラウザ認識で記録継続。';
-      } else {
-          titleEl.textContent = '停止中';
-          textEl.textContent = 'タップで開始 / AI整形ON';
-      }
-  }
-
   function updateStats(){
     document.getElementById('totalLogs').textContent = logs.length;
-    document.getElementById('aiTokens').textContent = totalTokens.toLocaleString(); 
     if(logs.length>1){
       const [h1,m1,s1]=logs[0].time.split(':'); const [h2,m2,s2]=logs[logs.length-1].time.split(':');
       const diff=Math.floor(((h2*3600+m2*60+s2*1)-(h1*3600+m1*60+s1*1))/60);
       document.getElementById('totalTime').textContent=diff+'分';
-    } else {
-      document.getElementById('totalTime').textContent='0分';
     }
   }
   function copyLogs(addr){
     const txt = logs.map(l => `${l.time} ${l.text} ${addr&&l.address?'('+l.address+')':''}`).join('\n');
     navigator.clipboard.writeText(txt); alert('コピー完了');
   }
-  // Edit Modal (省略なし)
+  // Edit Modal
   window.openEditModal = (id) => {
     editingLogId=id; const row=logs.find(r=>r.id===id);
     if(row){ document.getElementById('editText').value=row.text; document.getElementById('editModal').classList.add('show'); }
@@ -797,13 +704,7 @@
   };
   document.getElementById('btnCancelEdit').onclick = ()=>document.getElementById('editModal').classList.remove('show');
 
-  window.onload=()=>{ 
-    load(); 
-    render(); 
-    renderTagButtons(); 
-    updateVoiceStatusUI(); // 初期ロード時にステータスを更新
-    setInterval(()=>document.getElementById('clock').textContent=nowHHMMSS(),1000); 
-  };
+  window.onload=()=>{ load(); render(); renderTagButtons(); setInterval(()=>document.getElementById('clock').textContent=nowHHMMSS(),1000); };
 </script>
 </body>
 </html>
