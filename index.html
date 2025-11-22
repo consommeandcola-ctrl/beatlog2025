@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - AI Ultimate v2.6.1</title>
+<title>救急記録 - AI Ultimate v2.6.2</title>
 <style>
   /* 基本スタイル */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
@@ -39,7 +39,6 @@
   }
   .recording-banner.show { display: block; }
   .recording-banner .main-text { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
-  .recording-banner .sub-text { font-size: 14px; opacity: 0.9; }
   .recording-time { 
     font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums;
     color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -55,16 +54,6 @@
   .system-status.error { background: #f8d7da; border-left-color: #e74c3c; color: #721c24; }
   .system-status.success { background: #d4edda; border-left-color: #27ae60; color: #155724; }
   
-  /* 権限アラート */
-  .permission-alert {
-    display: none; background: #fff3cd; border: 2px solid #f39c12; border-radius: 8px;
-    padding: 12px; margin-bottom: 8px;
-  }
-  .permission-alert.show { display: block; }
-  .permission-alert-title { font-size: 13px; font-weight: 700; color: #856404; margin-bottom: 6px; }
-  .permission-alert-text { font-size: 11px; color: #856404; line-height: 1.5; margin-bottom: 8px; }
-  .permission-alert-buttons { display: flex; gap: 6px; }
-  
   /* ボイスコントロール */
   .voice-control { display: flex; gap: 8px; align-items: center; padding: 8px; background: #ecf0f1; border-radius: 6px; margin-bottom: 6px; }
   .voice-btn {
@@ -78,20 +67,10 @@
     animation: pulse-voice 1.5s infinite;
     box-shadow: 0 0 20px rgba(39, 174, 96, 0.6);
   }
-  .voice-btn:disabled { background: #95a5a6; opacity: 0.6; cursor: not-allowed; }
-  @keyframes pulse-voice { 
-    0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(39, 174, 96, 0.6); } 
-    50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(39, 174, 96, 0.8); } 
-  }
   .voice-status { flex: 1; min-width: 0; }
   .voice-status-title { font-size: 10px; font-weight: 600; color: #2c3e50; margin-bottom: 2px; }
   .voice-status-text { font-size: 9px; color: #7f8c8d; line-height: 1.2; }
   .voice-interim { margin-top: 4px; padding: 4px 6px; background: #fff; border-radius: 4px; border-left: 2px solid #3498db; font-size: 10px; color: #7f8c8d; font-style: italic; min-height: 16px; }
-  .confidence-bar { margin-top: 3px; height: 4px; background: #ecf0f1; border-radius: 2px; overflow: hidden; }
-  .confidence-fill { height: 100%; transition: width 0.3s ease, background-color 0.3s ease; }
-  .confidence-high { background: #27ae60; }
-  .confidence-medium { background: #f39c12; }
-  .confidence-low { background: #e74c3c; }
   
   /* 設定セクション */
   .settings-section {
@@ -115,8 +94,6 @@
     width: 100%; min-height: 50px; border: 2px solid #bdc3c7; border-radius: 6px; padding: 6px;
     font-size: 13px; line-height: 1.4; resize: vertical; font-family: inherit; background: #fff;
   }
-  textarea:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
-  .controls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
   .pill {
     display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid #bdc3c7; border-radius: 12px;
     background: #ecf0f1; font-size: 10px; color: #2c3e50; font-weight: 500;
@@ -125,33 +102,18 @@
     border: none; background: #3498db; color: #fff; border-radius: 6px; padding: 8px 12px; font-weight: 600; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     min-height: 40px; display: inline-flex; align-items: center; justify-content: center;
   }
-  .btn:active { transform: scale(0.97); opacity: 0.9; }
-  .btn.success { background: #27ae60; }
-  .btn.danger { background: #e74c3c; }
-  .btn.warning { background: #f39c12; }
-  .btn.secondary { background: #95a5a6; }
   .tag-buttons {
     display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; max-height: 180px; overflow-y: auto; padding: 6px; background: #f8f9fa; border-radius: 6px; -webkit-overflow-scrolling: touch;
   }
   .tag-buttons .btn {
     background: #e8f4f8; color: #2c3e50; font-size: 10px; padding: 5px 8px; border-radius: 10px; border: 1px solid #3498db; min-height: 30px;
   }
-  .tag-buttons .btn:active { background: #3498db; color: #fff; }
   .main-buttons { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-  
-  /* 統計・ログ */
-  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-  .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 8px; border-radius: 6px; text-align: center; }
-  .stat-value { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
-  .stat-label { font-size: 8px; opacity: 0.9; }
-  .timeline { max-height: 35vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  ul.log { list-style: none; display: flex; flex-direction: column; gap: 5px; }
   
   /* ログ行 */
   .row {
     padding: 6px; border-left: 3px solid #3498db; border-radius: 5px; background: #f8f9fa; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
-  .row.selected { background: #e8f4f8; border-left-color: #e74c3c; }
   .row.ai-processing { border-left-color: #bdc3c7; background: #fff; opacity: 0.8; }
   .row.ai-processing .text::after { content: ' 🤖 AI整形中...'; font-size: 10px; color: #9b59b6; animation: blink 1.5s infinite; }
   .row.ai-done { border-left-color: #9b59b6; }
@@ -160,33 +122,23 @@
   .time { font-size: 10px; color: #3498db; margin-bottom: 3px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
   .addr { font-size: 10px; color: #2c3e50; margin: 2px 0 4px; padding-left: 4px; border-left: 2px solid #27ae60; background: #eef9f1; border-radius: 3px; }
   .text { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin-bottom: 3px; color: #2c3e50; line-height: 1.4; }
-  .tags { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 3px; }
   .tag { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 8px; padding: 1px 6px; font-size: 8px; font-weight: 600; }
-  .row .tools { position: absolute; top: 4px; right: 4px; display: flex; gap: 3px; opacity: 0.8; }
-  .row.selected .tools { opacity: 1; }
-  .tools .btn { font-size: 9px; padding: 3px 6px; min-height: 28px; }
-  .empty-state { text-align: center; padding: 25px 12px; color: #7f8c8d; font-size: 12px; }
   
+  /* モーダル */
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
   .modal.show { display: flex; align-items: center; justify-content: center; }
-  .modal-content { background: #fff; border-radius: 8px; padding: 16px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-  .modal-header { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #2c3e50; }
-  .modal-body textarea { width: 100%; min-height: 100px; margin-bottom: 12px; }
-  .modal-buttons { display: flex; gap: 8px; }
-  .modal-buttons .btn { flex: 1; }
   
   @media (min-width: 768px){
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     textarea { min-height: 90px; }
     .timeline { max-height: 55vh; }
-    h1 { font-size: 16px; }
   }
 </style>
 </head>
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (AI Ultimate v2.6.1)</h1>
+      <h1>🚑 救急記録 (AI Ultimate v2.6.2)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -202,16 +154,8 @@
       <section class="card">
         <h2>📝 入力・設定</h2>
         <div class="body">
-          <div id="permissionAlert" class="permission-alert">
-            <div class="permission-alert-title">🎤 マイク許可が必要です</div>
-            <div class="permission-alert-text">iPhone設定 > Safari > マイクで許可してください。</div>
-            <div class="permission-alert-buttons">
-              <button id="btnRetryPermission" type="button" class="btn warning">🔄 再試行</button>
-            </div>
-          </div>
-
           <div class="settings-section">
-            <div class="settings-title">⚙️ 設定 & AIキー (端末保存)</div>
+            <div class="settings-title">⚙️ 設定 & APIキー (端末保存)</div>
             <div class="setting-row">
               <label>Gemini API Key</label>
               <input type="password" id="apiKeyInput" placeholder="ここにAPIキーを入力">
@@ -239,7 +183,6 @@
             <div class="voice-status">
               <div class="voice-status-title" id="voiceStatusTitle">停止中</div>
               <div class="voice-status-text" id="voiceStatusText">タップで開始</div>
-              <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width: 0%"></div></div>
               <div class="voice-interim" id="voiceInterim"></div>
               <div id="systemStatus" class="system-status" style="display:none;"></div>
             </div>
@@ -248,7 +191,6 @@
           <textarea id="input" placeholder="ここにテキストが表示されます"></textarea>
 
           <div class="controls">
-            <label class="pill"><input id="punct" type="checkbox" checked> 句点確定</label>
             <label class="pill"><input id="gpsHi" type="checkbox" checked> GPS</label>
             <label class="pill">⏳ <input id="gpsTimeout" type="number" min="2" max="20" value="6">s</label>
           </div>
@@ -291,18 +233,19 @@
   </div>
 
 <script>
-  const STORE_KEY='emergency-doc-v2-6-1';
+  const STORE_KEY='emergency-doc-v2-6-2';
   const API_KEY_STORE = 'gemini_api_key_local';
   let logs=[]; let selectedId=null; let startTime=null; let restartCount=0;
-  let editingLogId=null; let saveDebounceTimer = null; let micPermissionGranted = false;
+  let editingLogId=null; let saveDebounceTimer = null; 
 
-  /* --- Feedback Manager (Restored) --- */
+  /* --- Feedback Manager --- */
   class FeedbackManager {
     constructor() {
       this.audioContext = null;
       this.speechSynth = window.speechSynthesis;
     }
     playBeep(frequency=880, duration=100) {
+      if (!document.getElementById('audioFeedback')?.checked) return;
       try {
         if (!this.audioContext) this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         if (this.audioContext.state === 'suspended') this.audioContext.resume();
@@ -337,21 +280,26 @@
   }
   const feedback = new FeedbackManager();
 
-  /* --- Gemini AI Client --- */
+  /* --- Gemini AI Client (404エラー対策済み) --- */
   class GeminiClient {
     constructor() {
       this.apiKey = localStorage.getItem(API_KEY_STORE) || '';
-      this.model = 'gemini-1.5-flash';
+      // 安定したモデル名を使用
+      this.model = 'gemini-1.5-flash'; 
     }
+    
     hasKey() { return !!this.apiKey; }
+    
     setKey(key) {
       this.apiKey = key.trim();
       localStorage.setItem(API_KEY_STORE, this.apiKey);
       showSystemStatus('APIキーを保存しました', 'success');
       feedback.playBeep(1200, 100);
     }
+    
     async correctText(originalText) {
       if (!this.apiKey) return originalText;
+      
       const prompt = `
       あなたは救急隊員のアシスタントです。
       以下の音声入力テキストを、医学的に正しい表記、数値形式、バイタルサインの標準的な記載（例: BP 120/80, SpO2 98%, JCS 1）に整形してください。
@@ -362,16 +310,30 @@
       4. 余計な挨拶は不要。整形後のテキストのみ返すこと。
       テキスト: ${originalText}
       `;
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+
+      // 404エラー対策: 安定した v1 エンドポイントを使用
+      const url = `https://generativelanguage.googleapis.com/v1/models/${this.model}:generateContent?key=${this.apiKey}`;
+      
       try {
         const res = await fetch(url, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
+        
+        if (!res.ok) {
+            const errData = await res.json();
+            console.error('AI API Error Detail:', errData);
+            // ユーザーフレンドリーなエラーメッセージ
+            showSystemStatus(`AI通信エラー: ${res.status} (APIキー/モデル名を確認)`, 'error');
+            return originalText; // エラー時も元のテキストを維持
+        }
+
         const data = await res.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || originalText;
       } catch (e) {
-        console.error('AI Error:', e);
+        console.error('AI Connection Error:', e);
+        showSystemStatus('AI接続失敗: ネットワークを確認', 'error');
         return originalText;
       }
     }
@@ -407,6 +369,7 @@
       try {
         const ctrl = new AbortController();
         setTimeout(()=>ctrl.abort(), to*1000);
+        // OpenStreetMap Nominatim サービスを利用
         const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
         const res = await fetch(url, { signal: ctrl.signal });
         const data = await res.json();
@@ -435,7 +398,7 @@
     
     logs.push(newLog);
     save(); render(); updateStats();
-    feedback.notifyLogSaved(); // ★音声フィードバック実行
+    feedback.notifyLogSaved(); 
 
     // AI Processing
     if(useAI && gemini.hasKey()){
@@ -591,7 +554,7 @@
         document.getElementById('voiceBtn').classList.add('active');
         document.getElementById('voiceStatusTitle').textContent='録音中';
         document.getElementById('recordingBanner').classList.add('show');
-        feedback.notifyRecordingStarted(); // ★開始アナウンス
+        feedback.notifyRecordingStarted(); 
         this.startTimer();
       } catch(e){
         alert('マイク起動エラー: '+e.message);
@@ -604,7 +567,7 @@
       document.getElementById('voiceBtn').classList.remove('active');
       document.getElementById('voiceStatusTitle').textContent='停止中';
       document.getElementById('recordingBanner').classList.remove('show');
-      feedback.notifyRecordingStopped(); // ★停止アナウンス
+      feedback.notifyRecordingStopped(); 
       clearInterval(this.timer);
     }
     toggle(){ if(this.isRec) this.stop(); else this.start(); }
@@ -615,12 +578,12 @@
   }
   const voiceRec = new VoiceRec();
 
-  /* --- Init --- */
+  /* --- Init & Handlers --- */
   document.getElementById('voiceBtn').onclick = ()=>voiceRec.toggle();
   document.getElementById('btnSaveKey').onclick = ()=>{ gemini.setKey(document.getElementById('apiKeyInput').value); };
   document.getElementById('btnCopy').onclick = ()=>copyLogs(false);
   document.getElementById('btnCopyAddr').onclick = ()=>copyLogs(true);
-  document.getElementById('btnClear').onclick = ()=>{ if(confirm('全消去?')){ logs=[]; save(); render(); updateStats(); } };
+  document.getElementById('btnClear').onclick = ()=>{ if(confirm('全消去しますか？')){ logs=[]; save(); render(); updateStats(); } };
   
   // 手入力欄
   let inputTimer;
@@ -639,20 +602,24 @@
   function showSystemStatus(msg, type){
     const el=document.getElementById('systemStatus');
     el.textContent=msg; el.className='system-status '+type; el.style.display='block';
-    setTimeout(()=>el.style.display='none',3000);
+    setTimeout(()=>el.style.display='none',5000); // エラー表示を長く
   }
   function updateStats(){
     document.getElementById('totalLogs').textContent = logs.length;
     if(logs.length>1){
-      const [h1,m1,s1]=logs[0].time.split(':'); const [h2,m2,s2]=logs[logs.length-1].time.split(':');
-      const diff=Math.floor(((h2*3600+m2*60+s2*1)-(h1*3600+m1*60+s1*1))/60);
+      const t1=logs[0].time.split(':').map(Number); const t2=logs[logs.length-1].time.split(':').map(Number);
+      const diff=Math.floor(((t2[0]*3600+t2[1]*60+t2[2])-(t1[0]*3600+t1[1]*60+t1[2]))/60);
       document.getElementById('totalTime').textContent=diff+'分';
+    }else{
+      document.getElementById('totalTime').textContent='0分';
     }
   }
   function copyLogs(addr){
     const txt = logs.map(l => `${l.time} ${l.text} ${addr&&l.address?'('+l.address+')':''}`).join('\n');
-    navigator.clipboard.writeText(txt); alert('コピー完了');
+    navigator.clipboard.writeText(txt); 
+    showSystemStatus('記録をクリップボードにコピーしました', 'success');
   }
+  
   // Edit Modal
   window.openEditModal = (id) => {
     editingLogId=id; const row=logs.find(r=>r.id===id);
@@ -665,7 +632,12 @@
   };
   document.getElementById('btnCancelEdit').onclick = ()=>document.getElementById('editModal').classList.remove('show');
 
-  window.onload=()=>{ load(); render(); renderTagButtons(); setInterval(()=>document.getElementById('clock').textContent=nowHHMMSS(),1000); };
+  window.onload=()=>{ 
+    load(); 
+    render(); 
+    renderTagButtons(); 
+    setInterval(()=>document.getElementById('clock').textContent=nowHHMMSS(),1000); 
+  };
 </script>
 </body>
 </html>
