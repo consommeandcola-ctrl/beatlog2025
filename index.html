@@ -6,9 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - AI Ultimate v2.6.6 (フィードバック復元)</title>
+<title>救急記録 - AI Ultimate v2.8.0</title>
 <style>
-  /* v2.4.6のスタイルをベースにAI用の装飾を追加 */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
   body {
     background: #f8f9fa; min-height: 100vh; color: #212529;
@@ -66,11 +65,14 @@
   .permission-alert-buttons { display: flex; gap: 6px; }
   
   /* ボイスコントロール */
-  .voice-control { display: flex; gap: 8px; align-items: center; padding: 8px; background: #ecf0f1; border-radius: 6px; margin-bottom: 6px; }
+  .voice-control { 
+    display: flex; justify-content: center; align-items: center; 
+    padding: 12px; background: #ecf0f1; border-radius: 6px; margin-bottom: 6px; 
+  }
   .voice-btn {
-    flex-shrink: 0; width: 52px; height: 52px; border: none; border-radius: 50%;
+    width: 70px; height: 70px; border: none; border-radius: 50%;
     background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: #fff; font-size: 22px; box-shadow: 0 2px 6px rgba(231,76,60,0.3);
+    color: #fff; font-size: 32px; box-shadow: 0 2px 6px rgba(231,76,60,0.3);
   }
   .voice-btn:active { transform: scale(0.95); }
   .voice-btn.active { 
@@ -83,16 +85,6 @@
     0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(39, 174, 96, 0.6); } 
     50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(39, 174, 96, 0.8); } 
   }
-  .voice-status { flex: 1; min-width: 0; }
-  .voice-status-title { font-size: 10px; font-weight: 600; color: #2c3e50; margin-bottom: 2px; }
-  .voice-status-text { font-size: 9px; color: #7f8c8d; line-height: 1.2; }
-  .voice-interim { margin-top: 4px; padding: 4px 6px; background: #fff; border-radius: 4px; border-left: 2px solid #3498db; font-size: 10px; color: #7f8c8d; font-style: italic; min-height: 16px; }
-  .confidence-bar { margin-top: 3px; height: 4px; background: #ecf0f1; border-radius: 2px; overflow: hidden; }
-  .confidence-fill { height: 100%; transition: width 0.3s ease, background-color 0.3s ease; }
-  .confidence-high { background: #27ae60; }
-  .confidence-medium { background: #f39c12; }
-  .confidence-low { background: #e74c3c; }
-  .ai-indicator { margin-top: 3px; font-size: 8px; color: #9b59b6; font-weight: 600; }
   
   /* 設定セクション */
   .settings-section {
@@ -112,11 +104,6 @@
   .setting-row input[type="password"] { flex:2; padding:4px; border:1px solid #bdc3c7; border-radius:4px; font-size:10px; }
 
   /* 入力・ボタン類 */
-  textarea {
-    width: 100%; min-height: 50px; border: 2px solid #bdc3c7; border-radius: 6px; padding: 6px;
-    font-size: 13px; line-height: 1.4; resize: vertical; font-family: inherit; background: #fff;
-  }
-  textarea:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
   .controls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
   .pill {
     display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid #bdc3c7; border-radius: 12px;
@@ -131,30 +118,63 @@
   .btn.danger { background: #e74c3c; }
   .btn.warning { background: #f39c12; }
   .btn.secondary { background: #95a5a6; }
+  .btn.purple { background: #9b59b6; }
+  
+  /* プリセットボタン */
   .tag-buttons {
-    display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; max-height: 180px; overflow-y: auto; padding: 6px; background: #f8f9fa; border-radius: 6px; -webkit-overflow-scrolling: touch;
+    display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; max-height: 240px; overflow-y: auto; 
+    padding: 8px; background: #f8f9fa; border-radius: 6px; -webkit-overflow-scrolling: touch;
   }
   .tag-buttons .btn {
-    background: #e8f4f8; color: #2c3e50; font-size: 10px; padding: 5px 8px; border-radius: 10px; border: 1px solid #3498db; min-height: 30px;
+    background: #e8f4f8; color: #2c3e50; font-size: 12px; padding: 8px 12px; 
+    border-radius: 12px; border: 2px solid #3498db; min-height: 42px; font-weight: 600;
   }
   .tag-buttons .btn:active { background: #3498db; color: #fff; }
-  .main-buttons { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .tag-buttons .category-header {
+    width: 100%; font-weight: 700; font-size: 11px; margin: 8px 0 4px; 
+    border-left: 3px solid #3498db; padding-left: 6px; color: #2c3e50;
+  }
   
-  /* 統計・ログ */
-  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .main-buttons { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  
+  /* 検索・フィルタ */
+  .search-section {
+    background: #e8f4f8; border: 2px solid #3498db; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+  }
+  .search-title { font-size: 11px; font-weight: 700; color: #2c3e50; margin-bottom: 6px; }
+  .search-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .search-row input[type="date"] { 
+    flex: 1; padding: 6px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 11px; 
+  }
+  .search-row input[type="text"] { 
+    flex: 1; padding: 6px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 11px; 
+  }
+  .search-row .btn { min-height: 32px; font-size: 10px; }
+  
+  /* 統計 */
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 8px; border-radius: 6px; text-align: center; }
   .stat-value { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
   .stat-label { font-size: 8px; opacity: 0.9; }
+  
+  /* 事例情報 */
+  .case-info {
+    background: #d4edda; border: 2px solid #27ae60; border-radius: 6px; padding: 8px; margin-bottom: 8px;
+  }
+  .case-info-title { font-size: 11px; font-weight: 700; color: #155724; margin-bottom: 4px; }
+  .case-info-text { font-size: 13px; font-weight: 700; color: #155724; }
+  
+  /* タイムライン */
   .timeline { max-height: 35vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   ul.log { list-style: none; display: flex; flex-direction: column; gap: 5px; }
   
-  /* ログ行のスタイル (AI処理状態を含む) */
+  /* ログ行 */
   .row {
-    padding: 6px; border-left: 3px solid #3498db; border-radius: 5px; background: #f8f9fa; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 8px 8px 48px 8px;
+    border-left: 3px solid #3498db; border-radius: 5px; background: #f8f9fa; 
+    position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
   .row.selected { background: #e8f4f8; border-left-color: #e74c3c; }
-  
-  /* AIステータス */
   .row.ai-processing { border-left-color: #bdc3c7; background: #fff; opacity: 0.8; }
   .row.ai-processing .text::after { content: ' 🤖 AI整形中...'; font-size: 10px; color: #9b59b6; animation: blink 1.5s infinite; }
   .row.ai-done { border-left-color: #9b59b6; }
@@ -162,28 +182,55 @@
   
   .time { font-size: 10px; color: #3498db; margin-bottom: 3px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
   .elapsed { font-size: 8px; color: #7f8c8d; font-weight: 500; background: #ecf0f1; padding: 1px 5px; border-radius: 6px; }
-  .addr { font-size: 10px; color: #2c3e50; margin: 2px 0 4px; padding-left: 4px; border-left: 2px solid #27ae60; background: #eef9f1; border-radius: 3px; }
+  .addr { 
+    font-size: 10px; color: #2c3e50; margin: 2px 0 4px; padding: 4px 6px; 
+    border-left: 2px solid #27ae60; background: #eef9f1; border-radius: 3px; 
+  }
   .addr.muted { opacity: 0.35; border-left-color: #bdc3c7; background: #f3f4f6; }
-  .text { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin-bottom: 3px; color: #2c3e50; line-height: 1.4; }
+  .text { 
+    white-space: pre-wrap; word-break: break-word; font-size: 12px; margin-bottom: 3px; 
+    color: #2c3e50; line-height: 1.5; padding-right: 4px;
+  }
   .tags { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 3px; }
   .tag { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 8px; padding: 1px 6px; font-size: 8px; font-weight: 600; }
-  .row .tools { position: absolute; top: 4px; right: 4px; display: flex; gap: 3px; opacity: 0.8; }
-  .row.selected .tools { opacity: 1; }
-  .tools .btn { font-size: 9px; padding: 3px 6px; min-height: 28px; }
+  
+  .row .tools { 
+    position: absolute; bottom: 6px; left: 8px; right: 8px; 
+    display: flex; gap: 4px; opacity: 1;
+  }
+  .tools .btn { font-size: 10px; padding: 4px 8px; min-height: 32px; flex: 1; }
+  
   .empty-state { text-align: center; padding: 25px 12px; color: #7f8c8d; font-size: 12px; }
   .ai-badge { font-size: 7px; background: #9b59b6; color: #fff; padding: 1px 4px; border-radius: 4px; margin-left: 4px; }
   
+  /* モーダル */
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
   .modal.show { display: flex; align-items: center; justify-content: center; }
   .modal-content { background: #fff; border-radius: 8px; padding: 16px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
   .modal-header { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #2c3e50; }
-  .modal-body textarea { width: 100%; min-height: 100px; margin-bottom: 12px; }
+  .modal-body textarea { width: 100%; min-height: 100px; margin-bottom: 12px; border: 2px solid #bdc3c7; border-radius: 6px; padding: 6px; font-size: 13px; line-height: 1.4; resize: vertical; font-family: inherit; }
   .modal-buttons { display: flex; gap: 8px; }
   .modal-buttons .btn { flex: 1; }
   
+  /* 事例一覧 */
+  .case-list { max-height: 50vh; overflow-y: auto; }
+  .case-item {
+    padding: 10px; border-left: 3px solid #3498db; border-radius: 5px; background: #f8f9fa;
+    margin-bottom: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative;
+  }
+  .case-item:hover { background: #e8f4f8; }
+  .case-item-header { font-size: 13px; font-weight: 700; color: #2c3e50; margin-bottom: 4px; padding-right: 40px; }
+  .case-item-info { font-size: 10px; color: #7f8c8d; }
+  .case-item-delete {
+    position: absolute; top: 8px; right: 8px; background: #e74c3c; color: #fff;
+    border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600;
+    cursor: pointer;
+  }
+  .case-item-delete:active { transform: scale(0.95); opacity: 0.9; }
+  .case-item-body { cursor: pointer; }
+  
   @media (min-width: 768px){
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    textarea { min-height: 90px; }
     .timeline { max-height: 55vh; }
     h1 { font-size: 16px; }
   }
@@ -192,7 +239,7 @@
 <body>
   <header>
     <div class="header-content">
-      <h1>🚑 救急記録 (AI Ultimate v2.6.6)</h1>
+      <h1>🚑 救急記録 (AI Ultimate v2.8.0)</h1>
       <div class="clock" id="clock">--:--:--</div>
     </div>
   </header>
@@ -238,19 +285,11 @@
 
           <div class="voice-control">
             <button id="voiceBtn" type="button" class="voice-btn">🎤</button>
-            <div class="voice-status">
-              <div class="voice-status-title" id="voiceStatusTitle">停止中</div>
-              <div class="voice-status-text" id="voiceStatusText">タップで開始</div>
-              <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width: 0%"></div></div>
-              <div class="voice-interim" id="voiceInterim"></div>
-              <div id="systemStatus" class="system-status" style="display:none;"></div>
-            </div>
           </div>
-
-          <textarea id="input" placeholder="ここにテキストが表示されます"></textarea>
+          
+          <div id="systemStatus" class="system-status" style="display:none;"></div>
 
           <div class="controls">
-            <label class="pill"><input id="punct" type="checkbox" checked> 句点確定</label>
             <label class="pill"><input id="gpsHi" type="checkbox" checked> GPS</label>
             <label class="pill">⏳ <input id="gpsTimeout" type="number" min="2" max="20" value="6">s</label>
           </div>
@@ -260,7 +299,10 @@
           <div class="main-buttons">
             <button id="btnCopy" type="button" class="btn success" title="住所なしでコピー">📋 コピー(住所無)</button>
             <button id="btnCopyAddr" type="button" class="btn success" title="住所付きでコピー">📋 コピー(住所有)</button>
-            <button id="btnClear" type="button" class="btn danger">🗑 記録消去</button>
+          </div>
+          <div class="main-buttons" style="margin-top:6px;">
+            <button id="btnEndCase" type="button" class="btn warning">✅ 事例終了</button>
+            <button id="btnClear" type="button" class="btn danger">🗑 現在記録消去</button>
           </div>
         </div>
       </section>
@@ -268,10 +310,28 @@
       <section class="card">
         <h2>⏰ 記録 (AI連携)</h2>
         <div class="body">
+          <div class="case-info">
+            <div class="case-info-title">現在の事例</div>
+            <div class="case-info-text" id="currentCaseInfo">事例 #1</div>
+          </div>
+          
+          <div class="search-section">
+            <div class="search-title">🔍 検索・フィルタ</div>
+            <div class="search-row">
+              <input type="date" id="filterDate" placeholder="日付">
+              <button id="btnShowCaseList" type="button" class="btn">📋 事例一覧</button>
+              <button id="btnClearDate" type="button" class="btn secondary">×</button>
+            </div>
+            <div class="search-row">
+              <input type="text" id="searchKeyword" placeholder="キーワード検索">
+              <button id="btnClearSearch" type="button" class="btn secondary">×</button>
+            </div>
+          </div>
+          
           <div class="stats">
             <div class="stat-card"><div class="stat-value" id="totalLogs">0</div><div class="stat-label">件数</div></div>
             <div class="stat-card"><div class="stat-value" id="totalTime">0分</div><div class="stat-label">経過</div></div>
-            <div class="stat-card"><div class="stat-value" id="restartCount">0</div><div class="stat-label">再起動</div></div>
+            <div class="stat-card"><div class="stat-value" id="filteredCount">-</div><div class="stat-label">表示中</div></div>
           </div>
           <div class="timeline">
             <ul id="log" class="log"></ul>
@@ -292,19 +352,45 @@
     </div>
   </div>
 
-<script>
-  const STORE_KEY='emergency-doc-v2-6';
-  const API_KEY_STORE = 'gemini_api_key_local';
-  let logs=[]; let selectedId=null; let startTime=null; let restartCount=0;
-  let editingLogId=null; let saveDebounceTimer = null; let micPermissionGranted = false;
+  <div id="caseListModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">📋 事例一覧</div>
+      <div class="modal-body">
+        <div class="case-list" id="caseList"></div>
+      </div>
+      <div class="modal-buttons">
+        <button id="btnCloseCaseList" type="button" class="btn secondary">閉じる</button>
+      </div>
+    </div>
+  </div>
 
-  /* --- Feedback Manager (ビープ音機能) --- */
+<script>
+  const STORE_KEY='emergency-doc-v2-8';
+  const API_KEY_STORE = 'gemini_api_key_local';
+  
+  // 現在の事例
+  let currentCase = {
+    caseNumber: 1,
+    startTime: null,
+    endTime: null,
+    date: null,
+    logs: []
+  };
+  
+  // 過去の事例
+  let cases = [];
+  
+  let selectedId=null; let editingLogId=null; let saveDebounceTimer = null; 
+  let filterDate = ''; let searchKeyword = '';
+  let viewingCaseNumber = null; // 表示中の事例番号
+
+  /* --- Feedback Manager --- */
   class FeedbackManager {
     constructor() {
       this.audioCtx = null;
+      this.speechSynth = window.speechSynthesis;
     }
 
-    // ユーザー操作に応じてオーディオコンテキストを初期化
     init() {
       if (!this.audioCtx) {
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -314,7 +400,6 @@
       }
     }
 
-    // 周波数(Hz)、時間(ms)を指定してビープ音を再生
     playBeep(frequency, duration) {
       this.init();
       if (!this.audioCtx) return;
@@ -325,10 +410,9 @@
       oscillator.connect(gainNode);
       gainNode.connect(this.audioCtx.destination);
 
-      oscillator.type = 'square'; // 波形
+      oscillator.type = 'square';
       oscillator.frequency.setValueAtTime(frequency, this.audioCtx.currentTime);
 
-      // フェードアウト
       gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration / 1000);
 
@@ -337,15 +421,25 @@
         oscillator.stop();
       }, duration);
     }
+    
+    speak(text) {
+      if (!this.speechSynth) return;
+      this.speechSynth.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 1.2;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      this.speechSynth.speak(utterance);
+    }
   }
   const feedback = new FeedbackManager();
 
-  /* --- Gemini AI Client (最終修正版 v2.6.6) --- */
+  /* --- Gemini AI Client --- */
   class GeminiClient {
     constructor() {
       this.apiKey = localStorage.getItem(API_KEY_STORE) || '';
-      // 【最重要修正箇所】現在最も互換性の高い最新のモデル名に固定
-      this.model = 'gemini-2.5-flash'; 
+      this.model = 'gemini-2.0-flash-exp';
     }
     
     hasKey() { return !!this.apiKey; }
@@ -354,7 +448,7 @@
       this.apiKey = key.trim();
       localStorage.setItem(API_KEY_STORE, this.apiKey);
       showSystemStatus('APIキーを保存しました', 'success');
-      feedback.playBeep(1200, 100); // 復元: APIキー保存時のフィードバック
+      feedback.playBeep(1200, 100);
     }
     
     async correctText(originalText) {
@@ -374,7 +468,6 @@
       テキスト: ${originalText}
       `;
 
-      // 互換性の高い v1beta エンドポイントを使用
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
       
       try {
@@ -411,19 +504,32 @@
 
   /* --- Core Functions --- */
   function nowHHMMSS(){ return new Date().toLocaleTimeString('ja-JP',{hour12:false}); }
+  function nowDate(){ return new Date().toISOString().slice(0,10); }
+  
   function save(){ 
     clearTimeout(saveDebounceTimer);
     saveDebounceTimer = setTimeout(() => {
-      localStorage.setItem(STORE_KEY, JSON.stringify({logs,startTime,restartCount})); 
+      localStorage.setItem(STORE_KEY, JSON.stringify({currentCase, cases})); 
     }, 300); 
   }
+  
   function load(){ 
     try{ 
       const d=JSON.parse(localStorage.getItem(STORE_KEY)); 
-      if(d){ logs=d.logs||[]; startTime=d.startTime||null; restartCount=d.restartCount||0; }
+      if(d){ 
+        currentCase = d.currentCase || {caseNumber: 1, startTime: null, endTime: null, date: null, logs: []};
+        cases = d.cases || [];
+      }
       document.getElementById('apiKeyInput').value = gemini.apiKey;
-      document.getElementById('restartCount').textContent = restartCount;
-    }catch{ logs=[]; } 
+      updateCaseInfo();
+    }catch{ 
+      currentCase = {caseNumber: 1, startTime: null, endTime: null, date: null, logs: []};
+      cases = [];
+    } 
+  }
+  
+  function updateCaseInfo(){
+    document.getElementById('currentCaseInfo').textContent = `事例 #${currentCase.caseNumber}`;
   }
 
   /* --- GPS --- */
@@ -435,7 +541,7 @@
         navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true, timeout:to*1000, maximumAge:10000});
       });
       const {latitude, longitude} = pos.coords;
-      // Reverse Geocode (OpenStreetMap)
+      
       try {
         const ctrl = new AbortController();
         setTimeout(()=>ctrl.abort(), to*1000);
@@ -444,68 +550,221 @@
         const data = await res.json();
         const addr = data.address;
         let resStr = '';
+        
         if(addr){
-          if(addr.city) resStr += addr.city; else if(addr.town) resStr += addr.town;
-          if(addr.suburb) resStr += addr.suburb; else if(addr.neighbourhood) resStr += addr.neighbourhood;
+          if(addr.city) resStr += addr.city;
+          else if(addr.town) resStr += addr.town;
+          else if(addr.village) resStr += addr.village;
+          
+          if(addr.suburb) resStr += addr.suburb;
+          else if(addr.neighbourhood) resStr += addr.neighbourhood;
+          else if(addr.quarter) resStr += addr.quarter;
+          
+          if(addr.road) resStr += addr.road;
+          if(addr.house_number) resStr += addr.house_number;
         }
+        
         return resStr || `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
-      } catch(e) { return `${latitude.toFixed(4)},${longitude.toFixed(4)}`; }
-    } catch(e){ return ''; }
+      } catch(e) { 
+        return `${latitude.toFixed(4)},${longitude.toFixed(4)}`; 
+      }
+    } catch(e){ 
+      return ''; 
+    }
   }
 
   /* --- Logging Logic --- */
-  async function addLine(text, address='', useAI=false){
+  async function addLine(text, address='', useAI=false, useSpeech=false){
     const t = text.trim();
     if(!t) return;
-    if(logs.length===0) startTime = nowHHMMSS();
+    
+    if(currentCase.logs.length===0) {
+      currentCase.startTime = nowHHMMSS();
+      currentCase.date = nowDate();
+    }
     
     const id = 'L'+Date.now();
     const newLog = {
-      id: id, time: nowHHMMSS(), text: t, address: address,
-      tags: [], status: useAI && gemini.hasKey() ? 'processing' : 'done'
+      id: id, 
+      time: nowHHMMSS(), 
+      date: nowDate(),
+      text: t, 
+      address: address,
+      tags: [], 
+      status: useAI && gemini.hasKey() ? 'processing' : 'done'
     };
     
-    logs.push(newLog);
+    currentCase.logs.push(newLog);
     save(); render(); updateStats();
-    feedback.playBeep(440, 50); // 復元: 記録確定時のフィードバック
+    
+    if(useSpeech){
+      feedback.speak('記録しました');
+    }
+    feedback.playBeep(440, 50);
 
-    // AI Processing
     if(useAI && gemini.hasKey()){
       try {
         const corrected = await gemini.correctText(t);
-        const target = logs.find(l=>l.id===id);
+        const target = currentCase.logs.find(l=>l.id===id);
         if(target){ 
           target.text = corrected; 
           target.status = 'done'; 
           save(); render(); 
-          feedback.playBeep(880, 50); // 復元: AI整形完了時のフィードバック
+          feedback.playBeep(880, 50);
         }
       } catch(e){
-        const target = logs.find(l=>l.id===id);
+        const target = currentCase.logs.find(l=>l.id===id);
         if(target){ target.status = 'done'; save(); render(); }
       }
     }
   }
+  
+  /* --- Case Management --- */
+  function endCase(){
+    if(currentCase.logs.length === 0){
+      alert('記録がありません');
+      return;
+    }
+    
+    if(!confirm('現在の事例を終了しますか？')){
+      return;
+    }
+    
+    currentCase.endTime = nowHHMMSS();
+    cases.push({...currentCase});
+    
+    // 新しい事例を開始
+    currentCase = {
+      caseNumber: currentCase.caseNumber + 1,
+      startTime: null,
+      endTime: null,
+      date: null,
+      logs: []
+    };
+    
+    save();
+    updateCaseInfo();
+    render();
+    updateStats();
+    
+    showSystemStatus('事例を終了しました', 'success');
+    feedback.playBeep(600, 200);
+  }
+  
+  function showCaseList(){
+    if(!filterDate){
+      alert('日付を選択してください');
+      return;
+    }
+    
+    const filteredCases = cases.filter(c => c.date === filterDate);
+    
+    const list = document.getElementById('caseList');
+    list.innerHTML = '';
+    
+    if(filteredCases.length === 0){
+      list.innerHTML = '<div class="empty-state">該当する事例がありません</div>';
+    } else {
+      filteredCases.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'case-item';
+        item.innerHTML = `
+          <button class="case-item-delete" onclick="deleteCase(${c.caseNumber}); event.stopPropagation();">削除</button>
+          <div class="case-item-body" onclick="viewCase(${c.caseNumber})">
+            <div class="case-item-header">事例 #${c.caseNumber}</div>
+            <div class="case-item-info">${c.startTime} - ${c.endTime} | ${c.logs.length}件の記録</div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+    
+    document.getElementById('caseListModal').classList.add('show');
+  }
+  
+  function viewCase(caseNumber){
+    viewingCaseNumber = caseNumber;
+    document.getElementById('caseListModal').classList.remove('show');
+    render();
+    updateStats();
+  }
+  
+  window.deleteCase = function(caseNumber){
+    if(!confirm(`事例 #${caseNumber} を削除しますか？\nこの操作は取り消せません。`)){
+      return;
+    }
+    
+    cases = cases.filter(c => c.caseNumber !== caseNumber);
+    save();
+    
+    // 表示中の事例が削除された場合
+    if(viewingCaseNumber === caseNumber){
+      viewingCaseNumber = null;
+      document.getElementById('caseListModal').classList.remove('show');
+      render();
+      updateStats();
+    } else {
+      // 事例一覧を再表示
+      showCaseList();
+    }
+    
+    showSystemStatus('事例を削除しました', 'success');
+    feedback.playBeep(400, 100);
+  }
+
+  /* --- Filtering & Rendering --- */
+  function getLogsToDisplay() {
+    // 表示する事例を決定
+    let logs = [];
+    
+    if(viewingCaseNumber !== null){
+      const targetCase = cases.find(c => c.caseNumber === viewingCaseNumber);
+      if(targetCase){
+        logs = targetCase.logs;
+      }
+    } else {
+      logs = currentCase.logs;
+    }
+    
+    // キーワード検索
+    if (searchKeyword) {
+      const keyword = searchKeyword.toLowerCase();
+      logs = logs.filter(log => 
+        log.text.toLowerCase().includes(keyword) || 
+        (log.address && log.address.toLowerCase().includes(keyword)) ||
+        (log.tags && log.tags.some(tag => tag.toLowerCase().includes(keyword)))
+      );
+    }
+    
+    return logs;
+  }
 
   function render(){
-    const list=document.getElementById('log'); list.innerHTML='';
-    if(!logs.length){ list.innerHTML='<li class="empty-state">記録なし</li>'; return; }
+    const list=document.getElementById('log'); 
+    list.innerHTML='';
+    
+    const logs = getLogsToDisplay();
+    
+    if(!logs.length){ 
+      list.innerHTML='<li class="empty-state">記録なし</li>'; 
+      document.getElementById('filteredCount').textContent = '0';
+      return; 
+    }
+    
+    document.getElementById('filteredCount').textContent = logs.length;
     
     [...logs].reverse().forEach(row=>{
       const li=document.createElement('li'); 
       li.className=`row ${row.status==='processing'?'ai-processing':''} ${row.id===selectedId?'selected':''}`;
-      if(row.status==='done' && row.text.match(/[a-zA-Z]/)) li.classList.add('ai-done'); // 簡易AI判定
+      if(row.status==='done' && row.text.match(/[a-zA-Z]/)) li.classList.add('ai-done');
       li.dataset.id=row.id;
 
       const time=document.createElement('div'); time.className='time'; 
       time.innerHTML=`🕐 ${row.time}`;
+      
       if(row.address){
-        const idx = logs.findIndex(x=>x.id===row.id);
-        const prevAddr = (idx>0 && logs[idx-1].address) ? logs[idx-1].address : '';
-        if(row.address !== prevAddr) {
-          const ad=document.createElement('div'); ad.className='addr'; ad.textContent=`📍 ${row.address}`;
-          li.append(ad);
-        }
+        const ad=document.createElement('div'); ad.className='addr'; ad.textContent=`📍 ${row.address}`;
+        li.append(ad);
       }
 
       const text=document.createElement('div'); text.className='text'; text.textContent=row.text;
@@ -515,11 +774,17 @@
       });
 
       const tools=document.createElement('div'); tools.className='tools';
-      tools.innerHTML = `
-        <button class="btn" onclick="selectLog('${row.id}')">${selectedId===row.id?'解除':'選択'}</button>
-        <button class="btn warning" onclick="openEditModal('${row.id}')">編集</button>
-        <button class="btn danger" onclick="delLog('${row.id}')">×</button>
-      `;
+      
+      // 過去の事例を表示中は編集・削除不可
+      if(viewingCaseNumber === null){
+        tools.innerHTML = `
+          <button class="btn" onclick="selectLog('${row.id}')">${selectedId===row.id?'✓選択中':'選択'}</button>
+          <button class="btn warning" onclick="openEditModal('${row.id}')">編集</button>
+          <button class="btn danger" onclick="delLog('${row.id}')">削除</button>
+        `;
+      } else {
+        tools.innerHTML = `<div style="font-size:10px; color:#7f8c8d; text-align:center; width:100%;">過去の事例（閲覧のみ）</div>`;
+      }
 
       li.append(time, text, tags, tools);
       list.appendChild(li);
@@ -527,30 +792,94 @@
   }
 
   window.selectLog = (id) => { selectedId = (selectedId===id ? null : id); render(); };
-  window.delLog = (id) => { if(confirm('削除?')){ logs=logs.filter(x=>x.id!==id); save(); render(); updateStats(); }};
+  window.delLog = (id) => { 
+    if(confirm('削除しますか?')){ 
+      currentCase.logs = currentCase.logs.filter(x=>x.id!==id); 
+      save(); render(); updateStats(); 
+    }
+  };
 
   /* --- Tag Buttons --- */
   function renderTagButtons(){
-    const box=document.getElementById('tagButtons'); box.innerHTML='';
-    const cats={
-      '🚑 救急':["救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着"],
-      '🚁 ヘリ':["ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","Dr接触","RP着"],
-      '💉 処置':["ルート確保","酸素投与","気管挿管","アドレナリン","モニター装着"],
-      '📋 情報':["主訴","胸痛","JCS","GCS","バイタル測定"]
+    const box=document.getElementById('tagButtons'); 
+    box.innerHTML='';
+    
+    const categories = {
+      '🚑 先行救急隊': {
+        prefix: '先行救急隊',
+        buttons: [
+          {label: '覚知', log: '覚知'},
+          {label: '指令', log: '指令'},
+          {label: '出動', log: '出動'},
+          {label: '現着', log: '現着'},
+          {label: '接触', log: '接触'},
+          {label: '車内収容', log: '車内収容'},
+          {label: '現発', log: '現発'},
+          {label: 'ドッキングポイント着', log: 'ドッキングポイント着'},
+          {label: '病着', log: '病着'}
+        ]
+      },
+      '🚁 ヘリ': {
+        prefix: 'ヘリ',
+        buttons: [
+          {label: '覚知', log: '覚知'},
+          {label: '指令', log: '指令'},
+          {label: '出動', log: '出動'},
+          {label: 'LZ着', log: 'LZ着'},
+          {label: '医師接触', log: '医師接触'},
+          {label: 'LZ離陸', log: 'LZ離陸'},
+          {label: '病着', log: '病着'}
+        ]
+      },
+      '🚗 ドクターカー': {
+        prefix: 'ドクターカー',
+        buttons: [
+          {label: '覚知', log: '覚知'},
+          {label: '指令', log: '指令'},
+          {label: '出動', log: '出動'},
+          {label: 'ドッキングポイント着', log: 'ドッキングポイント着'},
+          {label: '現着', log: '現着'},
+          {label: 'カードクター接触', log: 'カードクター接触'},
+          {label: '現発', log: '現発'},
+          {label: '病着', log: '病着'}
+        ]
+      }
     };
-    Object.entries(cats).forEach(([cat,tags])=>{
-      const h=document.createElement('div');
-      h.style.cssText='width:100%;font-weight:700;font-size:10px;margin:6px 0 2px;border-left:3px solid #3498db;padding-left:4px;';
-      h.textContent=cat; box.appendChild(h);
-      tags.forEach(tag=>{
-        const b=document.createElement('button'); b.className='btn'; b.textContent=tag;
-        b.onclick=async ()=>{
+    
+    Object.entries(categories).forEach(([catName, catData])=>{
+      const h = document.createElement('div');
+      h.className = 'category-header';
+      h.textContent = catName; 
+      box.appendChild(h);
+      
+      catData.buttons.forEach(btn => {
+        const b = document.createElement('button'); 
+        b.className = 'btn'; 
+        b.textContent = btn.label;
+        
+        b.onclick = async ()=>{
+          let logText = '';
+          
+          if(catData.prefix === 'ドクターカー'){
+            if(['覚知','指令','出動','現着','現発','病着'].includes(btn.log)){
+              logText = catData.prefix + btn.log;
+            } else {
+              logText = btn.log;
+            }
+          } else {
+            logText = catData.prefix + btn.log;
+          }
+          
           if(selectedId){
-            const row=logs.find(r=>r.id===selectedId);
-            if(row && !row.tags.includes(tag)){ row.tags.push(tag); save(); render(); }
-          }else{
+            const row = currentCase.logs.find(r=>r.id===selectedId);
+            if(row && !row.tags.includes(logText)){ 
+              row.tags.push(logText); 
+              save(); 
+              render(); 
+            }
+          } else {
             const addr = await fetchAddressFromGPS();
-            addLine(tag, addr, false); // タグはAI通さない
+            addLine(logText, addr, false, false);
           }
         };
         box.appendChild(b);
@@ -558,7 +887,7 @@
     });
   }
 
-  /* --- Wake Lock & Audio Loop (v2.4.6 Logic) --- */
+  /* --- Wake Lock --- */
   class EnhancedWakeLock {
     constructor() {
       this.wakeLock = null; this.noSleepVideo = null; this.silentAudioCtx = null;
@@ -608,31 +937,25 @@
         
         this.rec.onresult = (e) => {
           let interim='';
-          let finalFound = false;
           for(let i=e.resultIndex; i<e.results.length; i++){
             if(e.results[i].isFinal){
               const t = e.results[i][0].transcript;
               const useAI = document.getElementById('useAI').checked;
-              addLine(t, '', useAI); // 音声のみAI通す
-              document.getElementById('voiceStatusText').textContent='確定: '+t.substring(0,8)+'...';
-              feedback.playBeep(600, 50); // 復元: 音声確定時のフィードバック
-              finalFound = true;
+              addLine(t, '', useAI, true);
             } else {
               interim += e.results[i][0].transcript;
             }
           }
-          document.getElementById('voiceInterim').textContent=interim;
         };
-        this.rec.onend = () => { if(this.isRec) this.rec.start(); }; // Auto restart
+        this.rec.onend = () => { if(this.isRec) this.rec.start(); };
         
         this.rec.start();
         this.isRec=true;
         enhancedWakeLock.request();
         document.getElementById('voiceBtn').classList.add('active');
-        document.getElementById('voiceStatusTitle').textContent='録音中';
         document.getElementById('recordingBanner').classList.add('show');
         this.startTimer();
-        feedback.playBeep(1000, 100); // 復元: 録音開始時のフィードバック
+        feedback.playBeep(1000, 100);
       } catch(e){
         alert('マイク起動エラー: '+e.message);
       }
@@ -642,14 +965,16 @@
       if(this.rec) this.rec.stop();
       enhancedWakeLock.release();
       document.getElementById('voiceBtn').classList.remove('active');
-      document.getElementById('voiceStatusTitle').textContent='停止中';
       document.getElementById('recordingBanner').classList.remove('show');
       clearInterval(this.timer);
     }
     toggle(){ if(this.isRec) this.stop(); else this.start(); }
     startTimer(){
       const el=document.getElementById('recordingTime'); let s=0;
-      this.timer=setInterval(()=>{ s++; el.textContent=`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },1000);
+      this.timer=setInterval(()=>{ 
+        s++; 
+        el.textContent=`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; 
+      },1000);
     }
   }
   const voiceRec = new VoiceRec();
@@ -659,20 +984,45 @@
   document.getElementById('btnSaveKey').onclick = ()=>{ gemini.setKey(document.getElementById('apiKeyInput').value); };
   document.getElementById('btnCopy').onclick = ()=>copyLogs(false);
   document.getElementById('btnCopyAddr').onclick = ()=>copyLogs(true);
-  document.getElementById('btnClear').onclick = ()=>{ if(confirm('全消去?')){ logs=[]; save(); render(); updateStats(); } };
+  document.getElementById('btnEndCase').onclick = ()=>endCase();
+  document.getElementById('btnClear').onclick = ()=>{ 
+    if(confirm('現在の記録を全消去?')){ 
+      currentCase.logs=[]; 
+      save(); 
+      render(); 
+      updateStats(); 
+    } 
+  };
   
-  // 手入力欄
-  let inputTimer;
-  document.getElementById('input').addEventListener('input', (e)=>{
-    clearTimeout(inputTimer);
-    inputTimer = setTimeout(async ()=>{
-      if(e.target.value.trim()){
-        const addr = await fetchAddressFromGPS();
-        addLine(e.target.value, addr, false); // 手入力はAI通さない
-        e.target.value='';
-      }
-    }, 1500); // 1.5秒待機で確定
+  // 事例一覧
+  document.getElementById('btnShowCaseList').onclick = ()=>showCaseList();
+  document.getElementById('btnCloseCaseList').onclick = ()=>{
+    document.getElementById('caseListModal').classList.remove('show');
+    viewingCaseNumber = null;
+    render();
+    updateStats();
+  };
+  
+  // フィルタ関連
+  document.getElementById('filterDate').addEventListener('change', (e)=>{
+    filterDate = e.target.value;
   });
+  document.getElementById('btnClearDate').onclick = ()=>{
+    filterDate = '';
+    document.getElementById('filterDate').value = '';
+    viewingCaseNumber = null;
+    render();
+    updateStats();
+  };
+  document.getElementById('searchKeyword').addEventListener('input', (e)=>{
+    searchKeyword = e.target.value;
+    render();
+  });
+  document.getElementById('btnClearSearch').onclick = ()=>{
+    searchKeyword = '';
+    document.getElementById('searchKeyword').value = '';
+    render();
+  };
 
   /* --- Utils --- */
   function showSystemStatus(msg, type){
@@ -680,31 +1030,56 @@
     el.textContent=msg; el.className='system-status '+type; el.style.display='block';
     setTimeout(()=>el.style.display='none',3000);
   }
+  
   function updateStats(){
+    const logs = getLogsToDisplay();
     document.getElementById('totalLogs').textContent = logs.length;
+    
     if(logs.length>1){
-      const [h1,m1,s1]=logs[0].time.split(':'); const [h2,m2,s2]=logs[logs.length-1].time.split(':');
+      const [h1,m1,s1]=logs[0].time.split(':'); 
+      const [h2,m2,s2]=logs[logs.length-1].time.split(':');
       const diff=Math.floor(((h2*3600+m2*60+s2*1)-(h1*3600+m1*60+s1*1))/60);
       document.getElementById('totalTime').textContent=diff+'分';
+    } else {
+      document.getElementById('totalTime').textContent='0分';
     }
+    
+    document.getElementById('filteredCount').textContent = logs.length;
   }
+  
   function copyLogs(addr){
+    const logs = getLogsToDisplay();
     const txt = logs.map(l => `${l.time} ${l.text} ${addr&&l.address?'('+l.address+')':''}`).join('\n');
-    navigator.clipboard.writeText(txt); alert('コピー完了');
+    navigator.clipboard.writeText(txt); 
+    alert('コピー完了');
   }
+  
   // Edit Modal
   window.openEditModal = (id) => {
-    editingLogId=id; const row=logs.find(r=>r.id===id);
-    if(row){ document.getElementById('editText').value=row.text; document.getElementById('editModal').classList.add('show'); }
+    editingLogId=id; 
+    const row=currentCase.logs.find(r=>r.id===id);
+    if(row){ 
+      document.getElementById('editText').value=row.text; 
+      document.getElementById('editModal').classList.add('show'); 
+    }
   };
   document.getElementById('btnSaveEdit').onclick = () => {
-    const row=logs.find(r=>r.id===editingLogId);
-    if(row){ row.text=document.getElementById('editText').value; save(); render(); }
+    const row=currentCase.logs.find(r=>r.id===editingLogId);
+    if(row){ 
+      row.text=document.getElementById('editText').value; 
+      save(); render(); 
+    }
     document.getElementById('editModal').classList.remove('show');
   };
   document.getElementById('btnCancelEdit').onclick = ()=>document.getElementById('editModal').classList.remove('show');
 
-  window.onload=()=>{ load(); render(); renderTagButtons(); setInterval(()=>document.getElementById('clock').textContent=nowHHMMSS(),1000); };
+  window.onload=()=>{ 
+    load(); 
+    render(); 
+    renderTagButtons(); 
+    updateStats();
+    setInterval(()=>document.getElementById('clock').textContent=nowHHMMSS(),1000); 
+  };
 </script>
 </body>
 </html>
