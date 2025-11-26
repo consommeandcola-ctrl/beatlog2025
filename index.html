@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - AI Ultimate v2.8.1 (iPhone最適化版)</title>
+<title>救急記録 - AI Ultimate v2.8.2</title>
 <style>
   /* v2.8.1: iPhone最適化強化 */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
@@ -358,6 +358,36 @@
   .modal-header h3 { font-size: 14px; font-weight: 700; color: #2c3e50; }
   .modal-body { padding: 16px; }
   .modal-footer { padding: 12px 16px; border-top: 1px solid #ecf0f1; display: flex; gap: 8px; justify-content: flex-end; }
+  
+  /* 📌 NEW: AI全体校正用スタイル */
+  .ai-review-btn {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
+  }
+  .ai-review-btn:active {
+    opacity: 0.9;
+  }
+  .ai-review-status {
+    text-align: center; padding: 30px 20px;
+  }
+  .ai-review-loading {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    font-size: 14px; color: #6a1b9a;
+  }
+  .ai-review-loading .spinner {
+    font-size: 32px; animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .ai-review-info {
+    background: #e8f4f8; border-left: 3px solid #3498db; padding: 10px 12px;
+    font-size: 12px; color: #2c3e50; margin-bottom: 12px; border-radius: 4px;
+  }
+  .ai-review-error {
+    background: #f8d7da; border-left: 3px solid #e74c3c; padding: 10px 12px;
+    font-size: 12px; color: #721c24; margin-bottom: 12px; border-radius: 4px;
+  }
 </style>
 </head>
 <body>
@@ -452,9 +482,12 @@
         <div class="timeline"><ul class="log" id="logList"></ul></div>
         <div class="main-buttons">
           <button class="btn" id="btnCopy">📤 出力</button>
-          <button class="btn" id="btnCopyAddr">📍 住所付き出力</button>
-          <button class="btn danger" id="btnClear">🗑️ 全消去</button>
+          <button class="btn" id="btnCopyAddr">📍 住所付</button>
+          <button class="btn danger" id="btnClear">🗑️ 消去</button>
         </div>
+        <button class="btn ai-review-btn" id="btnAIReview" style="width:100%; margin-top:8px; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+          🤖✨ AI全体校正して出力
+        </button>
       </div>
     </div>
 
@@ -517,6 +550,34 @@
   </div>
 </div>
 
+<!-- 📌 NEW: AI全体校正プレビューモーダル -->
+<div class="modal" id="aiReviewModal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header" style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border-bottom-color: #9b59b6;">
+      <h3>🤖✨ AI全体校正プレビュー</h3>
+    </div>
+    <div class="modal-body">
+      <div id="aiReviewStatus" class="ai-review-status">
+        <div class="ai-review-loading">
+          <span class="spinner">🔄</span>
+          <span>全ログをAIで校正中...</span>
+        </div>
+      </div>
+      <div id="aiReviewResult" style="display:none;">
+        <div class="ai-review-info">
+          <span>📋 校正結果をご確認ください。問題なければ出力してください。</span>
+        </div>
+        <textarea id="aiReviewText" style="min-height:250px; font-size:13px; line-height:1.6;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" id="btnCancelReview">キャンセル</button>
+      <button class="btn" id="btnRetryReview" style="display:none;">🔄 再校正</button>
+      <button class="btn success" id="btnDownloadReview" style="display:none;">📥 この内容で出力</button>
+    </div>
+  </div>
+</div>
+
 <script>
   /* --- Global State --- */
   let currentCaseId = 'default';
@@ -525,11 +586,11 @@
   let gpsPosition = null;
   let aiStats = { processed: 0, pending: 0 };
   let currentFilter = 'all'; // 📌 NEW v2.8.0: フィルタ状態
-  const AI_MODEL_NAME = 'gemini-2.5-flash-lite';
-  const VERSION = 'v2.8.1';
+  const AI_MODEL_NAME = 'gemini-2.5-flash-lite'; // 2025年7月GA版
+  const VERSION = 'v2.8.2';
 
   document.querySelector('.version').textContent = VERSION;
-  document.title = `救急記録 - AI Ultimate ${VERSION} (iPhone最適化版)`;
+  document.title = `救急記録 - AI Ultimate ${VERSION}`;
 
   /* --- 📌 NEW v2.8.0: 重要ログ検出用キーワード定義 --- */
   const CRITICAL_KEYWORDS = {
@@ -1045,6 +1106,55 @@
   const gemini = {
     key: localStorage.getItem('gemini_key') || '',
     setKey(k) { this.key = k; localStorage.setItem('gemini_key', k); showSystemStatus('API Key保存完了', 'success'); },
+    
+    // 📌 NEW: 全体校正機能
+    async reviewAll(logsText) {
+      if (!this.key) {
+        throw new Error('API Keyが未設定です');
+      }
+      
+      const prompt = `以下は救急現場での活動記録（時系列順）です。この全体を医学的に正確な記録として校正してください。
+
+**校正指示:**
+1. **時系列の整合性を確認し、矛盾があれば修正してください。**
+2. **重複した記録があれば統合してください。**
+3. **医学用語を適切に統一してください（例: バイタル表記の統一）。**
+4. **意識レベルは GCS E○V○M○ または JCS ○ の形式に統一してください。**
+5. **明記されていない事実情報は絶対に追加しないでください。**
+6. **各行の時刻（HH:MM:SS形式）は必ず保持してください。**
+7. **全体の流れが分かりやすいよう整理してください。**
+8. **校正後の記録のみを出力し、説明は不要です。**
+
+--- 記録開始 ---
+${logsText}
+--- 記録終了 ---`;
+      
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL_NAME}:generateContent?key=${this.key}`;
+      
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
+        })
+      });
+      
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`HTTP Error: ${res.status} - ${errorBody.substring(0, 100)}`);
+      }
+      
+      const data = await res.json();
+      const reviewed = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      
+      if (!reviewed) {
+        throw new Error('AIからの応答が空でした');
+      }
+      
+      return reviewed;
+    },
+    
     async correct(logId, text) {
       if (!this.key) {
         showSystemStatus('エラー: API Keyが未設定です', 'error');
@@ -1556,6 +1666,95 @@
       updateAIQueueInfo();
       updateCriticalStats();
     }
+  };
+  
+  /* --- 📌 NEW: AI全体校正機能 --- */
+  let lastReviewedText = '';
+  
+  document.getElementById('btnAIReview').onclick = async () => {
+    const logs = getLogs();
+    if (logs.length === 0) {
+      alert('記録がありません');
+      return;
+    }
+    
+    if (!gemini.key) {
+      alert('Gemini API Keyが設定されていません');
+      return;
+    }
+    
+    // モーダル表示
+    document.getElementById('aiReviewModal').classList.add('show');
+    document.getElementById('aiReviewStatus').style.display = 'block';
+    document.getElementById('aiReviewResult').style.display = 'none';
+    document.getElementById('btnRetryReview').style.display = 'none';
+    document.getElementById('btnDownloadReview').style.display = 'none';
+    
+    // ログをテキストに変換
+    const logsText = logs.map(l => {
+      let line = `${l.time} ${l.text}`;
+      if (l.address) line += ` (📍 ${l.address})`;
+      return line;
+    }).join('\n');
+    
+    try {
+      const reviewed = await gemini.reviewAll(logsText);
+      lastReviewedText = reviewed;
+      
+      // 結果表示
+      document.getElementById('aiReviewStatus').style.display = 'none';
+      document.getElementById('aiReviewResult').style.display = 'block';
+      document.getElementById('aiReviewText').value = reviewed;
+      document.getElementById('btnRetryReview').style.display = 'inline-flex';
+      document.getElementById('btnDownloadReview').style.display = 'inline-flex';
+      
+    } catch (e) {
+      console.error('AI Review Error:', e);
+      document.getElementById('aiReviewStatus').innerHTML = `
+        <div class="ai-review-error">
+          ❌ AI校正エラー: ${e.message}
+        </div>
+      `;
+      document.getElementById('btnRetryReview').style.display = 'inline-flex';
+    }
+  };
+  
+  document.getElementById('btnCancelReview').onclick = () => {
+    document.getElementById('aiReviewModal').classList.remove('show');
+  };
+  
+  document.getElementById('btnRetryReview').onclick = () => {
+    document.getElementById('btnAIReview').click();
+  };
+  
+  document.getElementById('btnDownloadReview').onclick = () => {
+    const currentCase = cases[currentCaseId];
+    const reviewedText = document.getElementById('aiReviewText').value;
+    
+    // ヘッダー付きで出力
+    let txt = `=== ${currentCase.name} ===\n`;
+    txt += `🤖 AI全体校正済み\n`;
+    txt += `出力日時: ${new Date().toLocaleString('ja-JP')}\n`;
+    txt += `${'='.repeat(30)}\n\n`;
+    txt += reviewedText;
+    
+    const fileName = `${currentCase.name}_AI校正済.txt`;
+    
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+    document.getElementById('aiReviewModal').classList.remove('show');
+    showSystemStatus('AI校正済みファイルを出力しました', 'success');
   };
 
   window.onload = () => {
