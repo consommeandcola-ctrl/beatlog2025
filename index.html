@@ -2,49 +2,71 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<title>救急記録 - AI Ultimate v2.6.6 (フィードバック復元)</title>
+<title>救急記録 - AI Ultimate v2.8.1 (iPhone最適化版)</title>
 <style>
-  /* v2.4.6のスタイルをベースにAI用の装飾を追加 */
+  /* v2.8.1: iPhone最適化強化 */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); }
-  body {
-    background: #f8f9fa; min-height: 100vh; color: #212529;
-    font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Yu Gothic','Hiragino Sans',sans-serif;
-    line-height: 1.4; font-size: 14px; -webkit-text-size-adjust: 100%; touch-action: manipulation; overflow-x: hidden;
+  
+  /* 📌 iPhone Safe Area対応 */
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
   }
+  
+  html {
+    /* オーバースクロールのバウンス無効化 */
+    overscroll-behavior: none;
+  }
+  
+  body {
+    background: #f8f9fa; min-height: 100vh; min-height: -webkit-fill-available; color: #212529;
+    font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Yu Gothic','Hiragino Sans',sans-serif;
+    line-height: 1.4; font-size: 15px; -webkit-text-size-adjust: 100%; touch-action: manipulation; 
+    overflow-x: hidden;
+    /* Safe Area対応 */
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+    padding-bottom: var(--safe-bottom);
+  }
+  
   header {
-    background: #fff; border-bottom: 2px solid #e74c3c; padding: 6px 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    background: #fff; border-bottom: 2px solid #e74c3c; 
+    padding: 8px 12px;
+    padding-top: calc(8px + var(--safe-top)); /* ノッチ/Dynamic Island対応 */
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     position: sticky; top: 0; z-index: 100;
   }
   .header-content { display: flex; justify-content: space-between; align-items: center; }
-  h1 { font-size: 13px; font-weight: 700; color: #e74c3c; }
-  .version { font-size: 8px; color: #9b59b6; margin-left: 4px; }
-  .clock { font-size: 16px; font-weight: 700; color: #2c3e50; font-variant-numeric: tabular-nums; }
-  .wrap { padding: 6px; }
-  .grid { display: flex; flex-direction: column; gap: 6px; }
-  .card { background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .card h2 { padding: 6px 10px; border-bottom: 2px solid #3498db; font-size: 12px; font-weight: 700; color: #2c3e50; background: #ecf0f1; }
-  .card .body { padding: 8px; }
+  h1 { font-size: 14px; font-weight: 700; color: #e74c3c; }
+  .version { font-size: 9px; color: #9b59b6; margin-left: 6px; }
+  .clock { font-size: 18px; font-weight: 700; color: #2c3e50; font-variant-numeric: tabular-nums; }
+  .wrap { padding: 10px; }
+  .grid { display: flex; flex-direction: column; gap: 8px; }
+  .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .card h2 { padding: 10px 12px; border-bottom: 2px solid #3498db; font-size: 14px; font-weight: 700; color: #2c3e50; background: #ecf0f1; }
+  .card .body { padding: 12px; }
   
-  /* 録音バナー */
-  .recording-banner {
-    display: none; position: fixed; top: 50px; left: 0; right: 0; 
+  /* 📌 小型録音インジケーター (右上固定) */
+  .recording-indicator {
+    display: none; position: fixed; top: 60px; right: 10px; 
     background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-    color: #fff; text-align: center; padding: 15px; z-index: 99;
-    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
-    animation: banner-pulse 2s infinite;
+    color: #fff; padding: 8px 12px; border-radius: 20px; z-index: 99;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.4);
+    animation: indicator-pulse 2s infinite;
+    font-size: 11px; font-weight: 700;
+    pointer-events: none;
   }
-  .recording-banner.show { display: block; }
-  .recording-banner .main-text { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
-  .recording-banner .sub-text { font-size: 14px; opacity: 0.9; }
-  .recording-time { 
-    font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums;
-    color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  }
-  @keyframes banner-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
+  .recording-indicator.show { display: flex; align-items: center; gap: 6px; }
+  .recording-indicator .icon { font-size: 16px; animation: blink 1s infinite; }
+  .recording-indicator .time { font-variant-numeric: tabular-nums; }
+  @keyframes indicator-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.9; } }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   
   /* システム通知 */
   .system-status {
@@ -65,12 +87,113 @@
   .permission-alert-text { font-size: 11px; color: #856404; line-height: 1.5; margin-bottom: 8px; }
   .permission-alert-buttons { display: flex; gap: 6px; }
   
+  /* 📌 ケース管理セクション */
+  .case-section {
+    background: #e8f4f8; border: 2px solid #3498db; border-radius: 8px; padding: 12px; margin-bottom: 10px;
+  }
+  .case-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+  }
+  .case-title {
+    font-size: 14px; font-weight: 700; color: #2c3e50;
+  }
+  .case-controls {
+    display: flex; gap: 6px;
+  }
+  .case-info {
+    font-size: 12px; color: #7f8c8d; margin-bottom: 8px; padding: 10px;
+    background: #fff; border-radius: 6px; border-left: 3px solid #3498db;
+  }
+  .case-list {
+    max-height: 140px; overflow-y: auto; background: #fff; border-radius: 6px; padding: 6px;
+    margin-top: 8px; -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .case-item {
+    padding: 12px 10px; margin: 4px 0; border-radius: 6px; background: #f8f9fa;
+    border-left: 3px solid #3498db; font-size: 12px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    min-height: 48px;
+  }
+  .case-item.active { background: #d4edda; border-left-color: #27ae60; font-weight: 600; }
+  .case-item:active { background: #ecf0f1; }
+  .case-item .name { flex: 1; }
+  .case-item .count { color: #7f8c8d; font-size: 11px; }
+  .case-item .delete { color: #e74c3c; font-weight: 700; padding: 0 10px; font-size: 16px; }
+  
+  /* 📌 AI処理制御 */
+  .ai-control-section {
+    background: #f3e5f5; border: 2px solid #9b59b6; border-radius: 8px; padding: 12px; margin-bottom: 10px;
+  }
+  .ai-control-title {
+    font-size: 13px; font-weight: 700; color: #6a1b9a; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ai-queue-info {
+    font-size: 11px; color: #6a1b9a; padding: 8px 10px; background: #fff; border-radius: 6px;
+    margin-bottom: 8px; border-left: 3px solid #9b59b6;
+  }
+  
+  /* 📌 NEW v2.8.0: 重要ログ抽出セクション */
+  .critical-section {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+    border: 2px solid #e74c3c; border-radius: 8px; padding: 12px; margin-bottom: 10px;
+  }
+  .critical-title {
+    font-size: 14px; font-weight: 700; color: #c0392b; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .critical-title .badge {
+    background: #e74c3c; color: #fff; font-size: 11px; padding: 4px 10px; border-radius: 12px;
+  }
+  .filter-buttons {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;
+  }
+  .filter-btn {
+    border: none; padding: 10px 14px; border-radius: 18px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    min-height: 44px; /* Apple推奨タッチターゲット */
+    display: inline-flex; align-items: center; justify-content: center;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+  .filter-btn.all { background: #ecf0f1; color: #2c3e50; border: 1px solid #bdc3c7; }
+  .filter-btn.all.active { background: #2c3e50; color: #fff; }
+  .filter-btn.starred { background: #fff3cd; color: #856404; border: 1px solid #f39c12; }
+  .filter-btn.starred.active { background: #f39c12; color: #fff; }
+  .filter-btn.airway { background: #e3f2fd; color: #1565c0; border: 1px solid #42a5f5; }
+  .filter-btn.airway.active { background: #1565c0; color: #fff; }
+  .filter-btn.circulation { background: #ffebee; color: #c62828; border: 1px solid #ef5350; }
+  .filter-btn.circulation.active { background: #c62828; color: #fff; }
+  .filter-btn.medication { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ab47bc; }
+  .filter-btn.medication.active { background: #6a1b9a; color: #fff; }
+  .filter-btn.procedure { background: #e8f5e9; color: #2e7d32; border: 1px solid #66bb6a; }
+  .filter-btn.procedure.active { background: #2e7d32; color: #fff; }
+  .filter-btn.defib { background: #fff8e1; color: #f57f17; border: 1px solid #ffca28; }
+  .filter-btn.defib.active { background: #f57f17; color: #fff; }
+  
+  .critical-stats {
+    display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: #7f8c8d; padding: 8px 10px;
+    background: #fff; border-radius: 6px; margin-bottom: 10px;
+  }
+  .critical-stats span { display: flex; align-items: center; gap: 3px; }
+  
+  .critical-output-btn {
+    width: 100%; padding: 14px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 50px;
+    -webkit-touch-callout: none; user-select: none;
+  }
+  .critical-output-btn:active { transform: scale(0.98); opacity: 0.9; }
+  
   /* ボイスコントロール */
-  .voice-control { display: flex; gap: 8px; align-items: center; padding: 8px; background: #ecf0f1; border-radius: 6px; margin-bottom: 6px; }
+  .voice-control { display: flex; gap: 12px; align-items: center; padding: 12px; background: #ecf0f1; border-radius: 8px; margin-bottom: 8px; }
   .voice-btn {
-    flex-shrink: 0; width: 52px; height: 52px; border: none; border-radius: 50%;
+    flex-shrink: 0; width: 60px; height: 60px; border: none; border-radius: 50%;
     background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: #fff; font-size: 22px; box-shadow: 0 2px 6px rgba(231,76,60,0.3);
+    color: #fff; font-size: 26px; box-shadow: 0 2px 8px rgba(231,76,60,0.3);
+    -webkit-touch-callout: none; user-select: none;
   }
   .voice-btn:active { transform: scale(0.95); }
   .voice-btn.active { 
@@ -78,633 +201,1375 @@
     animation: pulse-voice 1.5s infinite;
     box-shadow: 0 0 20px rgba(39, 174, 96, 0.6);
   }
+  .voice-btn.standby {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    animation: pulse-standby 2s infinite;
+    box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
+  }
   .voice-btn:disabled { background: #95a5a6; opacity: 0.6; cursor: not-allowed; }
   @keyframes pulse-voice { 
     0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(39, 174, 96, 0.6); } 
     50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(39, 174, 96, 0.8); } 
   }
+  @keyframes pulse-standby {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(243, 156, 18, 0.5); }
+    50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(243, 156, 18, 0.7); }
+  }
   .voice-status { flex: 1; min-width: 0; }
-  .voice-status-title { font-size: 10px; font-weight: 600; color: #2c3e50; margin-bottom: 2px; }
-  .voice-status-text { font-size: 9px; color: #7f8c8d; line-height: 1.2; }
-  .voice-interim { margin-top: 4px; padding: 4px 6px; background: #fff; border-radius: 4px; border-left: 2px solid #3498db; font-size: 10px; color: #7f8c8d; font-style: italic; min-height: 16px; }
-  .confidence-bar { margin-top: 3px; height: 4px; background: #ecf0f1; border-radius: 2px; overflow: hidden; }
-  .confidence-fill { height: 100%; transition: width 0.3s ease, background-color 0.3s ease; }
-  .confidence-high { background: #27ae60; }
-  .confidence-medium { background: #f39c12; }
-  .confidence-low { background: #e74c3c; }
-  .ai-indicator { margin-top: 3px; font-size: 8px; color: #9b59b6; font-weight: 600; }
+  .voice-status-title { font-size: 13px; font-weight: 600; color: #2c3e50; margin-bottom: 4px; }
+  .voice-status-text { font-size: 11px; color: #7f8c8d; line-height: 1.3; }
+  .voice-interim { margin-top: 6px; padding: 8px 10px; background: #fff; border-radius: 6px; border-left: 3px solid #3498db; font-size: 12px; color: #7f8c8d; font-style: italic; min-height: 20px; }
   
   /* 設定セクション */
   .settings-section {
-    background: #fff3cd; border: 2px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+    background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 10px;
   }
   .settings-title {
-    font-size: 11px; font-weight: 700; color: #856404; margin-bottom: 6px;
-    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 700; color: #856404; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
   }
   .setting-row {
-    display: flex; align-items: center; gap: 8px; margin: 6px 0; padding: 6px;
-    background: #fff; border-radius: 4px;
+    display: flex; align-items: center; gap: 10px; margin: 8px 0; padding: 10px;
+    background: #fff; border-radius: 6px; min-height: 50px;
   }
-  .setting-row label { flex: 1; font-size: 11px; color: #2c3e50; font-weight: 500; }
-  .setting-row input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
-  .setting-row input[type="number"] { width: 60px; padding: 4px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 11px; }
-  .setting-row input[type="password"] { flex:2; padding:4px; border:1px solid #bdc3c7; border-radius:4px; font-size:10px; }
+  .setting-row label { flex: 1; font-size: 13px; color: #2c3e50; font-weight: 500; }
+  .setting-row input[type="checkbox"] { 
+    width: 24px; height: 24px; cursor: pointer; 
+    /* iOS用のタッチ領域拡大 */
+    min-width: 44px; min-height: 44px;
+    margin: 0; padding: 10px;
+  }
+  .setting-row input[type="number"] { width: 70px; padding: 8px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px; }
+  .setting-row input[type="password"] { flex:2; padding: 10px; border:1px solid #bdc3c7; border-radius:6px; font-size:14px; }
 
-  /* 入力・ボタン類 */
+  /* 入力・ボタン類 - 📌 タッチターゲット44px以上確保 */
   textarea {
-    width: 100%; min-height: 50px; border: 2px solid #bdc3c7; border-radius: 6px; padding: 6px;
-    font-size: 13px; line-height: 1.4; resize: vertical; font-family: inherit; background: #fff;
+    width: 100%; min-height: 60px; border: 2px solid #bdc3c7; border-radius: 8px; padding: 10px;
+    font-size: 16px; line-height: 1.5; resize: vertical; font-family: inherit; background: #fff;
+    /* iOS入力時のズーム防止 */
+    font-size: 16px !important;
   }
-  textarea:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
-  .controls { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  textarea:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,0.2); }
+  .controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .pill {
-    display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid #bdc3c7; border-radius: 12px;
-    background: #ecf0f1; font-size: 10px; color: #2c3e50; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border: 1px solid #bdc3c7; border-radius: 14px;
+    background: #ecf0f1; font-size: 11px; color: #2c3e50; font-weight: 500;
   }
   .btn {
-    border: none; background: #3498db; color: #fff; border-radius: 6px; padding: 8px 12px; font-weight: 600; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    min-height: 40px; display: inline-flex; align-items: center; justify-content: center;
+    border: none; background: #3498db; color: #fff; border-radius: 8px; padding: 12px 16px; 
+    font-weight: 600; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    min-height: 44px; /* Apple推奨の最小タッチターゲット */
+    min-width: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+    -webkit-touch-callout: none; /* 長押しメニュー防止 */
+    user-select: none;
   }
   .btn:active { transform: scale(0.97); opacity: 0.9; }
   .btn.success { background: #27ae60; }
   .btn.danger { background: #e74c3c; }
   .btn.warning { background: #f39c12; }
   .btn.secondary { background: #95a5a6; }
+  .btn.mini { font-size: 12px; padding: 8px 12px; min-height: 36px; }
   .tag-buttons {
-    display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; max-height: 180px; overflow-y: auto; padding: 6px; background: #f8f9fa; border-radius: 6px; -webkit-overflow-scrolling: touch;
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 200px; overflow-y: auto; 
+    padding: 8px; background: #f8f9fa; border-radius: 8px; 
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain; /* スクロール連鎖防止 */
   }
   .tag-buttons .btn {
-    background: #e8f4f8; color: #2c3e50; font-size: 10px; padding: 5px 8px; border-radius: 10px; border: 1px solid #3498db; min-height: 30px;
+    background: #e8f4f8; color: #2c3e50; font-size: 12px; padding: 10px 14px; 
+    border-radius: 12px; border: 1px solid #3498db; min-height: 44px;
   }
   .tag-buttons .btn:active { background: #3498db; color: #fff; }
-  .main-buttons { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .main-buttons { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   
   /* 統計・ログ */
-  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-  .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 8px; border-radius: 6px; text-align: center; }
-  .stat-value { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
-  .stat-label { font-size: 8px; opacity: 0.9; }
-  .timeline { max-height: 35vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  ul.log { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 10px; border-radius: 8px; text-align: center; }
+  .stat-value { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+  .stat-label { font-size: 9px; opacity: 0.9; }
+  .timeline { 
+    max-height: 40vh; overflow-y: auto; 
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  ul.log { list-style: none; display: flex; flex-direction: column; gap: 6px; }
   
-  /* ログ行のスタイル (AI処理状態を含む) */
+  /* ログ行のスタイル */
   .row {
-    padding: 6px; border-left: 3px solid #3498db; border-radius: 5px; background: #f8f9fa; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 10px; border-left: 4px solid #3498db; border-radius: 6px; background: #f8f9fa; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
   .row.selected { background: #e8f4f8; border-left-color: #e74c3c; }
-  
-  /* AIステータス */
   .row.ai-processing { border-left-color: #bdc3c7; background: #fff; opacity: 0.8; }
-  .row.ai-processing .text::after { content: ' 🤖 AI整形中...'; font-size: 10px; color: #9b59b6; animation: blink 1.5s infinite; }
+  .row.ai-processing .text::after { content: ' 🤖 AI整形中...'; font-size: 11px; color: #9b59b6; animation: blink 1.5s infinite; }
   .row.ai-done { border-left-color: #9b59b6; }
-  @keyframes blink { 50% { opacity: 0.5; } }
+  .row.ai-done .text::after { content: ' ✨'; font-size: 11px; }
+  .row.ai-error { border-left-color: #e74c3c; background: #f8d7da; }
+  .row.ai-error .text::after { content: ' ❌ AIエラー'; font-size: 11px; color: #e74c3c; font-weight: 700; }
   
-  .time { font-size: 10px; color: #3498db; margin-bottom: 3px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
-  .elapsed { font-size: 8px; color: #7f8c8d; font-weight: 500; background: #ecf0f1; padding: 1px 5px; border-radius: 6px; }
-  .addr { font-size: 10px; color: #2c3e50; margin: 2px 0 4px; padding-left: 4px; border-left: 2px solid #27ae60; background: #eef9f1; border-radius: 3px; }
-  .addr.muted { opacity: 0.35; border-left-color: #bdc3c7; background: #f3f4f6; }
-  .text { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin-bottom: 3px; color: #2c3e50; line-height: 1.4; }
-  .tags { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 3px; }
-  .tag { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 8px; padding: 1px 6px; font-size: 8px; font-weight: 600; }
-  .row .tools { position: absolute; top: 4px; right: 4px; display: flex; gap: 3px; opacity: 0.8; }
-  .row.selected .tools { opacity: 1; }
-  .tools .btn { font-size: 9px; padding: 3px 6px; min-height: 28px; }
-  .empty-state { text-align: center; padding: 25px 12px; color: #7f8c8d; font-size: 12px; }
-  .ai-badge { font-size: 7px; background: #9b59b6; color: #fff; padding: 1px 4px; border-radius: 4px; margin-left: 4px; }
+  /* 📌 NEW v2.8.0: 重要ログのスタイル */
+  .row.critical { background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); }
+  .row.starred { border-left-color: #f39c12; }
+  .row.starred .star-btn { color: #f39c12; }
+  .row.cat-airway { border-left-color: #1565c0; }
+  .row.cat-circulation { border-left-color: #c62828; }
+  .row.cat-medication { border-left-color: #6a1b9a; }
+  .row.cat-procedure { border-left-color: #2e7d32; }
+  .row.cat-defib { border-left-color: #f57f17; }
   
-  .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
-  .modal.show { display: flex; align-items: center; justify-content: center; }
-  .modal-content { background: #fff; border-radius: 8px; padding: 16px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-  .modal-header { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #2c3e50; }
-  .modal-body textarea { width: 100%; min-height: 100px; margin-bottom: 12px; }
-  .modal-buttons { display: flex; gap: 8px; }
-  .modal-buttons .btn { flex: 1; }
-  
-  @media (min-width: 768px){
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    textarea { min-height: 90px; }
-    .timeline { max-height: 55vh; }
-    h1 { font-size: 16px; }
+  .row .category-badge {
+    display: inline-block; font-size: 10px; padding: 3px 6px; border-radius: 8px;
+    margin-left: 6px; font-weight: 600;
   }
+  .row .category-badge.airway { background: #e3f2fd; color: #1565c0; }
+  .row .category-badge.circulation { background: #ffebee; color: #c62828; }
+  .row .category-badge.medication { background: #f3e5f5; color: #6a1b9a; }
+  .row .category-badge.procedure { background: #e8f5e9; color: #2e7d32; }
+  .row .category-badge.defib { background: #fff8e1; color: #f57f17; }
+  
+  .time { font-size: 11px; font-weight: 700; color: #e74c3c; margin-right: 8px; }
+  .text { font-size: 14px; color: #2c3e50; line-height: 1.4; }
+  .addr { font-size: 10px; color: #7f8c8d; margin-top: 4px; }
+  .actions { margin-top: 6px; display: flex; gap: 8px; align-items: center; }
+  .actions button { 
+    font-size: 12px; padding: 8px 12px; border: none; background: #ecf0f1; color: #2c3e50; 
+    border-radius: 6px; min-height: 36px; min-width: 44px;
+    -webkit-touch-callout: none; user-select: none;
+  }
+  .actions button:active { background: #bdc3c7; }
+  .actions .star-btn { 
+    font-size: 20px; background: transparent; color: #bdc3c7; 
+    padding: 4px 8px; min-height: 44px; min-width: 44px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .actions .star-btn:active { transform: scale(1.2); }
+  
+  /* Modal */
+  .modal {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 200;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: #fff; border-radius: 12px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .modal-header { padding: 12px 16px; border-bottom: 2px solid #3498db; background: #ecf0f1; }
+  .modal-header h3 { font-size: 14px; font-weight: 700; color: #2c3e50; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px; border-top: 1px solid #ecf0f1; display: flex; gap: 8px; justify-content: flex-end; }
 </style>
 </head>
 <body>
-  <header>
-    <div class="header-content">
-      <h1>🚑 救急記録 (AI Ultimate v2.6.6)</h1>
-      <div class="clock" id="clock">--:--:--</div>
-    </div>
-  </header>
 
-  <div id="recordingBanner" class="recording-banner">
-    <div class="main-text">🔴 録音中</div>
-    <div class="recording-time" id="recordingTime">00:00</div>
-    <div class="sub-text">活動中も継続記録</div>
+<header>
+  <div class="header-content">
+    <div><h1>🚁 救急記録<span class="version">v2.8.0</span></h1></div>
+    <div class="clock" id="clock">00:00:00</div>
   </div>
+</header>
 
-  <div class="wrap">
-    <div class="grid">
-      <section class="card">
-        <h2>📝 入力・設定</h2>
-        <div class="body">
-          <div id="permissionAlert" class="permission-alert">
-            <div class="permission-alert-title">🎤 マイク許可が必要です</div>
-            <div class="permission-alert-text">iPhone設定 > Safari > マイクで許可してください。</div>
-            <div class="permission-alert-buttons">
-              <button id="btnRetryPermission" type="button" class="btn warning">🔄 再試行</button>
-            </div>
-          </div>
+<div class="recording-indicator" id="recordingIndicator">
+  <span class="icon">🎤</span>
+  <span class="time" id="recordingTime">00:00</span>
+</div>
 
-          <div class="settings-section">
-            <div class="settings-title">⚙️ 設定 & AIキー (端末保存)</div>
-            <div class="setting-row">
-              <label>Gemini API Key</label>
-              <input type="password" id="apiKeyInput" placeholder="ここにAPIキーを入力">
-            </div>
-            <div class="setting-row">
-              <button id="btnSaveKey" type="button" class="btn success" style="width:100%; height:30px; font-size:10px;">APIキーを保存</button>
-            </div>
-            <hr style="border:0; border-top:1px solid #e0a800; margin:8px 0;">
-            <div class="setting-row">
-              <label>AI整形を使用</label>
-              <input type="checkbox" id="useAI" checked>
-            </div>
-            <div class="setting-row">
-              <label>画面常時点灯</label>
-              <input type="checkbox" id="keepScreenOn" checked>
-            </div>
-          </div>
-
-          <div class="voice-control">
-            <button id="voiceBtn" type="button" class="voice-btn">🎤</button>
-            <div class="voice-status">
-              <div class="voice-status-title" id="voiceStatusTitle">停止中</div>
-              <div class="voice-status-text" id="voiceStatusText">タップで開始</div>
-              <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width: 0%"></div></div>
-              <div class="voice-interim" id="voiceInterim"></div>
-              <div id="systemStatus" class="system-status" style="display:none;"></div>
-            </div>
-          </div>
-
-          <textarea id="input" placeholder="ここにテキストが表示されます"></textarea>
-
-          <div class="controls">
-            <label class="pill"><input id="punct" type="checkbox" checked> 句点確定</label>
-            <label class="pill"><input id="gpsHi" type="checkbox" checked> GPS</label>
-            <label class="pill">⏳ <input id="gpsTimeout" type="number" min="2" max="20" value="6">s</label>
-          </div>
-
-          <div class="tag-buttons" id="tagButtons"></div>
-
-          <div class="main-buttons">
-            <button id="btnCopy" type="button" class="btn success" title="住所なしでコピー">📋 コピー(住所無)</button>
-            <button id="btnCopyAddr" type="button" class="btn success" title="住所付きでコピー">📋 コピー(住所有)</button>
-            <button id="btnClear" type="button" class="btn danger">🗑 記録消去</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>⏰ 記録 (AI連携)</h2>
-        <div class="body">
-          <div class="stats">
-            <div class="stat-card"><div class="stat-value" id="totalLogs">0</div><div class="stat-label">件数</div></div>
-            <div class="stat-card"><div class="stat-value" id="totalTime">0分</div><div class="stat-label">経過</div></div>
-            <div class="stat-card"><div class="stat-value" id="restartCount">0</div><div class="stat-label">再起動</div></div>
-          </div>
-          <div class="timeline">
-            <ul id="log" class="log"></ul>
-          </div>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <div id="editModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">📝 記録を編集</div>
-      <div class="modal-body"><textarea id="editText"></textarea></div>
-      <div class="modal-buttons">
-        <button id="btnSaveEdit" type="button" class="btn success">💾 保存</button>
-        <button id="btnCancelEdit" type="button" class="btn secondary">❌</button>
+<div class="wrap">
+  <div class="grid">
+    
+    <div class="permission-alert" id="permissionAlert">
+      <div class="permission-alert-title">⚠️ マイク権限が必要です</div>
+      <div class="permission-alert-text">音声入力を使用するには、ブラウザのマイク権限を許可してください。設定 → Safari → カメラとマイク から許可できます。</div>
+      <div class="permission-alert-buttons">
+        <button class="btn mini secondary" onclick="document.getElementById('permissionAlert').classList.remove('show')">閉じる</button>
       </div>
     </div>
+    
+    <div class="case-section">
+      <div class="case-header">
+        <div class="case-title">📁 ケース管理</div>
+        <div class="case-controls">
+          <button class="btn mini success" onclick="createNewCase()">新規作成</button>
+          <button class="btn mini" onclick="toggleCaseList()">一覧</button>
+        </div>
+      </div>
+      <div class="case-info" id="caseInfo">
+        現在のケース: <strong id="currentCaseName">デフォルト</strong> (<span id="currentCaseCount">0</span>件)
+      </div>
+      <div class="case-list" id="caseList" style="display:none;"></div>
+    </div>
+    
+    <!-- 📌 NEW v2.8.0: 重要ログ抽出セクション -->
+    <div class="critical-section">
+      <div class="critical-title">
+        🎯 重要ログ抽出
+        <span class="badge" id="criticalCount">0件</span>
+      </div>
+      <div class="filter-buttons">
+        <button class="filter-btn all active" data-filter="all" onclick="setFilter('all')">全て</button>
+        <button class="filter-btn starred" data-filter="starred" onclick="setFilter('starred')">⭐ 手動</button>
+        <button class="filter-btn airway" data-filter="airway" onclick="setFilter('airway')">🫁 気道</button>
+        <button class="filter-btn circulation" data-filter="circulation" onclick="setFilter('circulation')">🩸 循環</button>
+        <button class="filter-btn medication" data-filter="medication" onclick="setFilter('medication')">💊 薬剤</button>
+        <button class="filter-btn procedure" data-filter="procedure" onclick="setFilter('procedure')">🔧 処置</button>
+        <button class="filter-btn defib" data-filter="defib" onclick="setFilter('defib')">⚡ 除細動</button>
+      </div>
+      <div class="critical-stats" id="criticalStats">
+        <span>🫁 気道: <strong>0</strong></span>
+        <span>🩸 循環: <strong>0</strong></span>
+        <span>💊 薬剤: <strong>0</strong></span>
+        <span>🔧 処置: <strong>0</strong></span>
+        <span>⚡ 除細動: <strong>0</strong></span>
+      </div>
+      <button class="critical-output-btn" onclick="exportCriticalLogs()">
+        📋 重要ログを抽出出力
+      </button>
+    </div>
+    
+    <div class="ai-control-section">
+      <div class="ai-control-title">🤖 AI処理制御 (RPM制限: 8件/分)</div>
+      <div class="ai-queue-info" id="aiQueueInfo">
+        キュー: 0件 | 処理済: 0件 | 制限: 8件/分まで
+      </div>
+      <button class="btn mini warning" style="width:100%" onclick="processAllLogsInCase()">📝 現在のケース全体をAI処理</button>
+    </div>
+
+    <div class="card">
+      <div class="voice-control">
+        <button class="voice-btn" id="voiceBtn">🎤</button>
+        <div class="voice-status">
+          <div class="voice-status-title" id="voiceStatusTitle">停止中</div>
+          <div class="voice-status-text" id="voiceStatusText">ボタンを押して録音開始</div>
+          <div class="voice-interim" id="voiceInterim"></div>
+        </div>
+      </div>
+      <div id="systemStatus" class="system-status" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>📝 記録ログ</h2>
+      <div class="body">
+        <div class="timeline"><ul class="log" id="logList"></ul></div>
+        <div class="main-buttons">
+          <button class="btn" id="btnCopy">📤 出力</button>
+          <button class="btn" id="btnCopyAddr">📍 住所付き出力</button>
+          <button class="btn danger" id="btnClear">🗑️ 全消去</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">⚙️ 設定</div>
+      <div class="setting-row">
+        <label>AI整形機能</label>
+        <input type="checkbox" id="useAI" checked/>
+      </div>
+      <div class="setting-row">
+        <label>画面スリープ防止</label>
+        <input type="checkbox" id="keepScreenOn" checked/>
+      </div>
+      <div class="setting-row">
+        <label>Gemini API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="AIxxxxxx..."/>
+        <button class="btn mini" id="btnSaveKey">保存</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🏷️ プリセット</h2>
+      <div class="body">
+        <div class="tag-buttons" id="tagButtons"></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="totalLogs">0</div>
+        <div class="stat-label">記録数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="totalTime">0分</div>
+        <div class="stat-label">経過時間</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="aiProcessed">0</div>
+        <div class="stat-label">AI処理済</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="aiPending">0</div>
+        <div class="stat-label">AI待機中</div>
+      </div>
+    </div>
+
   </div>
+</div>
+
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <div class="modal-header"><h3>📝 記録を編集</h3></div>
+    <div class="modal-body">
+      <textarea id="editText" style="min-height:100px;"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" id="btnCancelEdit">キャンセル</button>
+      <button class="btn success" id="btnSaveEdit">保存</button>
+    </div>
+  </div>
+</div>
 
 <script>
-  const STORE_KEY='emergency-doc-v2-6';
-  const API_KEY_STORE = 'gemini_api_key_local';
-  let logs=[]; let selectedId=null; let startTime=null; let restartCount=0;
-  let editingLogId=null; let saveDebounceTimer = null; let micPermissionGranted = false;
+  /* --- Global State --- */
+  let currentCaseId = 'default';
+  let cases = {};
+  let editingLogId = null;
+  let gpsPosition = null;
+  let aiStats = { processed: 0, pending: 0 };
+  let currentFilter = 'all'; // 📌 NEW v2.8.0: フィルタ状態
+  const AI_MODEL_NAME = 'gemini-2.0-flash-lite';
+  const VERSION = 'v2.8.1';
 
-  /* --- Feedback Manager (ビープ音機能) --- */
-  class FeedbackManager {
-    constructor() {
-      this.audioCtx = null;
+  document.querySelector('.version').textContent = VERSION;
+  document.title = `救急記録 - AI Ultimate ${VERSION} (iPhone最適化版)`;
+
+  /* --- 📌 NEW v2.8.0: 重要ログ検出用キーワード定義 --- */
+  const CRITICAL_KEYWORDS = {
+    airway: {
+      name: '気道管理',
+      icon: '🫁',
+      keywords: [
+        // 気管挿管関連
+        '気管挿管', '挿管', 'チューブ', 'ETT', 'エアウェイ', 'エアウエイ',
+        'RSI', '迅速導入', 'ラピッドシーケンス',
+        // 声門上器具
+        'LMA', 'ラリンゲアルマスク', 'アイジェル', 'i-gel', '声門上',
+        // 外科的気道
+        '輪状甲状', '気管切開', 'トラキオ', 'サージカルエアウェイ', '外科的気道',
+        // ビデオ喉頭鏡
+        'マックグラス', 'McGRATH', 'エアウェイスコープ', 'AWS', 'ビデオ喉頭鏡',
+        // その他
+        '抜管', 'BURP', 'クリコイド', 'セリック', '経鼻エアウェイ', '経口エアウェイ'
+      ]
+    },
+    circulation: {
+      name: '循環・輸血',
+      icon: '🩸',
+      keywords: [
+        // 輸血関連
+        '輸血', 'RBC', 'RCC', '赤血球', 'FFP', '血漿', 'PC', '血小板',
+        'クロスマッチ', 'タイプ&スクリーン', 'O型', 'Oネガ', 'O-',
+        'MTP', '大量輸血', '緊急輸血',
+        // ルート・アクセス
+        '中心静脈', 'CV', 'CVC', '骨髄', 'IO', '骨髄路', 'PICC',
+        '動脈ライン', 'Aライン', '末梢ルート', '18G', '16G', '14G',
+        // 循環補助
+        'PCPS', 'ECMO', 'IABP', 'Impella',
+        // 輸液
+        '急速輸液', 'ボーラス', 'ボルベン', 'フィジオ', '乳酸リンゲル', '生食',
+        // 心停止・蘇生
+        'CPR', '心臓マッサージ', '胸骨圧迫', 'ROSC', '心拍再開', '自己心拍',
+        // その他
+        '昇圧剤', 'カテコラミン', '開胸', '心臓マッサージ'
+      ]
+    },
+    medication: {
+      name: '薬剤投与',
+      icon: '💊',
+      keywords: [
+        // カテコラミン
+        'アドレナリン', 'ボスミン', 'エピネフリン', 'エピ',
+        'ノルアドレナリン', 'ノルアド', 'ノルエピ',
+        'ドパミン', 'ドブタミン', 'ドブトレックス',
+        // 鎮静・鎮痛
+        'プロポフォール', 'ディプリバン', 'ミダゾラム', 'ドルミカム',
+        'フェンタニル', 'ケタミン', 'ケタラール',
+        'ロクロニウム', 'エスラックス', 'スキサメトニウム', 'サクシン',
+        // 抗不整脈
+        'アミオダロン', 'アンカロン', 'リドカイン', 'キシロカイン',
+        'アトロピン', 'イソプロテレノール',
+        // 昇圧・降圧
+        'バソプレシン', 'ニカルジピン', 'ペルジピン', 'ニトログリセリン', 'ニトロ',
+        // 抗凝固
+        'ヘパリン', 'プロタミン', 'トラネキサム酸', 'トランサミン',
+        // 電解質・その他
+        'カルチコール', 'グルコン酸カルシウム', 'メイロン', '重曹',
+        'ブドウ糖', 'グルコース', 'インスリン',
+        'マグネシウム', 'カリウム',
+        // 解毒・拮抗
+        'ナロキソン', 'フルマゼニル', 'アネキセート', 'イントラリポス', '脂肪乳剤',
+        // 抗生剤
+        '抗菌薬', '抗生剤', '抗生物質'
+      ]
+    },
+    procedure: {
+      name: '処置',
+      icon: '🔧',
+      keywords: [
+        // 胸腔関連
+        '胸腔ドレーン', '胸腔穿刺', 'ドレナージ', 'トロッカー', '脱気',
+        '緊張性気胸', '開放性気胸', '血胸',
+        // REBOA・止血
+        'REBOA', 'レボア', '大動脈遮断', 'ゾーン',
+        '止血', 'パッキング', 'ターニケット',
+        // 開胸・開腹
+        '開胸', '緊急開胸', 'クラムシェル', 'ED開胸',
+        '開腹', '緊急開腹', 'ダメージコントロール', 'DCS',
+        // 骨折・固定
+        '骨盤固定', 'シーツラッピング', 'サムスリング', 'Tポッド',
+        '脊椎固定', 'バックボード', '頸椎カラー',
+        // 創傷処置
+        '縫合', '創閉鎖', 'デブリ', 'デブリードマン',
+        // 減圧
+        '開頭', '穿頭', '脳室ドレナージ', '減圧',
+        // その他
+        '経皮的', 'ペーシング', 'ペースメーカー', 'PM'
+      ]
+    },
+    defib: {
+      name: '除細動',
+      icon: '⚡',
+      keywords: [
+        // 除細動
+        '除細動', 'DC', 'ショック', 'ディフィブ',
+        'AED', '自動体外式', 'パッド',
+        // リズム
+        'VF', '心室細動', 'pVT', '無脈性VT', '無脈性心室頻拍',
+        'PEA', '無脈性電気活動', 'アシストリー', 'Asystole',
+        // 電気的治療
+        'カルディオバージョン', '同期',
+        // その他
+        'ジュール', 'J', '二相性', '単相性'
+      ]
     }
+  };
 
-    // ユーザー操作に応じてオーディオコンテキストを初期化
-    init() {
-      if (!this.audioCtx) {
-        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (this.audioCtx.state === 'suspended') {
-        this.audioCtx.resume();
+  /* --- 📌 NEW v2.8.0: ログのカテゴリ自動検出 --- */
+  function detectCategory(text) {
+    const lowerText = text.toLowerCase();
+    const detected = [];
+    
+    for (const [category, data] of Object.entries(CRITICAL_KEYWORDS)) {
+      for (const keyword of data.keywords) {
+        if (text.includes(keyword) || lowerText.includes(keyword.toLowerCase())) {
+          detected.push(category);
+          break; // 同じカテゴリで複数マッチしても1回だけ
+        }
       }
     }
+    
+    return detected;
+  }
+  
+  /* --- 📌 NEW v2.8.0: 重要ログかどうか判定 --- */
+  function isCritical(log) {
+    return log.starred || (log.categories && log.categories.length > 0);
+  }
+  
+  /* --- 📌 NEW v2.8.0: フィルタ切り替え --- */
+  function setFilter(filter) {
+    currentFilter = filter;
+    
+    // ボタンのアクティブ状態を更新
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    
+    render();
+  }
+  
+  /* --- 📌 NEW v2.8.0: 重要ログの統計を更新 --- */
+  function updateCriticalStats() {
+    const logs = getLogs();
+    const stats = {
+      airway: 0,
+      circulation: 0,
+      medication: 0,
+      procedure: 0,
+      defib: 0,
+      starred: 0
+    };
+    
+    logs.forEach(log => {
+      if (log.starred) stats.starred++;
+      if (log.categories) {
+        log.categories.forEach(cat => {
+          if (stats[cat] !== undefined) stats[cat]++;
+        });
+      }
+    });
+    
+    const totalCritical = logs.filter(log => isCritical(log)).length;
+    document.getElementById('criticalCount').textContent = `${totalCritical}件`;
+    
+    document.getElementById('criticalStats').innerHTML = `
+      <span>⭐ 手動: <strong>${stats.starred}</strong></span>
+      <span>🫁 気道: <strong>${stats.airway}</strong></span>
+      <span>🩸 循環: <strong>${stats.circulation}</strong></span>
+      <span>💊 薬剤: <strong>${stats.medication}</strong></span>
+      <span>🔧 処置: <strong>${stats.procedure}</strong></span>
+      <span>⚡ 除細動: <strong>${stats.defib}</strong></span>
+    `;
+  }
+  
+  /* --- 📌 NEW v2.8.0: ⭐トグル --- */
+  window.toggleStar = (id) => {
+    const log = getLogs().find(r => r.id === id);
+    if (log) {
+      log.starred = !log.starred;
+      save();
+      render();
+      updateCriticalStats();
+    }
+  };
+  
+  /* --- 📌 NEW v2.8.0: 重要ログ抽出出力 --- */
+  function exportCriticalLogs() {
+    const logs = getLogs();
+    let filteredLogs;
+    
+    if (currentFilter === 'all') {
+      filteredLogs = logs.filter(log => isCritical(log));
+    } else if (currentFilter === 'starred') {
+      filteredLogs = logs.filter(log => log.starred);
+    } else {
+      filteredLogs = logs.filter(log => log.categories && log.categories.includes(currentFilter));
+    }
+    
+    if (filteredLogs.length === 0) {
+      alert('抽出対象のログがありません');
+      return;
+    }
+    
+    const currentCase = cases[currentCaseId];
+    const filterName = currentFilter === 'all' ? '重要ログ' : 
+                       currentFilter === 'starred' ? '手動マーク' :
+                       CRITICAL_KEYWORDS[currentFilter]?.name || currentFilter;
+    
+    // ヘッダー作成
+    let txt = `=== ${currentCase.name} ===\n`;
+    txt += `抽出条件: ${filterName}\n`;
+    txt += `抽出件数: ${filteredLogs.length}件\n`;
+    txt += `出力日時: ${new Date().toLocaleString('ja-JP')}\n`;
+    txt += `${'='.repeat(30)}\n\n`;
+    
+    // ログ本文
+    filteredLogs.forEach(log => {
+      let line = `${log.time}`;
+      if (log.starred) line += ' ⭐';
+      if (log.categories && log.categories.length > 0) {
+        const catIcons = log.categories.map(c => CRITICAL_KEYWORDS[c]?.icon || '').join('');
+        line += ` ${catIcons}`;
+      }
+      line += `\n  ${log.text}`;
+      if (log.address) line += `\n  📍 ${log.address}`;
+      txt += line + '\n\n';
+    });
+    
+    const fileName = `${currentCase.name}_${filterName}.txt`;
+    
+    // ダウンロード
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+    showSystemStatus(`${filteredLogs.length}件の重要ログを出力しました`, 'success');
+  }
 
-    // 周波数(Hz)、時間(ms)を指定してビープ音を再生
-    playBeep(frequency, duration) {
-      this.init();
-      if (!this.audioCtx) return;
 
-      const oscillator = this.audioCtx.createOscillator();
-      const gainNode = this.audioCtx.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(this.audioCtx.destination);
-
-      oscillator.type = 'square'; // 波形
-      oscillator.frequency.setValueAtTime(frequency, this.audioCtx.currentTime);
-
-      // フェードアウト
-      gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration / 1000);
-
-      oscillator.start();
-      setTimeout(() => {
-        oscillator.stop();
-      }, duration);
+  /* --- AI Rate Limiter (8 requests per minute) --- */
+  class AIRateLimiter {
+    constructor(maxRequests = 8, windowMs = 60000) {
+      this.maxRequests = maxRequests;
+      this.windowMs = windowMs;
+      this.queue = [];
+      this.processing = false;
+      this.requestTimes = [];
+    }
+    
+    async enqueue(logId, text) {
+      if (this.queue.some(item => item.logId === logId)) return;
+      
+      this.queue.push({ logId, text, timestamp: Date.now() });
+      aiStats.pending = this.queue.length;
+      updateStats();
+      updateAIQueueInfo();
+      
+      if (!this.processing) {
+        this.processQueue();
+      }
+    }
+    
+    async processQueue() {
+      if (this.queue.length === 0) {
+        this.processing = false;
+        return;
+      }
+      
+      this.processing = true;
+      const now = Date.now();
+      
+      this.requestTimes = this.requestTimes.filter(t => now - t < this.windowMs);
+      
+      if (this.requestTimes.length >= this.maxRequests) {
+        const oldestRequest = this.requestTimes[0];
+        const waitTime = this.windowMs - (now - oldestRequest);
+        showSystemStatus(`AI制限中: ${Math.ceil(waitTime/1000)}秒待機 (RPMリセット待ち)`, 'warning');
+        setTimeout(() => this.processQueue(), waitTime + 100);
+        return;
+      }
+      
+      const item = this.queue.shift();
+      aiStats.pending = this.queue.length;
+      updateStats();
+      updateAIQueueInfo();
+      
+      this.requestTimes.push(Date.now());
+      await gemini.correct(item.logId, item.text);
+      
+      setTimeout(() => this.processQueue(), 500);
+    }
+    
+    getStatus() {
+      const now = Date.now();
+      this.requestTimes = this.requestTimes.filter(t => now - t < this.windowMs);
+      return {
+        queueLength: this.queue.length,
+        recentRequests: this.requestTimes.length,
+        maxRequests: this.maxRequests
+      };
     }
   }
-  const feedback = new FeedbackManager();
+  const aiLimiter = new AIRateLimiter(8, 60000);
 
-  /* --- Gemini AI Client (最終修正版 v2.6.6) --- */
-  class GeminiClient {
-    constructor() {
-      this.apiKey = localStorage.getItem(API_KEY_STORE) || '';
-      // 【最重要修正箇所】現在最も互換性の高い最新のモデル名に固定
-      this.model = 'gemini-2.5-flash'; 
+  /* --- Utils --- */
+  function nowHHMMSS(){
+    const d=new Date(); return [d.getHours(),d.getMinutes(),d.getSeconds()].map(v=>v.toString().padStart(2,'0')).join(':');
+  }
+  function nowDate(){ const d=new Date(); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; }
+  function nowTime(){ const d=new Date(); return `${d.getHours().toString().padStart(2,'0')}${d.getMinutes().toString().padStart(2,'0')}`; }
+
+  /* --- Case Management --- */
+  function initCases() {
+    const saved = localStorage.getItem('beatlog_cases');
+    if (saved) {
+      cases = JSON.parse(saved);
+    } else {
+      cases = {
+        'default': {
+          name: 'デフォルト',
+          logs: [],
+          createdAt: new Date().toISOString()
+        }
+      };
+    }
+    currentCaseId = localStorage.getItem('beatlog_current_case') || 'default';
+  }
+  
+  function saveCases() {
+    localStorage.setItem('beatlog_cases', JSON.stringify(cases));
+    localStorage.setItem('beatlog_current_case', currentCaseId);
+  }
+  
+  function createNewCase() {
+    const caseName = prompt('事案名を入力してください:', '事案');
+    if (!caseName) return;
+    
+    const date = nowDate();
+    const time = nowTime();
+    const caseId = `case_${Date.now()}`;
+    const fullName = `${caseName}-${date}-${time}`;
+    
+    cases[caseId] = {
+      name: fullName,
+      logs: [],
+      createdAt: new Date().toISOString()
+    };
+    
+    currentCaseId = caseId;
+    saveCases();
+    updateCaseInfo();
+    renderCaseList();
+    render();
+    showSystemStatus(`新規ケース作成: ${fullName}`, 'success');
+  }
+  
+  function switchCase(caseId) {
+    if (!cases[caseId]) return;
+    currentCaseId = caseId;
+    saveCases();
+    updateCaseInfo();
+    render();
+    updateCriticalStats();
+    showSystemStatus(`ケース切替: ${cases[caseId].name}`, 'success');
+  }
+  
+  function deleteCase(caseId) {
+    if (caseId === 'default') {
+      alert('デフォルトケースは削除できません');
+      return;
+    }
+    if (!confirm(`ケース「${cases[caseId].name}」を削除しますか?`)) return;
+    
+    delete cases[caseId];
+    if (currentCaseId === caseId) {
+      currentCaseId = 'default';
+    }
+    saveCases();
+    updateCaseInfo();
+    renderCaseList();
+    render();
+    showSystemStatus('ケース削除完了', 'success');
+  }
+  
+  function updateCaseInfo() {
+    const currentCase = cases[currentCaseId];
+    document.getElementById('currentCaseName').textContent = currentCase.name;
+    document.getElementById('currentCaseCount').textContent = currentCase.logs.length;
+  }
+  
+  function toggleCaseList() {
+    const list = document.getElementById('caseList');
+    if (list.style.display === 'none') {
+      renderCaseList();
+      list.style.display = 'block';
+    } else {
+      list.style.display = 'none';
+    }
+  }
+  
+  function renderCaseList() {
+    const list = document.getElementById('caseList');
+    list.innerHTML = '';
+    
+    Object.entries(cases).forEach(([caseId, caseData]) => {
+      const item = document.createElement('div');
+      item.className = 'case-item' + (caseId === currentCaseId ? ' active' : '');
+      item.innerHTML = `
+        <span class="name">${caseData.name}</span>
+        <span class="count">${caseData.logs.length}件</span>
+        ${caseId !== 'default' ? '<span class="delete" onclick="event.stopPropagation(); deleteCase(\''+caseId+'\')">🗑️</span>' : ''}
+      `;
+      item.onclick = () => {
+        switchCase(caseId);
+        toggleCaseList();
+      };
+      list.appendChild(item);
+    });
+  }
+  
+  /* --- Process All Logs in Current Case --- */
+  async function processAllLogsInCase() {
+    const currentCase = cases[currentCaseId];
+    const unprocessedLogs = currentCase.logs.filter(log => !log.aiProcessed && !log.aiProcessing && !log.aiError);
+    
+    if (unprocessedLogs.length === 0) {
+      alert('AI処理が必要なログはありません');
+      return;
     }
     
-    hasKey() { return !!this.apiKey; }
-    
-    setKey(key) {
-      this.apiKey = key.trim();
-      localStorage.setItem(API_KEY_STORE, this.apiKey);
-      showSystemStatus('APIキーを保存しました', 'success');
-      feedback.playBeep(1200, 100); // 復元: APIキー保存時のフィードバック
+    if (!confirm(`${unprocessedLogs.length}件のログをAI処理しますか?\nRPM制限により時間がかかる場合があります。`)) {
+      return;
     }
     
-    async correctText(originalText) {
-      if (!this.apiKey) {
-        showSystemStatus('AIキーが未入力です。設定を確認してください。', 'error');
-        return originalText;
+    showSystemStatus(`${unprocessedLogs.length}件のログをキューに追加中...`, 'warning');
+    
+    for (const log of unprocessedLogs) {
+      log.aiProcessed = false;
+      log.aiError = false;
+      await aiLimiter.enqueue(log.id, log.text);
+    }
+    
+    showSystemStatus(`${unprocessedLogs.length}件をキューに追加完了`, 'success');
+    render();
+  }
+  
+  /* --- Update AI Queue Info --- */
+  function updateAIQueueInfo() {
+    const status = aiLimiter.getStatus();
+    document.getElementById('aiQueueInfo').innerHTML = `
+      キュー: <strong>${status.queueLength}</strong>件 | 
+      処理済: <strong>${aiStats.processed}</strong>件 | 
+      現在の分間リクエスト: <strong>${status.recentRequests}/${status.maxRequests}</strong>件
+    `;
+  }
+
+  /* --- Data Management --- */
+  function save() { saveCases(); }
+  function load() { initCases(); updateCaseInfo(); }
+  
+  function getLogs() {
+    return cases[currentCaseId].logs;
+  }
+  
+  function addLine(text, address, useAI) {
+    if (!text || !text.trim()) {
+      return;
+    }
+    
+    const id = Date.now() + Math.random();
+    
+    // 📌 NEW v2.8.0: カテゴリ自動検出
+    const categories = detectCategory(text);
+    
+    const log = { 
+      id, 
+      time: nowHHMMSS(), 
+      text, 
+      address, 
+      aiProcessed: false, 
+      aiError: false, 
+      aiProcessing: false,
+      starred: false, // 📌 NEW v2.8.0
+      categories: categories // 📌 NEW v2.8.0
+    };
+    cases[currentCaseId].logs.push(log);
+    save();
+    render();
+    updateStats();
+    updateCriticalStats();
+    
+    if (useAI && text.trim()) {
+      aiLimiter.enqueue(id, text);
+    }
+  }
+
+  /* --- Gemini AI --- */
+  const gemini = {
+    key: localStorage.getItem('gemini_key') || '',
+    setKey(k) { this.key = k; localStorage.setItem('gemini_key', k); showSystemStatus('API Key保存完了', 'success'); },
+    async correct(logId, text) {
+      if (!this.key) {
+        showSystemStatus('エラー: API Keyが未設定です', 'error');
+        return;
       }
       
-      const prompt = `
-      あなたは救急隊員のアシスタントです。
-      以下の音声入力テキストを、医学的に正しい表記、数値形式、バイタルサインの標準的な記載（例: BP 120/80, SpO2 98%, JCS 1）に整形してください。
-      ルール:
-      1. 意味を変えずに誤字脱字を修正。
-      2. フィラー（「あー」等）削除。
-      3. **最重要: 個人名（患者氏名）が含まれる場合は絶対に削除し、[氏名削除]と置換する。**
-      4. 余計な挨拶は不要。整形後のテキストのみ返すこと。
-      テキスト: ${originalText}
-      `;
-
-      // 互換性の高い v1beta エンドポイントを使用
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+      const row = getLogs().find(r => r.id === logId);
+      if (!row) return;
+      
+      row.aiProcessing = true;
+      row.aiError = false;
+      render();
       
       try {
-        const res = await fetch(url, {
-          method: 'POST', 
+        const prompt = `以下の救急現場の音声入力文を、医学的に正確な記録に整形してください。
+
+**指示:**
+1.  **整形は、入力されたテキストの内容を基に実施してください。**
+2.  **入力されたテキストに明記されていない事実情報（年齢、バイタルサイン、詳細な病歴など）は、絶対に推測して追加しないでください。**
+3.  会話内容を8割程度維持し、大幅な削除は行わないでください。
+4.  意識レベルについては、**GCS (グラスゴー・コーマ・スケール)** の場合は **E○V○M○** の形式（例: GCS E3V4M6）に整形し、**JCS (ジャパン・コーマ・スケール)** と誤認識しないようにしてください。（例：「114」→「GCS E1V1M4」）
+5.  バイタルサインは現行の数字と単位を保持し、適切な形式に整形してください。
+6.  医学用語は適切に修正し、不要な口語表現は削除してください。
+7.  整形された**記録文のみ**を出力してください。一切の説明や解説を含めないでください。
+8.  入力が短すぎる場合や具体的な情報を含まない場合でも、**架空の事実情報を作成する代わりに、入力されたテキストをそのまま整形した結果を返してください。**
+
+入力: ${text}`;
+        
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL_NAME}:generateContent?key=${this.key}`;
+        
+        const res = await fetch(apiUrl, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 512 } 
+          })
         });
         
         if (!res.ok) {
-            const errData = await res.json();
-            console.error('AI API Error Detail:', errData);
-            
-            let statusMessage = `AI通信エラー: ${res.status} ${res.statusText}`;
-            if(res.status === 404){
-              statusMessage = `AI通信エラー: 404 (モデル「${this.model}」が見つかりません。APIキー/モデル名を確認してください)`;
-            } else if (res.status === 400){
-              statusMessage = 'AI通信エラー: 400 (APIキーが無効、残高不足、またはプロンプトが無効)';
-            }
-            showSystemStatus(statusMessage, 'error');
-            return originalText; 
+          const errorBody = await res.text();
+          throw new Error(`HTTP Error: ${res.status} ${res.statusText || res.status} - ${errorBody.substring(0, 50)}...`);
         }
-
+        
         const data = await res.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || originalText;
+        const corrected = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        
+        if (corrected) {
+          row.text = corrected;
+          row.aiProcessed = true;
+          aiStats.processed++;
+          
+          // 📌 NEW v2.8.0: AI整形後にカテゴリを再検出
+          row.categories = detectCategory(corrected);
+        }
       } catch (e) {
-        console.error('AI Connection Error:', e);
-        showSystemStatus('AI接続失敗: ネットワークを確認', 'error');
-        return originalText;
+        console.error('AI Error:', e);
+        row.aiError = true;
+        
+        let errorMsg = e.message;
+        if (errorMsg.includes('400')) errorMsg = '400 Bad Request (プロンプトまたはAPIキーエラー)';
+        if (errorMsg.includes('403')) errorMsg = '403 Forbidden (APIキーの権限不足)';
+        if (errorMsg.includes('404')) errorMsg = '404 Not Found (エンドポイントまたはモデル名エラー)';
+        if (errorMsg.includes('429')) errorMsg = '429 Too Many Requests (レート制限超過)';
+        if (errorMsg.includes('500')) errorMsg = '500 Server Error (Geminiサーバー側の問題)';
+        
+        showSystemStatus(`AI処理失敗: ${errorMsg}`, 'error');
+      } finally {
+        row.aiProcessing = false;
+        save();
+        render();
+        updateStats();
+        updateCriticalStats();
       }
     }
-  }
-  const gemini = new GeminiClient();
+  };
 
-  /* --- Core Functions --- */
-  function nowHHMMSS(){ return new Date().toLocaleTimeString('ja-JP',{hour12:false}); }
-  function save(){ 
-    clearTimeout(saveDebounceTimer);
-    saveDebounceTimer = setTimeout(() => {
-      localStorage.setItem(STORE_KEY, JSON.stringify({logs,startTime,restartCount})); 
-    }, 300); 
-  }
-  function load(){ 
-    try{ 
-      const d=JSON.parse(localStorage.getItem(STORE_KEY)); 
-      if(d){ logs=d.logs||[]; startTime=d.startTime||null; restartCount=d.restartCount||0; }
-      document.getElementById('apiKeyInput').value = gemini.apiKey;
-      document.getElementById('restartCount').textContent = restartCount;
-    }catch{ logs=[]; } 
-  }
+  /* --- Audio Feedback --- */
+  const feedback = {
+    ctx: null,
+    getCtx() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); return this.ctx; },
+    playBeep(freq, dur) {
+      if (!document.getElementById('useAI').checked) return;
+      const ctx = this.getCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur / 1000);
+      osc.start();
+      osc.stop(ctx.currentTime + dur / 1000);
+    }
+  };
 
   /* --- GPS --- */
-  async function fetchAddressFromGPS(){
-    if(!document.getElementById('gpsHi').checked) return '';
-    const to = Math.max(2, Math.min(20, +document.getElementById('gpsTimeout').value || 6));
-    try{
-      const pos = await new Promise((resolve,reject) => {
-        navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true, timeout:to*1000, maximumAge:10000});
-      });
-      const {latitude, longitude} = pos.coords;
-      // Reverse Geocode (OpenStreetMap)
-      try {
-        const ctrl = new AbortController();
-        setTimeout(()=>ctrl.abort(), to*1000);
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
-        const res = await fetch(url, { signal: ctrl.signal });
-        const data = await res.json();
-        const addr = data.address;
-        let resStr = '';
-        if(addr){
-          if(addr.city) resStr += addr.city; else if(addr.town) resStr += addr.town;
-          if(addr.suburb) resStr += addr.suburb; else if(addr.neighbourhood) resStr += addr.neighbourhood;
-        }
-        return resStr || `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
-      } catch(e) { return `${latitude.toFixed(4)},${longitude.toFixed(4)}`; }
-    } catch(e){ return ''; }
-  }
-
-  /* --- Logging Logic --- */
-  async function addLine(text, address='', useAI=false){
-    const t = text.trim();
-    if(!t) return;
-    if(logs.length===0) startTime = nowHHMMSS();
-    
-    const id = 'L'+Date.now();
-    const newLog = {
-      id: id, time: nowHHMMSS(), text: t, address: address,
-      tags: [], status: useAI && gemini.hasKey() ? 'processing' : 'done'
-    };
-    
-    logs.push(newLog);
-    save(); render(); updateStats();
-    feedback.playBeep(440, 50); // 復元: 記録確定時のフィードバック
-
-    // AI Processing
-    if(useAI && gemini.hasKey()){
-      try {
-        const corrected = await gemini.correctText(t);
-        const target = logs.find(l=>l.id===id);
-        if(target){ 
-          target.text = corrected; 
-          target.status = 'done'; 
-          save(); render(); 
-          feedback.playBeep(880, 50); // 復元: AI整形完了時のフィードバック
-        }
-      } catch(e){
-        const target = logs.find(l=>l.id===id);
-        if(target){ target.status = 'done'; save(); render(); }
-      }
+  async function fetchAddressFromGPS() {
+    if (!gpsPosition) return '';
+    const { latitude, longitude } = gpsPosition.coords;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ja`);
+      const data = await res.json();
+      return data.display_name || '';
+    } catch (e) {
+      return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
     }
   }
-
-  function render(){
-    const list=document.getElementById('log'); list.innerHTML='';
-    if(!logs.length){ list.innerHTML='<li class="empty-state">記録なし</li>'; return; }
-    
-    [...logs].reverse().forEach(row=>{
-      const li=document.createElement('li'); 
-      li.className=`row ${row.status==='processing'?'ai-processing':''} ${row.id===selectedId?'selected':''}`;
-      if(row.status==='done' && row.text.match(/[a-zA-Z]/)) li.classList.add('ai-done'); // 簡易AI判定
-      li.dataset.id=row.id;
-
-      const time=document.createElement('div'); time.className='time'; 
-      time.innerHTML=`🕐 ${row.time}`;
-      if(row.address){
-        const idx = logs.findIndex(x=>x.id===row.id);
-        const prevAddr = (idx>0 && logs[idx-1].address) ? logs[idx-1].address : '';
-        if(row.address !== prevAddr) {
-          const ad=document.createElement('div'); ad.className='addr'; ad.textContent=`📍 ${row.address}`;
-          li.append(ad);
-        }
-      }
-
-      const text=document.createElement('div'); text.className='text'; text.textContent=row.text;
-      const tags=document.createElement('div'); tags.className='tags';
-      (row.tags||[]).forEach(tag=>{ 
-        const sp=document.createElement('span'); sp.className='tag'; sp.textContent=tag; tags.appendChild(sp); 
-      });
-
-      const tools=document.createElement('div'); tools.className='tools';
-      tools.innerHTML = `
-        <button class="btn" onclick="selectLog('${row.id}')">${selectedId===row.id?'解除':'選択'}</button>
-        <button class="btn warning" onclick="openEditModal('${row.id}')">編集</button>
-        <button class="btn danger" onclick="delLog('${row.id}')">×</button>
-      `;
-
-      li.append(time, text, tags, tools);
-      list.appendChild(li);
-    });
+  
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(pos => { gpsPosition = pos; }, (error) => {
+        // GPS errors silently handled
+    }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
   }
 
-  window.selectLog = (id) => { selectedId = (selectedId===id ? null : id); render(); };
-  window.delLog = (id) => { if(confirm('削除?')){ logs=logs.filter(x=>x.id!==id); save(); render(); updateStats(); }};
+  /* --- Render --- */
+  function render() {
+    const logs = getLogs();
+    const ul = document.getElementById('logList');
+    ul.innerHTML = '';
+    
+    // 📌 NEW v2.8.0: フィルタ適用
+    let filteredLogs = logs;
+    if (currentFilter !== 'all') {
+      if (currentFilter === 'starred') {
+        filteredLogs = logs.filter(log => log.starred);
+      } else {
+        filteredLogs = logs.filter(log => log.categories && log.categories.includes(currentFilter));
+      }
+    }
+    
+    if (!filteredLogs.length) {
+      const msg = currentFilter === 'all' ? '記録なし' : `「${currentFilter === 'starred' ? '手動マーク' : CRITICAL_KEYWORDS[currentFilter]?.name || currentFilter}」に該当するログなし`;
+      ul.innerHTML = `<li class="row" style="text-align:center;color:#7f8c8d;">${msg}</li>`;
+      return;
+    }
+    
+    [...filteredLogs].reverse().forEach(row => {
+      const li = document.createElement('li');
+      
+      // クラス構築
+      let classes = ['row'];
+      if (row.selected) classes.push('selected');
+      if (row.aiProcessing) classes.push('ai-processing');
+      if (row.aiProcessed) classes.push('ai-done');
+      if (row.aiError) classes.push('ai-error');
+      if (row.starred) classes.push('starred');
+      if (isCritical(row)) classes.push('critical');
+      if (row.categories && row.categories.length > 0) {
+        classes.push(`cat-${row.categories[0]}`); // 最初のカテゴリの色を使用
+      }
+      
+      li.className = classes.join(' ');
+      
+      // カテゴリバッジ生成
+      let categoryBadges = '';
+      if (row.categories && row.categories.length > 0) {
+        categoryBadges = row.categories.map(cat => {
+          const catData = CRITICAL_KEYWORDS[cat];
+          return `<span class="category-badge ${cat}">${catData?.icon || ''} ${catData?.name || cat}</span>`;
+        }).join('');
+      }
+      
+      li.innerHTML = `
+        <div>
+          <span class="time">${row.time}</span>
+          <span class="text">${row.text}</span>
+          ${categoryBadges}
+        </div>
+        ${row.address ? `<div class="addr">📍 ${row.address}</div>` : ''}
+        <div class="actions">
+          <button class="star-btn" onclick="toggleStar(${row.id})">${row.starred ? '⭐' : '☆'}</button>
+          <button onclick="openEditModal(${row.id})">編集</button>
+          <button onclick="deleteLog(${row.id})">削除</button>
+        </div>
+      `;
+      ul.appendChild(li);
+    });
+    
+    updateCaseInfo();
+  }
+
+  window.deleteLog = (id) => {
+    const logs = getLogs();
+    const idx = logs.findIndex(r => r.id === id);
+    if (idx !== -1) {
+      logs.splice(idx, 1);
+      save();
+      render();
+      updateStats();
+      updateCriticalStats();
+    }
+  };
 
   /* --- Tag Buttons --- */
-  function renderTagButtons(){
-    const box=document.getElementById('tagButtons'); box.innerHTML='';
-    const cats={
-      '🚑 救急':["救急覚知","救急指令","救急出動","救急現着","救急接触","車内収容","現発","病着"],
-      '🚁 ヘリ':["ヘリ覚知","ヘリ指令","ヘリ出動","ヘリ現着","Dr接触","RP着"],
-      '💉 処置':["ルート確保","酸素投与","気管挿管","アドレナリン","モニター装着"],
-      '📋 情報':["主訴","胸痛","JCS","GCS","バイタル測定"]
+  function renderTagButtons() {
+    const box = document.getElementById('tagButtons');
+    box.innerHTML = '';
+    const cats = {
+      '🚑 先行救急隊': ["先行救急隊現着", "先行救急隊接触", "先行救急隊車内収容", "先行救急隊現発", "先行救急隊病着"],
+      '🚁 ヘリ': ["ヘリ出動", "ヘリ現着", "ヘリDr接触", "ヘリRP着"],
+      '🚗 Dr Car': ["Dr Car出動", "Dr Car現着", "Dr Car接触", "Dr Car現発", "Dr Car病着"]
     };
-    Object.entries(cats).forEach(([cat,tags])=>{
-      const h=document.createElement('div');
-      h.style.cssText='width:100%;font-weight:700;font-size:10px;margin:6px 0 2px;border-left:3px solid #3498db;padding-left:4px;';
-      h.textContent=cat; box.appendChild(h);
-      tags.forEach(tag=>{
-        const b=document.createElement('button'); b.className='btn'; b.textContent=tag;
-        b.onclick=async ()=>{
-          if(selectedId){
-            const row=logs.find(r=>r.id===selectedId);
-            if(row && !row.tags.includes(tag)){ row.tags.push(tag); save(); render(); }
-          }else{
-            const addr = await fetchAddressFromGPS();
-            addLine(tag, addr, false); // タグはAI通さない
-          }
+    Object.entries(cats).forEach(([cat, tags]) => {
+      const h = document.createElement('div');
+      h.style.cssText = 'width:100%;font-weight:700;font-size:10px;margin:6px 0 2px;border-left:3px solid #3498db;padding-left:4px;';
+      h.textContent = cat;
+      box.appendChild(h);
+      tags.forEach(tag => {
+        const b = document.createElement('button');
+        b.className = 'btn';
+        b.textContent = tag;
+        b.onclick = async () => {
+          const addr = await fetchAddressFromGPS();
+          addLine(tag, addr, false);
         };
         box.appendChild(b);
       });
     });
   }
 
-  /* --- Wake Lock & Audio Loop (v2.4.6 Logic) --- */
+  /* --- Wake Lock --- */
   class EnhancedWakeLock {
     constructor() {
-      this.wakeLock = null; this.noSleepVideo = null; this.silentAudioCtx = null;
+      this.wakeLock = null;
+      this.noSleepVideo = null;
+      this.silentAudioCtx = null;
       this.setupNoSleepVideo();
     }
     setupNoSleepVideo() {
       this.noSleepVideo = document.createElement('video');
-      this.noSleepVideo.setAttribute('playsinline',''); this.noSleepVideo.setAttribute('muted','');
-      this.noSleepVideo.setAttribute('loop',''); this.noSleepVideo.style.display='none';
+      this.noSleepVideo.setAttribute('playsinline', '');
+      this.noSleepVideo.setAttribute('muted', '');
+      this.noSleepVideo.setAttribute('loop', '');
       this.noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAA1m1vb3YAAABsbXZoZAAAAAAAAAAAAAAAAAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjU2LjQwLjEwMQ==';
+      this.noSleepVideo.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
       document.body.appendChild(this.noSleepVideo);
     }
     startSilentAudio() {
-      if (!this.silentAudioCtx) this.silentAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
-      if (this.silentAudioCtx.state==='suspended') this.silentAudioCtx.resume();
-      const osc=this.silentAudioCtx.createOscillator(); const g=this.silentAudioCtx.createGain();
-      osc.connect(g); g.connect(this.silentAudioCtx.destination);
-      osc.frequency.value=440; g.gain.value=0.001; osc.start();
+      if (!this.silentAudioCtx) this.silentAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.silentAudioCtx.state === 'suspended') this.silentAudioCtx.resume();
+      const osc = this.silentAudioCtx.createOscillator();
+      const g = this.silentAudioCtx.createGain();
+      osc.connect(g);
+      g.connect(this.silentAudioCtx.destination);
+      osc.frequency.value = 440;
+      g.gain.value = 0.001;
+      osc.start();
     }
     async request() {
-      if(!document.getElementById('keepScreenOn').checked) return;
-      if('wakeLock' in navigator){ try{ this.wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
-      try{ await this.noSleepVideo.play(); }catch(e){}
-      try{ this.startSilentAudio(); }catch(e){}
+      if (!document.getElementById('keepScreenOn').checked) return;
+      if ('wakeLock' in navigator) {
+        try {
+          this.wakeLock = await navigator.wakeLock.request('screen');
+        } catch (e) { console.error('WakeLock API failed:', e); }
+      }
+      try {
+        await this.noSleepVideo.play();
+      } catch (e) { console.warn('Video play for NoSleep failed:', e); }
+      try {
+        this.startSilentAudio();
+      } catch (e) { console.warn('Silent audio for NoSleep failed:', e); }
     }
     async release() {
-      if(this.wakeLock) { this.wakeLock.release(); this.wakeLock=null; }
+      if (this.wakeLock) {
+        try { this.wakeLock.release(); } catch (e) {}
+        this.wakeLock = null;
+      }
       this.noSleepVideo.pause();
-      if(this.silentAudioCtx) { this.silentAudioCtx.close(); this.silentAudioCtx=null; }
+      if (this.silentAudioCtx) {
+        try { this.silentAudioCtx.close(); } catch (e) {}
+        this.silentAudioCtx = null;
+      }
     }
   }
   const enhancedWakeLock = new EnhancedWakeLock();
 
   /* --- Voice Recognition --- */
   class VoiceRec {
-    constructor(){
-      this.rec=null; this.isRec=false; this.timer=null;
+    constructor() {
+      this.rec = null;
+      this.isRec = false;
+      this.timer = null;
     }
-    async start(){
-      try{
-        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    async start() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+             throw new Error('getUserMedia not supported in this browser.');
+        }
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        
         const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(!Speech) throw new Error('No API');
+        if (!Speech) throw new Error('Speech Recognition API not available.');
+        
+        if (this.rec) {
+            try { this.rec.stop(); } catch(e) {}
+        }
         
         this.rec = new Speech();
-        this.rec.lang='ja-JP'; this.rec.continuous=true; this.rec.interimResults=true;
-        
+        this.rec.lang = 'ja-JP';
+        this.rec.continuous = true;
+        this.rec.interimResults = true;
+        this.rec.endSilenceTimeout = 2.0;
+        this.rec.maxAlternatives = 1;
+
         this.rec.onresult = (e) => {
-          let interim='';
-          let finalFound = false;
-          for(let i=e.resultIndex; i<e.results.length; i++){
-            if(e.results[i].isFinal){
+          let interim = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) {
               const t = e.results[i][0].transcript;
               const useAI = document.getElementById('useAI').checked;
-              addLine(t, '', useAI); // 音声のみAI通す
-              document.getElementById('voiceStatusText').textContent='確定: '+t.substring(0,8)+'...';
-              feedback.playBeep(600, 50); // 復元: 音声確定時のフィードバック
-              finalFound = true;
+              addLine(t, '', useAI);
+              document.getElementById('voiceStatusText').textContent = '確定: ' + t.substring(0, 8) + '...';
+              feedback.playBeep(600, 50);
             } else {
               interim += e.results[i][0].transcript;
             }
           }
-          document.getElementById('voiceInterim').textContent=interim;
+          document.getElementById('voiceInterim').textContent = interim;
         };
-        this.rec.onend = () => { if(this.isRec) this.rec.start(); }; // Auto restart
+        this.rec.onend = () => {
+          if (this.isRec) {
+            this.rec.start();
+          }
+        };
+        this.rec.onerror = (e) => {
+             console.error('Speech Recognition Error:', e);
+             if (e.error === 'not-allowed') {
+                this.stop();
+                document.getElementById('permissionAlert').classList.add('show');
+             } else if (e.error !== 'no-speech') {
+                 this.stop();
+                 if (this.isRec) this.start();
+             }
+        };
         
         this.rec.start();
-        this.isRec=true;
+        this.isRec = true;
         enhancedWakeLock.request();
         document.getElementById('voiceBtn').classList.add('active');
-        document.getElementById('voiceStatusTitle').textContent='録音中';
-        document.getElementById('recordingBanner').classList.add('show');
+        document.getElementById('voiceStatusTitle').textContent = '録音中';
+        document.getElementById('voiceStatusText').textContent = '音声を認識しています...';
+        document.getElementById('recordingIndicator').classList.add('show');
         this.startTimer();
-        feedback.playBeep(1000, 100); // 復元: 録音開始時のフィードバック
-      } catch(e){
-        alert('マイク起動エラー: '+e.message);
+        feedback.playBeep(1000, 100);
+        document.getElementById('permissionAlert').classList.remove('show');
+      } catch (e) {
+        showSystemStatus('マイク起動エラー: ' + e.message.substring(0, 50) + '...', 'error');
+        if (e.message.includes('permission')) {
+            document.getElementById('permissionAlert').classList.add('show');
+        }
+        this.stop();
       }
     }
-    stop(){
-      this.isRec=false;
-      if(this.rec) this.rec.stop();
+    stop() {
+      this.isRec = false;
+      if (this.rec) {
+        try {
+          this.rec.onend = null;
+          this.rec.stop();
+        } catch(e) {}
+      }
       enhancedWakeLock.release();
       document.getElementById('voiceBtn').classList.remove('active');
-      document.getElementById('voiceStatusTitle').textContent='停止中';
-      document.getElementById('recordingBanner').classList.remove('show');
+      document.getElementById('voiceStatusTitle').textContent = '停止中';
+      document.getElementById('voiceStatusText').textContent = 'ボタンを押して録音開始';
+      document.getElementById('voiceInterim').textContent = '';
+      document.getElementById('recordingIndicator').classList.remove('show');
       clearInterval(this.timer);
     }
-    toggle(){ if(this.isRec) this.stop(); else this.start(); }
-    startTimer(){
-      const el=document.getElementById('recordingTime'); let s=0;
-      this.timer=setInterval(()=>{ s++; el.textContent=`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },1000);
+    toggle() {
+      if (this.isRec) this.stop();
+      else this.start();
+    }
+    startTimer() {
+      const el = document.getElementById('recordingTime');
+      let s = 0;
+      this.timer = setInterval(() => {
+        s++;
+        el.textContent = `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+        updateAIQueueInfo();
+      }, 1000);
     }
   }
   const voiceRec = new VoiceRec();
 
-  /* --- Init --- */
-  document.getElementById('voiceBtn').onclick = ()=>voiceRec.toggle();
-  document.getElementById('btnSaveKey').onclick = ()=>{ gemini.setKey(document.getElementById('apiKeyInput').value); };
-  document.getElementById('btnCopy').onclick = ()=>copyLogs(false);
-  document.getElementById('btnCopyAddr').onclick = ()=>copyLogs(true);
-  document.getElementById('btnClear').onclick = ()=>{ if(confirm('全消去?')){ logs=[]; save(); render(); updateStats(); } };
-  
-  // 手入力欄
-  let inputTimer;
-  document.getElementById('input').addEventListener('input', (e)=>{
-    clearTimeout(inputTimer);
-    inputTimer = setTimeout(async ()=>{
-      if(e.target.value.trim()){
-        const addr = await fetchAddressFromGPS();
-        addLine(e.target.value, addr, false); // 手入力はAI通さない
-        e.target.value='';
-      }
-    }, 1500); // 1.5秒待機で確定
-  });
-
   /* --- Utils --- */
-  function showSystemStatus(msg, type){
-    const el=document.getElementById('systemStatus');
-    el.textContent=msg; el.className='system-status '+type; el.style.display='block';
-    setTimeout(()=>el.style.display='none',3000);
+  function showSystemStatus(msg, type) {
+    const el = document.getElementById('systemStatus');
+    el.textContent = msg;
+    el.className = 'system-status ' + type;
+    el.style.display = 'block';
+    const duration = (type === 'error' || type === 'warning') ? 5000 : 3000;
+    setTimeout(() => el.style.display = 'none', duration);
   }
-  function updateStats(){
+  
+  function updateStats() {
+    const logs = getLogs();
     document.getElementById('totalLogs').textContent = logs.length;
-    if(logs.length>1){
-      const [h1,m1,s1]=logs[0].time.split(':'); const [h2,m2,s2]=logs[logs.length-1].time.split(':');
-      const diff=Math.floor(((h2*3600+m2*60+s2*1)-(h1*3600+m1*60+s1*1))/60);
-      document.getElementById('totalTime').textContent=diff+'分';
+    document.getElementById('aiProcessed').textContent = aiStats.processed;
+    document.getElementById('aiPending').textContent = aiLimiter.queue.length;
+    
+    if (logs.length > 1) {
+      const timeStrs = logs.map(l => l.time).sort();
+      const [h1, m1, s1] = timeStrs[0].split(':').map(Number);
+      const [h2, m2, s2] = timeStrs[timeStrs.length - 1].split(':').map(Number);
+      
+      const totalSeconds1 = h1 * 3600 + m1 * 60 + s1;
+      const totalSeconds2 = h2 * 3600 + m2 * 60 + s2;
+      
+      let diff = totalSeconds2 - totalSeconds1;
+      if (diff < 0) {
+          diff += 24 * 3600; 
+      }
+      
+      const minutes = Math.floor(diff / 60);
+      document.getElementById('totalTime').textContent = minutes + '分';
+    } else {
+      document.getElementById('totalTime').textContent = '0分';
     }
   }
-  function copyLogs(addr){
-    const txt = logs.map(l => `${l.time} ${l.text} ${addr&&l.address?'('+l.address+')':''}`).join('\n');
-    navigator.clipboard.writeText(txt); alert('コピー完了');
+  
+  function shareLogs(addr) {
+    const logs = getLogs();
+    if (logs.length === 0) {
+      alert('記録がありません');
+      return;
+    }
+    
+    const currentCase = cases[currentCaseId];
+    const txt = logs.map(l => {
+        let line = `${l.time} ${l.text}`;
+        if (addr && l.address) {
+            line += ` (📍 ${l.address})`;
+        }
+        if (l.aiError) {
+            line += ` (❌ AI処理失敗)`;
+        }
+        return line;
+    }).join('\n');
+    
+    const fileName = `${currentCase.name}.txt`;
+    
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    
+    a.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+    showSystemStatus('ファイルをダウンロードしました。「ファイル」アプリから共有できます', 'success');
   }
+  
   // Edit Modal
   window.openEditModal = (id) => {
-    editingLogId=id; const row=logs.find(r=>r.id===id);
-    if(row){ document.getElementById('editText').value=row.text; document.getElementById('editModal').classList.add('show'); }
+    editingLogId = id;
+    const row = getLogs().find(r => r.id === id);
+    if (row) {
+      document.getElementById('editText').value = row.text;
+      document.getElementById('editModal').classList.add('show');
+    }
   };
+  
   document.getElementById('btnSaveEdit').onclick = () => {
-    const row=logs.find(r=>r.id===editingLogId);
-    if(row){ row.text=document.getElementById('editText').value; save(); render(); }
+    const row = getLogs().find(r => r.id === editingLogId);
+    if (row) {
+      const newText = document.getElementById('editText').value;
+      if (row.text !== newText) {
+          row.text = newText;
+          row.aiProcessed = false;
+          row.aiError = false;
+          // 📌 NEW v2.8.0: 編集後にカテゴリを再検出
+          row.categories = detectCategory(newText);
+          aiLimiter.enqueue(row.id, row.text);
+      }
+      save();
+      render();
+      updateCriticalStats();
+    }
     document.getElementById('editModal').classList.remove('show');
   };
-  document.getElementById('btnCancelEdit').onclick = ()=>document.getElementById('editModal').classList.remove('show');
+  
+  document.getElementById('btnCancelEdit').onclick = () => document.getElementById('editModal').classList.remove('show');
 
-  window.onload=()=>{ load(); render(); renderTagButtons(); setInterval(()=>document.getElementById('clock').textContent=nowHHMMSS(),1000); };
+  /* --- Init --- */
+  document.getElementById('voiceBtn').onclick = () => voiceRec.toggle();
+  document.getElementById('btnSaveKey').onclick = () => {
+    gemini.setKey(document.getElementById('apiKeyInput').value);
+  };
+  document.getElementById('btnCopy').onclick = () => shareLogs(false);
+  document.getElementById('btnCopyAddr').onclick = () => shareLogs(true);
+  document.getElementById('btnClear').onclick = () => {
+    if (confirm('現在のケースの全ログを消去しますか?')) {
+      cases[currentCaseId].logs = [];
+      aiStats.processed = 0;
+      aiLimiter.queue = [];
+      save();
+      render();
+      updateStats();
+      updateAIQueueInfo();
+      updateCriticalStats();
+    }
+  };
+
+  window.onload = () => {
+    load();
+    render();
+    renderTagButtons();
+    document.getElementById('apiKeyInput').value = gemini.key;
+    
+    updateAIQueueInfo();
+    updateStats();
+    updateCriticalStats();
+    
+    setInterval(() => document.getElementById('clock').textContent = nowHHMMSS(), 1000);
+  };
 </script>
 </body>
 </html>
