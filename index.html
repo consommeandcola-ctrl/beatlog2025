@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MedWorkLog Ver.4.4.0</title>
+    <title>MedWorkLog Ver.4.4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js"></script>
@@ -61,8 +61,11 @@
 
     <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow-md flex justify-between items-center no-print">
         <div>
-            <h1 class="text-lg font-bold"><i class="fas fa-user-md mr-2"></i>勤務実態記録 v4.4</h1>
-            <p class="text-xs opacity-80" id="current-status-text">バックグラウンド追尾対応</p>
+            <h1 class="text-lg font-bold"><i class="fas fa-user-md mr-2"></i>勤務実態記録 v4.4.1</h1>
+            <div class="flex items-center gap-2">
+                <p class="text-xs opacity-80" id="current-status-text">GPS初期化中...</p>
+                <div id="gps-debug-info" class="text-[10px] bg-indigo-800 px-1 rounded hidden"></div>
+            </div>
         </div>
         <div class="flex gap-2">
             <button onclick="openPastWork()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700" title="過去勤務"><i class="fas fa-calendar-plus fa-lg"></i></button>
@@ -304,24 +307,62 @@
             document.getElementById('setting-hospital-name').value=config.hospitalName;document.getElementById('setting-user-name').value=config.userName;document.getElementById('auto-no-break').checked=config.autoNoBreak;
         }
 
-        // ==================== GPS & LOGGING (Auto-Freeze Fix) ====================
-        function initGeoLocation(){if("geolocation" in navigator)navigator.geolocation.watchPosition(p=>{state.lastGPSCoords={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy};const d=getDist(p.coords.latitude,p.coords.longitude,config.hospitalLat,config.hospitalLng);handleLocation(d<config.radius);},e=>{},{enableHighAccuracy:true});}
+        // ==================== GPS & LOGGING (FIXED) ====================
+        function initGeoLocation(){
+            if("geolocation" in navigator) {
+                // Initial fetch
+                navigator.geolocation.getCurrentPosition(
+                    (p)=>{ handleGPSUpdate(p); },
+                    (e)=>{ handleGPSError(e); },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+                // Watch
+                navigator.geolocation.watchPosition(
+                    (p)=>{ handleGPSUpdate(p); },
+                    (e)=>{ handleGPSError(e); },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else {
+                document.getElementById('current-status-text').innerText = "GPS非対応";
+            }
+        }
+        function handleGPSUpdate(p){
+            state.lastGPSCoords={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy};
+            const d=getDist(p.coords.latitude,p.coords.longitude,config.hospitalLat,config.hospitalLng);
+            
+            // Debug info
+            const debugEl = document.getElementById('gps-debug-info');
+            debugEl.style.display = 'block';
+            debugEl.innerText = `${new Date().toLocaleTimeString()} 精度:${Math.round(p.coords.accuracy)}m`;
+            document.getElementById('current-status-text').innerText = d < config.radius ? "院内エリア" : "院外エリア";
+            
+            handleLocation(d<config.radius);
+        }
+        function handleGPSError(e){
+            let msg = "GPSエラー: ";
+            switch(e.code) {
+                case 1: msg+="許可拒否"; break;
+                case 2: msg+="取得不可"; break;
+                case 3: msg+="タイムアウト"; break;
+                default: msg+=e.message; break;
+            }
+            document.getElementById('current-status-text').innerText = msg;
+        }
+
         function getDist(lat1,lon1,lat2,lon2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+        
         function handleLocation(isInside){
             const prev=state.isInside; state.isInside=isInside;
             const card=document.getElementById('status-card'),txt=document.getElementById('location-status'),btn=document.getElementById('manual-entry-btn');
             
             if(isInside){
                 card.classList.add('border-green-500'); txt.innerText="院内/勤務中"; btn.innerText="手動退館";
-                // Auto Entry
                 if(!prev) addLog('ENTRY','GPS自動入館',state.lastGPSCoords);
-                state.pendingExitTime = null; // reset pending exit
+                state.pendingExitTime = null; 
             }
             else{
                 card.classList.remove('border-green-500'); txt.innerText="院外/OFF"; btn.innerText="手動入館";
-                // Detect EXIT while asleep/background
                 if(prev && state.status !== 'MOBILE_WORK') {
-                    // CRITICAL: Capture time NOW
                     state.pendingExitTime = new Date().toISOString();
                     document.getElementById('exitModal').style.display='block'; 
                 }
@@ -339,11 +380,8 @@
         function confirmExit(r){
             document.getElementById('exitModal').style.display='none';
             if(r==='IGNORE'){ state.pendingExitTime = null; return; }
-            
-            // Use pending timestamp if available (the moment user left the radius), else current time
             const exitTime = state.pendingExitTime || new Date().toISOString();
             state.pendingExitTime = null;
-
             if(r==='MOBILE_WORK'){state.status='MOBILE_WORK';addLog('EXIT','業務外出',state.lastGPSCoords,exitTime);}
             else{state.status='OUTSIDE';addLog('EXIT','勤務終了',state.lastGPSCoords,exitTime);}
             updateStatusUI();recalcToday();
@@ -355,7 +393,7 @@
             else{c.classList.remove('border-green-500','border-orange-400');t.innerText='OFF';b.innerText='入館';}
         }
 
-        // ==================== CALCULATION (Same as Ver 4.2.0) ====================
+        // ==================== CALCULATION ====================
         function getCumulativeMonthlyOt(targetDateStr) {
             const targetDate = new Date(targetDateStr);
             const year = targetDate.getFullYear(); const month = targetDate.getMonth();
@@ -476,6 +514,7 @@
         function recalcToday(){
             const today = new Date().toLocaleDateString('en-CA');
             const s = calculateDailyStats(today);
+            
             if(s && !s.isOff){
                 document.getElementById('today-work-hours').innerText = s.netWorkHours.toFixed(1)+'h';
                 document.getElementById('today-ot-hours').innerText = s.otHours.toFixed(1)+'h';
@@ -483,22 +522,40 @@
                 document.getElementById('calc-breakdown').innerText = `本来の残業代: ¥${s.legalPay.toLocaleString()}`;
                 state.lastCalcText = s.text;
             } else {
-                document.getElementById('today-work-hours').innerText = '0h'; document.getElementById('today-ot-hours').innerText = '0h'; document.getElementById('today-fixed-allowance').innerText = '¥0'; document.getElementById('calc-breakdown').innerText = 'ログなし';
+                document.getElementById('today-work-hours').innerText = '0h';
+                document.getElementById('today-ot-hours').innerText = '0h';
+                document.getElementById('today-fixed-allowance').innerText = '¥0';
+                document.getElementById('calc-breakdown').innerText = 'ログなし';
             }
             
-            const now = new Date(); const year = now.getFullYear(); const month = now.getMonth(); const daysInMonth = new Date(year, month + 1, 0).getDate();
-            let totalActual = config.managerAllowance || 0; let totalLegal = 0;
+            const now = new Date();
+            const year = now.getFullYear(); const month = now.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let totalActual = config.managerAllowance || 0;
+            let totalLegal = 0;
+            
             for(let d=1; d<=daysInMonth; d++){
                 const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const stat = calculateDailyStats(dateStr);
                 if(stat) { totalActual += stat.actualPay; totalLegal += stat.legalPay; }
             }
+            
             const balance = totalActual - totalLegal;
             const balanceEl = document.getElementById('month-balance');
+            
             document.getElementById('month-actual-pay').innerText = '¥' + totalActual.toLocaleString();
             document.getElementById('month-legal-pay').innerText = '¥' + totalLegal.toLocaleString();
-            if (balance < 0) { balanceEl.innerText = '-¥' + Math.abs(balance).toLocaleString(); balanceEl.className = "text-3xl font-extrabold text-red-600 blink-red"; document.getElementById('month-balance-text').innerText = "損失発生中 (名ばかり管理職)"; } 
-            else { balanceEl.innerText = '+¥' + balance.toLocaleString(); balanceEl.className = "text-3xl font-extrabold text-green-600"; document.getElementById('month-balance-text').innerText = "管理職手当内で推移"; }
+            
+            if (balance < 0) {
+                balanceEl.innerText = '-¥' + Math.abs(balance).toLocaleString();
+                balanceEl.className = "text-3xl font-extrabold text-red-600 blink-red";
+                document.getElementById('month-balance-text').innerText = "損失発生中 (名ばかり管理職)";
+            } else {
+                balanceEl.innerText = '+¥' + balance.toLocaleString();
+                balanceEl.className = "text-3xl font-extrabold text-green-600";
+                document.getElementById('month-balance-text').innerText = "管理職手当内で推移";
+            }
+            
             updateCharts();
         }
 
@@ -542,9 +599,10 @@
             const shift = document.getElementById('past-shift').value;
             if (!date) return alert('日付選択必須');
             state.dailyShifts[date] = shift; localStorage.setItem(DAILY_SHIFTS_KEY, JSON.stringify(state.dailyShifts));
+            
             if (shift === 'off') {
                 const offDate = new Date(`${date}T00:00:00`);
-                state.logs.push({id:Date.now(), timestamp: offDate.toISOString(), type:'OFF', note:'完全休日 [過去入力]', manual:true});
+                state.logs.push({ id: Date.now(), timestamp: offDate.toISOString(), type: 'OFF', note: '完全休日 [過去入力]', manual: true });
                 state.appliedAllowances[date] = 0;
             } else {
                 const start = document.getElementById('past-start').value; const end = document.getElementById('past-end').value;
@@ -620,7 +678,8 @@
         function saveManualLog(){
             const ts = document.getElementById('manual-timestamp').value; const type = document.getElementById('manual-type').value; const note = document.getElementById('manual-note').value;
             if(!ts || !note) return alert('入力不備');
-            addLog(type, note + ' [手動]', null, new Date(ts).toISOString()); closeManualLog();
+            addLog(type, note + ' [手動]', null); state.logs[0].timestamp = new Date(ts).toISOString(); state.logs.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+            saveLogs(); recalcToday(); closeManualLog();
         }
         function openDataManagement(){ document.getElementById('dataModal').style.display='block'; }
         function closeDataManagement(){ document.getElementById('dataModal').style.display='none'; }
@@ -635,8 +694,6 @@
         function closeDailyDetail(){ document.getElementById('dailyModal').style.display='none'; }
         function updateClock(){ document.getElementById('clock-display').innerText = new Date().toLocaleTimeString('ja-JP'); }
         function exportCSV(){ let csv = "Date,Type,Note\n"; state.logs.forEach(l => csv += `${l.timestamp},${l.type},${l.note}\n`); const blob = new Blob([csv], {type:'text/csv'}); const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='logs.csv'; a.click(); }
-        function logActivity(n){addLog('ACTIVITY',n,state.lastGPSCoords);}
-        function startBreak(){state.onBreak=!state.onBreak;addLog(state.onBreak?'BREAK_START':'BREAK_END',state.onBreak?'休憩開始':'休憩終了');}
 
         window.onload = init;
     </script>
