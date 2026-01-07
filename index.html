@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MedWorkLog Ver.4.5.1</title>
+    <title>MedWorkLog Ver.4.5.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js"></script>
@@ -67,8 +67,8 @@
 
     <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow-md flex justify-between items-center no-print">
         <div>
-            <h1 class="text-lg font-bold"><i class="fas fa-user-md mr-2"></i>勤務実態記録 v4.5.1</h1>
-            <p class="text-xs opacity-80">初回検知時刻記録対応</p>
+            <h1 class="text-lg font-bold"><i class="fas fa-user-md mr-2"></i>勤務実態記録 v4.5.2</h1>
+            <p class="text-xs opacity-80">セッション復元対応</p>
         </div>
         <div class="flex gap-2">
             <button onclick="openPastWork()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700" title="過去勤務"><i class="fas fa-calendar-plus fa-lg"></i></button>
@@ -407,6 +407,10 @@
         // ==================== INIT ====================
         function init() {
             loadData();
+            
+            // GPS安定化変数を現在のstateに合わせて初期化
+            lastGpsState = state.isInside;
+            
             updateClock();
             setInterval(updateClock, 1000);
             initGeoLocation();
@@ -426,6 +430,8 @@
                 document.getElementById('daily-shift-select').value = state.dailyShifts[today];
             }
             updateShiftModeIndicator();
+            
+            console.log(`Init complete: status=${state.status}, isInside=${state.isInside}`);
         }
         
         function loadData() {
@@ -455,6 +461,53 @@
             
             // 本日の出動回数をカウント
             countTodayDispatches();
+            
+            // 本日のログから現在のstatusを復元
+            restoreStatusFromLogs();
+        }
+        
+        function restoreStatusFromLogs() {
+            const today = getTodayStr();
+            const todayLogs = state.logs
+                .filter(l => new Date(l.timestamp).toLocaleDateString('en-CA') === today)
+                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            if (todayLogs.length === 0) {
+                state.status = 'OFF';
+                state.isInside = false;
+                return;
+            }
+            
+            // 最新のログから状態を判定
+            let entryCount = 0, exitCount = 0, dispatchCount = 0, returnCount = 0;
+            
+            todayLogs.forEach(l => {
+                if (l.type === 'ENTRY') entryCount++;
+                if (l.type === 'EXIT') exitCount++;
+                if (l.type === 'DISPATCH') dispatchCount++;
+                if (l.type === 'RETURN') returnCount++;
+            });
+            
+            // 出動中かどうか
+            if (dispatchCount > returnCount) {
+                state.status = 'DISPATCHED';
+                state.isInside = false;
+                console.log('Status restored: DISPATCHED');
+                return;
+            }
+            
+            // 勤務中かどうか
+            if (entryCount > exitCount) {
+                state.status = 'WORKING';
+                state.isInside = true;
+                console.log('Status restored: WORKING');
+                return;
+            }
+            
+            // それ以外はOFF
+            state.status = 'OFF';
+            state.isInside = false;
+            console.log('Status restored: OFF');
         }
         
         function getTodayStr() { return new Date().toLocaleDateString('en-CA'); }
