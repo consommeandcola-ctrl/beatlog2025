@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MedWorkLog Ver.4.5.0</title>
+    <title>MedWorkLog Ver.4.5.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js"></script>
@@ -67,8 +67,8 @@
 
     <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow-md flex justify-between items-center no-print">
         <div>
-            <h1 class="text-lg font-bold"><i class="fas fa-user-md mr-2"></i>勤務実態記録 v4.5</h1>
-            <p class="text-xs opacity-80">プレホス勤務対応版</p>
+            <h1 class="text-lg font-bold"><i class="fas fa-user-md mr-2"></i>勤務実態記録 v4.5.1</h1>
+            <p class="text-xs opacity-80">初回検知時刻記録対応</p>
         </div>
         <div class="flex gap-2">
             <button onclick="openPastWork()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700" title="過去勤務"><i class="fas fa-calendar-plus fa-lg"></i></button>
@@ -338,9 +338,10 @@
                 <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
                     <label class="block text-sm font-bold text-yellow-900 mb-2"><i class="fas fa-satellite mr-1"></i>GPS設定</label>
                     <div class="grid grid-cols-2 gap-3 mb-2">
-                        <div><label class="block text-xs font-bold">精度閾値 (m)</label><input type="number" id="setting-gps-accuracy" class="w-full border p-1 rounded" value="100"></div>
+                        <div><label class="block text-xs font-bold">精度閾値 (m)</label><input type="number" id="setting-gps-accuracy" class="w-full border p-1 rounded" value="200"></div>
                         <div><label class="block text-xs font-bold">安定回数</label><input type="number" id="setting-gps-stable" class="w-full border p-1 rounded" value="3"></div>
                     </div>
+                    <p class="text-[10px] text-gray-600">※初回検知時刻で記録されます</p>
                 </div>
                 <div><label class="block text-sm font-bold text-gray-700">情報</label>
                     <input type="text" id="setting-user-name" class="w-full border p-2 rounded mb-1" placeholder="氏名">
@@ -383,7 +384,7 @@
             allowanceTiers: { tier1: 5000, tier2: 6500, tier3: 9000, tier4: 10000 },
             hospitalLat: 31.573568, hospitalLng: 130.541833, radius: 300,
             hospitalName: '鹿児島市立病院', userName: '', 
-            gpsAccuracyLimit: 100, gpsStableThreshold: 3
+            gpsAccuracyLimit: 200, gpsStableThreshold: 3
         };
         
         let state = {
@@ -401,6 +402,7 @@
         // GPS安定化
         let gpsStableCount = 0;
         let lastGpsState = null;
+        let firstStateChangeTime = null;  // 最初に状態が変わった時刻を保存
 
         // ==================== INIT ====================
         function init() {
@@ -473,19 +475,26 @@
                     const currentlyInside = distance < config.radius;
                     
                     if (accuracy > config.gpsAccuracyLimit) {
-                        updateGpsDebug(`精度不足 ${accuracy.toFixed(0)}m`, 'gps-warning');
+                        updateGpsDebug(`精度不足 ${accuracy.toFixed(0)}m (>${config.gpsAccuracyLimit}m)`, 'gps-warning');
                         return;
                     }
                     
-                    if (currentlyInside === lastGpsState) { gpsStableCount++; }
-                    else { gpsStableCount = 1; lastGpsState = currentlyInside; }
+                    if (currentlyInside === lastGpsState) { 
+                        gpsStableCount++; 
+                    } else { 
+                        gpsStableCount = 1; 
+                        lastGpsState = currentlyInside;
+                        firstStateChangeTime = new Date();  // 最初の変化時刻を記録
+                    }
                     
                     const icon = currentlyInside ? '🏥' : '📍';
                     updateGpsDebug(`${icon} ${distance.toFixed(0)}m / 精度${accuracy.toFixed(0)}m [${gpsStableCount}/${config.gpsStableThreshold}]`, 
-                        accuracy < 50 ? 'gps-good' : 'gps-warning');
+                        accuracy < 100 ? 'gps-good' : 'gps-warning');
                     
                     if (gpsStableCount >= config.gpsStableThreshold) {
-                        handleLocationChange(currentlyInside);
+                        // 初回検知時刻を渡して処理
+                        handleLocationChange(currentlyInside, firstStateChangeTime);
+                        firstStateChangeTime = null;  // リセット
                     }
                 },
                 (e) => { updateGpsDebug(`GPSエラー: ${e.message}`, 'gps-bad'); },
@@ -505,22 +514,23 @@
         }
 
         // ==================== LOCATION HANDLING ====================
-        function handleLocationChange(isInside) {
+        function handleLocationChange(isInside, detectedTime) {
             const wasInside = state.isInside;
             if (wasInside === isInside) return;
             
             state.isInside = isInside;
             const prehospital = isPrehospitalShift();
+            const logTime = detectedTime || new Date();  // 検知時刻がなければ現在時刻
             
             if (isInside) {
                 // 院内に入った
                 if (state.status === 'DISPATCHED') {
                     // プレホス出動から帰還
-                    addLog('RETURN', '帰還 (GPS自動)');
+                    addLog('RETURN', '帰還 (GPS自動)', logTime);
                     state.status = 'WORKING';
                 } else if (state.status === 'OFF') {
                     // 出勤
-                    addLog('ENTRY', 'GPS自動入館');
+                    addLog('ENTRY', 'GPS自動入館', logTime);
                     state.status = 'WORKING';
                 }
             } else {
@@ -528,7 +538,7 @@
                 if (state.status === 'WORKING') {
                     if (prehospital) {
                         // プレホス勤務 → 自動で出動記録
-                        addLog('DISPATCH', 'プレホス出動 (GPS自動)');
+                        addLog('DISPATCH', 'プレホス出動 (GPS自動)', logTime);
                         state.status = 'DISPATCHED';
                         state.todayDispatchCount++;
                     } else {
@@ -656,10 +666,10 @@
         }
 
         // ==================== LOGGING ====================
-        function addLog(type, note) {
+        function addLog(type, note, timestamp = null) {
             state.logs.unshift({
                 id: Date.now(),
-                timestamp: new Date().toISOString(),
+                timestamp: (timestamp instanceof Date ? timestamp : new Date()).toISOString(),
                 type, note,
                 gps: state.lastGPSCoords,
                 shift: getCurrentShift()
