@@ -3,152 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MedWorkLog Ver.4.6.0</title>
+    <meta name="theme-color" content="#312e81">
+    <meta name="description" content="医療従事者向け勤務実態記録アプリ">
+    <title>MedWorkLog PWA v5.0</title>
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js"></script>
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; padding-bottom: 40px; }
         .btn-press { transition: transform 0.1s; }
         .btn-press:active { transform: scale(0.95); }
         .card { background: white; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        
         .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
         .modal-content { background-color: #fefefe; margin: 2% auto; padding: 20px; border: 1px solid #888; width: 95%; max-width: 900px; border-radius: 10px; max-height: 95vh; overflow-y: auto; }
-        
         .blink-red { animation: blinker 2s linear infinite; color: red; font-weight: bold; }
         @keyframes blinker { 50% { opacity: 0.5; } }
         .disabled-area { opacity: 0.4; pointer-events: none; }
         .rate-badge { font-size: 0.7em; padding: 1px 3px; border-radius: 3px; background: #fee2e2; color: #991b1b; border: 1px solid #f87171; margin-left: 4px; }
         .activity-selected { background-color: #3b82f6 !important; color: white !important; font-weight: bold; border-color: #2563eb !important; }
+        .log-item { position: relative; }
+        .log-item:hover .edit-btns { display: flex; }
+        .edit-btns { display: none; }
+        #storage-warning { display: none; background-color: #fee2e2; color: #991b1b; padding: 8px; text-align: center; font-weight: bold; border-bottom: 2px solid #ef4444; position: fixed; top: 0; left: 0; right: 0; z-index: 31; }
+        #footer-status { position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2937; color: #9ca3af; font-size: 10px; padding: 4px 10px; display: flex; justify-content: space-between; z-index: 40; }
+        header { min-height: 65px; }
+        header button { min-width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        #footer-status { position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2937; color: #9ca3af; font-size: 10px; padding: 4px 10px; display: flex; justify-content: space-between; z-index: 40; }
+        .backup-indicator { position: fixed; top: 70px; right: 10px; background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; z-index: 35; animation: fadeOut 3s forwards; }
+        @keyframes fadeOut { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         
-        /* Shift Type Styling */
-        .shift-prehospital { background: linear-gradient(135deg, #f97316, #ea580c); color: white; }
-        .shift-indoor { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
-        
-        /* Status Card Variations */
-        .status-prehospital-standby { background-color: #fff7ed !important; border-left-color: #f97316 !important; }
-        .status-prehospital-dispatch { background-color: #fef3c7 !important; border-left-color: #d97706 !important; }
-        .status-indoor-working { background-color: #eff6ff !important; border-left-color: #3b82f6 !important; }
-        .status-off { background-color: #f3f4f6 !important; border-left-color: #9ca3af !important; }
-        
-        /* Dispatch Counter Badge */
-        .dispatch-badge { 
-            background: linear-gradient(135deg, #f97316, #dc2626);
-            color: white; padding: 6px 14px; border-radius: 20px;
-            font-weight: bold; font-size: 14px;
-            display: inline-flex; align-items: center; gap: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        /* GPS */
-        .gps-good { color: #059669; }
-        .gps-warning { color: #d97706; }
-        .gps-bad { color: #dc2626; }
-        
-        /* Print */
         @media print {
-            body { background: white; color: black; }
+            body { background: white; color: black; padding-bottom: 0; }
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            .modal { position: static; background: none; width: 100%; height: auto; overflow: visible; }
-            .modal-content { width: 100%; max-width: 100%; margin: 0; padding: 0; border: none; box-shadow: none; max-height: none; }
+            #footer-status { display: none; }
+            .modal { position: static; background: none; }
+            .modal-content { width: 100%; max-width: 100%; margin: 0; border: none; box-shadow: none; }
+            table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            th, td { border: 1px solid #000; padding: 4px; }
+            .report-summary-box { border: 2px solid #000; padding: 10px; margin-bottom: 10px; }
         }
         .print-only { display: none; }
         .report-table { width: 100%; border-collapse: collapse; font-size: 11px; }
         .report-table th, .report-table td { border: 1px solid #ccc; padding: 4px; text-align: center; }
         .report-table th { background-color: #f0f0f0; font-weight: bold; }
+        .report-table td.text-left { text-align: left; }
+        .report-table td.text-right { text-align: right; }
         .report-table tr.holiday-row { background-color: #fff0f0; }
         .report-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .report-box { border: 1px solid #ccc; padding: 10px; border-radius: 4px; background: #fff; }
+        .mobile-work-active { background-color: #fffbeb; border-color: #f59e0b; }
+        .db-status-ok { color: #10b981; }
+        .db-status-error { color: #ef4444; }
     </style>
 </head>
 <body class="pb-24">
 
-    <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow-md flex justify-between items-center no-print">
-        <div>
-            <h1 class="text-lg font-bold"><i class="fas fa-user-md mr-2"></i>勤務実態記録 v4.6</h1>
-            <p class="text-xs opacity-80">GPS可視化・位置設定対応</p>
+    <div id="storage-warning" class="no-print">
+        <i class="fas fa-exclamation-triangle mr-2"></i>警告: データベース接続エラー！ データが保存されません
+    </div>
+
+    <header class="bg-indigo-900 text-white p-3 sticky top-0 z-30 shadow-md no-print">
+        <div class="flex justify-between items-center">
+            <!-- 左側: タイトルとステータス -->
+            <div class="flex-1 min-w-0" onclick="initGeoLocation()" class="cursor-pointer">
+                <div class="flex items-center gap-2 mb-1">
+                    <h1 class="text-base font-bold truncate">
+                        <i class="fas fa-user-md mr-1"></i>勤務記録 v5.0
+                    </h1>
+                    <span id="db-status-icon" class="flex-shrink-0 w-5 h-5 flex items-center justify-center" title="DB状態">
+                        <i class="fas fa-database text-xs"></i>
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                    <p class="opacity-80 truncate" id="current-status-text">GPS待機中...</p>
+                </div>
+            </div>
+            
+            <!-- 右側: ボタン群 -->
+            <div class="flex gap-1 flex-shrink-0 ml-2">
+                <button onclick="openPastWork()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700 transition" title="過去勤務">
+                    <i class="fas fa-calendar-plus"></i>
+                </button>
+                <button onclick="openManualLog()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700 transition" title="手動ログ">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+                <button onclick="openReport()" class="bg-red-600 text-white p-2 rounded hover:bg-red-700 shadow transition" title="レポート">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </button>
+                <button onclick="openBackupManager()" class="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition" title="バックアップ">
+                    <i class="fas fa-shield-alt"></i>
+                </button>
+                <button onclick="openSettings()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700 transition" title="設定">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
         </div>
-        <div class="flex gap-2">
-            <button onclick="openPastWork()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700" title="過去勤務"><i class="fas fa-calendar-plus fa-lg"></i></button>
-            <button onclick="openManualLog()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700" title="手動ログ"><i class="fas fa-plus-circle fa-lg"></i></button>
-            <button onclick="openReport()" class="bg-red-600 text-white p-2 rounded hover:bg-red-700 shadow-lg font-bold" title="レポート"><i class="fas fa-file-invoice-dollar fa-lg"></i></button>
-            <button onclick="openSettings()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700" title="設定"><i class="fas fa-cog fa-lg"></i></button>
-        </div>
+        
+        <!-- GPS詳細情報（デバッグ用・通常は非表示） -->
+        <div id="gps-debug-info" class="text-[9px] bg-indigo-800 px-2 py-1 rounded mt-2 hidden"></div>
     </header>
 
     <main class="p-4 space-y-4">
-
-        <!-- Status Card -->
         <div class="card p-4 border-l-4 border-gray-400" id="status-card">
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-sm text-gray-500 font-bold">現在地・勤務状況</h2>
-                    <div class="text-2xl font-bold mt-1" id="location-status">OFF</div>
+                    <div class="text-2xl font-bold mt-1" id="location-status">院外 / OFF</div>
                     <div class="text-sm text-gray-600 mt-1 font-mono" id="clock-display">--:--:--</div>
-                    <div class="text-xs text-gray-400 mt-1" id="session-info">セッション: なし</div>
                 </div>
-                <div class="text-right space-y-2">
-                    <div id="dispatch-counter-area" style="display:none;">
-                        <span class="dispatch-badge"><i class="fas fa-helicopter"></i>出動 <span id="dispatch-count">0</span>回</span>
-                    </div>
-                    <button onclick="handleMainButton()" id="main-btn" class="bg-green-600 text-white px-4 py-2 rounded shadow btn-press font-bold text-sm">
-                        手動入館
+                <div class="text-right">
+                    <button onclick="manualToggleEntry()" id="manual-entry-btn" class="bg-green-600 text-white px-4 py-2 rounded shadow btn-press font-bold text-xs">手動入館</button>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-gray-100">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-xs text-gray-500 font-bold">本日のシフト</label>
+                    <button onclick="showShiftHelp()" class="text-xs text-blue-600 hover:text-blue-800" title="シフトの説明">
+                        <i class="fas fa-question-circle"></i>
                     </button>
                 </div>
-            </div>
-            
-            <!-- GPS状態表示（大きく見やすく） -->
-            <div class="mt-3 p-3 rounded-lg border-2" id="gps-status-box" style="background: #f0f9ff; border-color: #0ea5e9;">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <div class="text-xs text-gray-500 font-bold">GPS判定</div>
-                        <div class="text-xl font-bold" id="gps-judgment">取得中...</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xs text-gray-500">病院まで</div>
-                        <div class="text-2xl font-bold" id="gps-distance">---m</div>
-                    </div>
-                </div>
-                <div class="mt-2 flex justify-between text-xs text-gray-500">
-                    <span id="gps-accuracy-display">精度: ---m</span>
-                    <span id="gps-radius-display">判定半径: ---m</span>
-                </div>
-                <div class="mt-1 w-full bg-gray-200 rounded-full h-2">
-                    <div class="h-2 rounded-full transition-all" id="gps-distance-bar" style="width: 0%; background: #22c55e;"></div>
-                </div>
-                <div class="text-[10px] text-gray-400 mt-1 text-center" id="gps-detail">位置情報を取得中...</div>
-            </div>
-            
-            <!-- Shift Selection -->
-            <div class="mt-3 pt-3 border-t border-gray-100">
-                <label class="text-xs text-gray-500 block mb-1 font-bold">本日のシフト</label>
-                <select id="daily-shift-select" onchange="updateShiftSelection()" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block p-2.5 font-bold">
-                    <option value="day_indoor">🏥 日勤 (院内) 8:30-17:15</option>
-                    <option value="day_prehospital">🚁 日勤 (プレホス) 8:30-17:15</option>
-                    <option value="semi_prehospital">🚁 準夜 (プレホス) 13:15-22:00</option>
-                    <option value="night_indoor">🏥 夜勤 (院内) 17:15-翌09:45</option>
-                    <option value="holiday">📅 休日出勤</option>
-                    <option value="off">✅ 休日 (勤務なし)</option>
+                <select id="daily-shift-select" onchange="updateShiftSelection()" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 block p-2">
+                    <optgroup label="通常勤務">
+                        <option value="day">日勤 (8:30-17:15)</option>
+                        <option value="semi">準夜 (13:15-22:00)</option>
+                        <option value="night">夜勤 (17:15-翌09:45)</option>
+                    </optgroup>
+                    <optgroup label="救急科専用">
+                        <option value="prehospital">🚁 プレホス (休憩なし)</option>
+                        <option value="er">🚑 救急当直 (休憩なし)</option>
+                        <option value="icu">🏥 ICU当直 (休憩なし)</option>
+                        <option value="oncall">📱 オンコール (17:15-翌8:30)</option>
+                    </optgroup>
+                    <optgroup label="休日">
+                        <option value="holiday">休日出勤</option>
+                        <option value="off">完全休日</option>
+                    </optgroup>
                 </select>
-                <div id="shift-mode-indicator" class="mt-2 text-xs text-center py-1 rounded hidden"></div>
+                <div id="shift-description" class="text-[10px] text-gray-500 mt-1 hidden"></div>
             </div>
         </div>
 
-        <!-- Monthly Balance -->
         <div class="card p-4 border-l-4 border-indigo-600">
-            <h2 class="text-sm text-indigo-900 font-bold mb-3 border-b pb-2"><i class="fas fa-balance-scale mr-2"></i>今月の待遇損益</h2>
+            <h2 class="text-sm text-indigo-900 font-bold mb-3 border-b pb-2"><i class="fas fa-balance-scale mr-2"></i>今月の待遇損益 (管理職 vs 一般職)</h2>
             <div class="grid grid-cols-2 gap-4 text-center mb-4">
                 <div class="bg-gray-50 p-2 rounded">
                     <div class="text-xs text-gray-500">A. 現状の支給予定</div>
                     <div class="text-lg font-bold text-blue-600" id="month-actual-pay">¥0</div>
-                    <div class="text-[10px] text-gray-400">管理職手当+固定手当</div>
                 </div>
                 <div class="bg-gray-50 p-2 rounded">
                     <div class="text-xs text-gray-500">B. 本来の残業代</div>
                     <div class="text-lg font-bold text-green-600" id="month-legal-pay">¥0</div>
-                    <div class="text-[10px] text-gray-400">法定割増(60h超対応)</div>
                 </div>
             </div>
             <div class="bg-indigo-50 border border-indigo-100 p-3 rounded text-center">
@@ -158,335 +168,466 @@
             </div>
         </div>
 
-        <!-- Today's Detail -->
         <div class="card p-4 border-l-4 border-red-500">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-sm text-gray-500 font-bold"><i class="fas fa-calculator mr-2"></i>本日の詳細</h2>
-                <button onclick="openDetailModal()" class="text-xs bg-gray-100 text-gray-600 border px-3 py-1 rounded hover:bg-gray-200 shadow-sm">
-                    <i class="fas fa-copy mr-1"></i>詳細・コピー
-                </button>
+                <button onclick="openDetailModal()" class="text-xs bg-gray-100 border px-3 py-1 rounded shadow-sm">詳細コピー</button>
             </div>
             <div class="grid grid-cols-2 gap-4 mb-3">
-                <div class="border rounded p-2 bg-gray-50">
-                    <div class="text-xs text-gray-500">実働 / 残業</div>
-                    <div class="text-lg font-bold"><span id="today-work-hours">0.0h</span> / <span id="today-ot-hours" class="text-red-600">0.0h</span></div>
-                </div>
-                <div class="border rounded p-2 bg-blue-50">
-                    <div class="text-xs text-blue-600">固定手当(本日)</div>
-                    <div class="text-lg font-bold text-blue-600" id="today-fixed-allowance">¥0</div>
-                </div>
+                <div class="border rounded p-2 bg-gray-50"><div class="text-xs text-gray-500">実働 / 残業</div><div class="text-lg font-bold"><span id="today-work-hours">0.0h</span> / <span id="today-ot-hours" class="text-red-600">0.0h</span></div></div>
+                <div class="border rounded p-2 bg-blue-50"><div class="text-xs text-blue-600">固定手当(本日)</div><div class="text-lg font-bold text-blue-600" id="today-fixed-allowance">¥0</div></div>
             </div>
-            <div id="today-dispatch-info" class="text-xs text-orange-600 font-bold mb-2" style="display:none;"></div>
             <div class="mt-2 text-xs text-gray-400 text-right" id="calc-breakdown">データ待機中...</div>
         </div>
 
-        <!-- Charts -->
         <div class="card p-4">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-sm text-gray-500 font-bold">残業分析グラフ</h2>
-                <div class="flex bg-gray-200 rounded p-0.5 w-fit">
+                <div class="flex bg-gray-200 rounded p-0.5 mb-2 w-fit">
                     <button onclick="updateChartRange('7d')" class="text-[10px] px-2 py-1 rounded bg-white shadow-sm" id="btn-7d">7日</button>
                     <button onclick="updateChartRange('1m')" class="text-[10px] px-2 py-1 rounded text-gray-500" id="btn-1m">1ヶ月</button>
                     <button onclick="updateChartRange('3m')" class="text-[10px] px-2 py-1 rounded text-gray-500" id="btn-3m">3ヶ月</button>
                 </div>
             </div>
-            <div class="mb-6">
-                <h3 class="text-xs font-bold text-gray-600 mb-1"><i class="fas fa-clock mr-1"></i>時間外・区分別 (時間)</h3>
-                <div class="relative w-full h-48"><canvas id="hoursChart"></canvas></div>
-            </div>
-            <div>
-                <h3 class="text-xs font-bold text-gray-600 mb-1"><i class="fas fa-yen-sign mr-1"></i>給与・積算 (円)</h3>
-                <div class="relative w-full h-48"><canvas id="payChart"></canvas></div>
-            </div>
+            <div class="mb-6"><h3 class="text-xs font-bold text-gray-600 mb-1">時間外・区分別積上げ (時間)</h3><div class="relative w-full h-48"><canvas id="hoursChart"></canvas></div></div>
+            <div><h3 class="text-xs font-bold text-gray-600 mb-1">給与・積算 (円)</h3><div class="relative w-full h-48"><canvas id="payChart"></canvas></div></div>
         </div>
-
-        <!-- Recent Logs -->
-        <div class="card p-4">
-            <div class="flex justify-between items-center mb-2">
-                <h2 class="text-sm text-gray-500 font-bold">直近ログ</h2>
-                <div class="flex gap-2">
-                    <button onclick="viewDailyDetail()" class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200"><i class="fas fa-calendar-day mr-1"></i>詳細</button>
-                    <button onclick="exportCSV()" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"><i class="fas fa-file-csv mr-1"></i>CSV</button>
-                </div>
-            </div>
-            <div id="log-container" class="text-xs space-y-1 max-h-60 overflow-y-auto font-mono"></div>
-        </div>
-
     </main>
 
-    <!-- Exit Modal (院内勤務用) -->
-    <div id="exitModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
-            <h2 class="text-lg font-bold mb-4 text-red-600"><i class="fas fa-door-open mr-2"></i>エリア退出検知</h2>
-            <p class="text-sm text-gray-600 mb-4">病院エリアから離れました。</p>
-            <div class="grid grid-cols-1 gap-3">
-                <button onclick="confirmExit('SHIFT_END')" class="p-4 bg-blue-100 text-blue-900 rounded-lg text-left font-bold border-2 border-blue-300 hover:bg-blue-200">
-                    <i class="fas fa-home mr-2"></i>退勤
-                    <span class="block text-xs font-normal mt-1 text-blue-700">勤務終了して帰宅</span>
-                </button>
-                <button onclick="confirmExit('IGNORE')" class="p-3 bg-gray-100 text-gray-600 rounded text-left border hover:bg-gray-200">
-                    <i class="fas fa-times mr-2"></i>記録しない
-                    <span class="text-xs font-normal ml-2">GPS誤差・誤検知</span>
-                </button>
-            </div>
-        </div>
+    <div id="footer-status" class="no-print">
+        <span id="save-status">DB: 初期化中...</span>
+        <span id="data-count">ログ数: 0</span>
+        <span id="backup-status">バックアップ: 未実施</span>
     </div>
 
-    <!-- Past Work Modal -->
+    <!-- Modals (same structure as before) -->
     <div id="pastWorkModal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
-            <h2 class="text-lg font-bold mb-4"><i class="fas fa-calendar-plus mr-2"></i>過去の記録入力</h2>
+            <h2 class="text-lg font-bold mb-4">過去の記録入力</h2>
             <div class="space-y-3">
-                <div><label class="block text-sm font-bold">日付</label><input type="date" id="past-date" class="w-full border p-2 rounded"></div>
-                <div><label class="block text-sm font-bold">シフト種別</label>
+                <div><label>日付</label><input type="date" id="past-date" class="w-full border p-2 rounded"></div>
+                <div><label>シフト</label>
                     <select id="past-shift" class="w-full border p-2 rounded" onchange="updatePastWorkPreview()">
-                        <option value="day_indoor">🏥 日勤 (院内)</option>
-                        <option value="day_prehospital">🚁 日勤 (プレホス)</option>
-                        <option value="semi_prehospital">🚁 準夜 (プレホス)</option>
-                        <option value="night_indoor">🏥 夜勤 (院内)</option>
-                        <option value="holiday">📅 休日出勤</option>
-                        <option value="off">✅ 完全休日 (勤務なし)</option>
+                        <optgroup label="通常勤務">
+                            <option value="day">日勤 (8:30-17:15)</option>
+                            <option value="semi">準夜 (13:15-22:00)</option>
+                            <option value="night">夜勤 (17:15-翌09:45)</option>
+                        </optgroup>
+                        <optgroup label="救急科専用">
+                            <option value="prehospital">🚁 プレホス (休憩なし)</option>
+                            <option value="er">🚑 救急当直 (休憩なし)</option>
+                            <option value="icu">🏥 ICU当直 (休憩なし)</option>
+                            <option value="oncall">📱 オンコール (17:15-翌8:30)</option>
+                        </optgroup>
+                        <optgroup label="休日">
+                            <option value="holiday">休日出勤</option>
+                            <option value="off">完全休日</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div id="past-work-inputs">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-sm font-bold">出勤時刻</label><input type="time" id="past-start" class="w-full border p-2 rounded" onchange="updatePastWorkPreview()"></div>
-                        <div><label class="block text-sm font-bold">退勤時刻</label><input type="time" id="past-end" class="w-full border p-2 rounded" onchange="updatePastWorkPreview()"></div>
-                    </div>
-                    
-                    <!-- プレホス出動回数 -->
-                    <div id="past-dispatch-area" class="mt-3 p-3 bg-orange-50 border border-orange-200 rounded" style="display:none;">
-                        <label class="block text-sm font-bold text-orange-800 mb-2"><i class="fas fa-helicopter mr-1"></i>プレホス出動</label>
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm">出動回数:</span>
-                            <input type="number" id="past-dispatch-count" class="w-20 border p-2 rounded text-center" value="0" min="0" max="20">
-                            <span class="text-sm">回</span>
-                        </div>
-                    </div>
-                    
-                    <div id="overtime-detail-area" class="border rounded p-3 bg-yellow-50 mt-3" style="display:none;">
-                        <h3 class="font-bold text-sm mb-2 text-orange-800"><i class="fas fa-clock mr-1"></i>時間外業務内容</h3>
-                        <div id="early-work-area" class="mb-3">
-                            <div class="text-xs font-bold text-gray-700 mb-1">早出業務:</div>
-                            <div class="grid grid-cols-3 gap-1">
-                                <button onclick="selectOvertimeActivity('early','プレホス準備')" class="early-activity-btn text-xs border rounded bg-white px-1 py-1 hover:bg-blue-50">プレホス準備</button>
-                                <button onclick="selectOvertimeActivity('early','病棟引継ぎ')" class="early-activity-btn text-xs border rounded bg-white px-1 py-1 hover:bg-blue-50">病棟引継ぎ</button>
-                                <button onclick="selectOvertimeActivity('early','回診')" class="early-activity-btn text-xs border rounded bg-white px-1 py-1 hover:bg-blue-50">回診</button>
-                            </div>
-                            <input type="text" id="early-custom" placeholder="その他" class="w-full text-xs border rounded p-1 mt-1">
-                        </div>
-                        <div id="late-work-area">
-                            <div class="text-xs font-bold text-gray-700 mb-1">残業業務:</div>
-                            <div class="grid grid-cols-3 gap-1">
-                                <button onclick="selectOvertimeActivity('late','救急対応')" class="late-activity-btn text-xs border rounded bg-white px-1 py-1 hover:bg-blue-50">救急対応</button>
-                                <button onclick="selectOvertimeActivity('late','記録作成')" class="late-activity-btn text-xs border rounded bg-white px-1 py-1 hover:bg-blue-50">記録作成</button>
-                                <button onclick="selectOvertimeActivity('late','カンファ')" class="late-activity-btn text-xs border rounded bg-white px-1 py-1 hover:bg-blue-50">カンファ</button>
-                            </div>
-                            <input type="text" id="late-custom" placeholder="その他" class="w-full text-xs border rounded p-1 mt-1">
-                        </div>
-                    </div>
-
-                    <div class="border-t pt-3 mt-3">
-                        <label class="block text-sm font-bold mb-1">固定手当の扱い</label>
-                        <div class="space-y-2">
-                            <label class="flex items-center text-sm"><input type="radio" name="past-applied" value="auto" class="mr-2" checked><span>時間に応じて自動計算</span></label>
-                            <label class="flex items-center text-sm"><input type="radio" name="past-applied" value="custom" class="mr-2"><span>手動:</span><input type="number" id="past-applied-amount" class="ml-2 border p-1 rounded w-24" placeholder="0"><span class="ml-1">円</span></label>
-                            <label class="flex items-center text-sm"><input type="radio" name="past-applied" value="none" class="mr-2"><span>なし（¥0）</span></label>
-                        </div>
-                    </div>
+                    <div class="grid grid-cols-2 gap-2"><div><label>出勤</label><input type="time" id="past-start" class="w-full border p-2 rounded" onchange="updatePastWorkPreview()"></div><div><label>退勤</label><input type="time" id="past-end" class="w-full border p-2 rounded" onchange="updatePastWorkPreview()"></div></div>
+                    <div class="mt-2"><label class="flex items-center text-sm"><input type="checkbox" id="past-no-break" class="mr-2" onchange="updatePastWorkPreview()"><span class="text-red-600 font-bold">休憩なし (常時待機)</span></label></div>
+                    <div id="overtime-detail-area" class="border rounded p-3 bg-yellow-50 mt-3" style="display:none;"><h3 class="font-bold text-sm text-orange-800">時間外業務内容</h3><div class="grid grid-cols-3 gap-1 mt-2"><button onclick="selectOvertimeActivity('early','準備')" class="early-activity-btn text-xs border bg-white">準備</button><button onclick="selectOvertimeActivity('early','引継')" class="early-activity-btn text-xs border bg-white">引継</button><button onclick="selectOvertimeActivity('early','回診')" class="early-activity-btn text-xs border bg-white">回診</button></div><div class="grid grid-cols-3 gap-1 mt-2"><button onclick="selectOvertimeActivity('late','救急')" class="late-activity-btn text-xs border bg-white">救急</button><button onclick="selectOvertimeActivity('late','記録')" class="late-activity-btn text-xs border bg-white">記録</button><button onclick="selectOvertimeActivity('late','カンファ')" class="late-activity-btn text-xs border bg-white">カンファ</button></div></div>
+                    <div class="border-t pt-3 mt-3"><label class="block text-sm font-bold mb-1">固定手当(科長職)</label><div class="space-y-2"><label class="flex items-center text-sm"><input type="radio" name="past-applied" value="auto" class="mr-2" checked onchange="updatePastWorkPreview()"><span>自動計算</span></label><label class="flex items-center text-sm"><input type="radio" name="past-applied" value="none" class="mr-2" onchange="updatePastWorkPreview()"><span>なし（¥0）</span></label></div></div>
                 </div>
-                <div><label class="block text-sm font-bold">メモ</label><input type="text" id="past-memo" class="w-full border p-2 rounded" placeholder="例: 出動3件、激務"></div>
-                <div class="bg-blue-50 border border-blue-200 rounded p-3 text-xs space-y-1">
-                    <div class="flex justify-between"><span>実働時間:</span> <span id="preview-work" class="font-bold">-</span></div>
-                    <div class="flex justify-between"><span>固定手当:</span> <span id="preview-actual" class="font-bold">¥0</span></div>
-                    <div class="border-t pt-1 mt-1 flex justify-between font-bold text-red-600"><span>待遇損益:</span> <span id="preview-balance">¥0</span></div>
-                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3 text-xs space-y-1"><div class="flex justify-between"><span>実働時間:</span> <span id="preview-work" class="font-bold">-</span></div><div class="flex justify-between"><span>固定手当:</span> <span id="preview-actual" class="font-bold">¥0</span></div><div class="border-t pt-1 mt-1 flex justify-between font-bold text-red-600"><span>待遇損益:</span> <span id="preview-balance">¥0</span></div></div>
             </div>
-            <div class="mt-6 flex justify-end gap-2">
-                <button onclick="closePastWork()" class="px-4 py-2 bg-gray-300 rounded text-sm hover:bg-gray-400">キャンセル</button>
-                <button onclick="savePastWork()" class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 font-bold">保存する</button>
-            </div>
+            <div class="mt-6 flex justify-end gap-2"><button onclick="closePastWork()" class="px-4 py-2 bg-gray-300 rounded">キャンセル</button><button onclick="savePastWork()" class="px-4 py-2 bg-blue-600 text-white rounded">保存</button></div>
         </div>
     </div>
 
-    <!-- Report Modal -->
-    <div id="reportModal" class="modal">
+    <div id="backupModal" class="modal">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-4 no-print">
-                <h2 class="text-lg font-bold text-gray-800">労基署対応 実態報告書</h2>
-                <button onclick="closeReport()" class="text-gray-500"><i class="fas fa-times"></i></button>
+            <h2 class="text-lg font-bold mb-4"><i class="fas fa-shield-alt mr-2"></i>バックアップ管理</h2>
+            
+            <div class="bg-green-50 border border-green-200 rounded p-4 mb-4">
+                <h3 class="font-bold text-green-800 mb-2"><i class="fas fa-info-circle mr-1"></i>自動バックアップ設定</h3>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm">
+                        <input type="checkbox" id="auto-backup-enabled" class="mr-2" onchange="toggleAutoBackup()">
+                        <span>自動バックアップを有効化 (24時間ごと)</span>
+                    </label>
+                    <div class="text-xs text-gray-600 ml-6">
+                        最終バックアップ: <span id="last-backup-time">未実施</span>
+                    </div>
+                </div>
             </div>
-            <div class="no-print bg-gray-50 p-4 rounded mb-4 flex gap-4 items-end flex-wrap">
-                <div><label class="block text-xs font-bold mb-1">開始日</label><input type="date" id="report-start" class="border p-2 rounded text-sm"></div>
-                <div><label class="block text-xs font-bold mb-1">終了日</label><input type="date" id="report-end" class="border p-2 rounded text-sm"></div>
-                <button onclick="generateReport()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold">生成</button>
+
+            <div class="space-y-3 mb-4">
+                <button onclick="createManualBackup()" class="w-full bg-blue-600 text-white px-4 py-2 rounded shadow flex items-center justify-center gap-2">
+                    <i class="fas fa-download"></i>
+                    <span>今すぐバックアップ作成</span>
+                </button>
+                
+                <div class="border p-4 rounded bg-gray-50">
+                    <p class="text-sm mb-2 font-bold">バックアップから復元:</p>
+                    <input type="file" id="restore-file" accept=".json" class="text-sm w-full mb-2">
+                    <button onclick="restoreFromBackup()" class="w-full bg-orange-600 text-white px-4 py-2 rounded text-sm">
+                        <i class="fas fa-upload mr-1"></i>復元実行
+                    </button>
+                </div>
+
+                <button onclick="viewBackupHistory()" class="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded text-sm">
+                    <i class="fas fa-history mr-1"></i>バックアップ履歴表示
+                </button>
             </div>
-            <div id="report-content" class="bg-white p-4"></div>
-            <div class="mt-4 flex justify-end gap-2 no-print">
-                <button onclick="printReport()" class="bg-green-600 text-white px-6 py-2 rounded text-sm font-bold">印刷</button>
-                <button onclick="copyReportText()" class="bg-indigo-600 text-white px-6 py-2 rounded text-sm font-bold">テキストコピー</button>
-                <button onclick="closeReport()" class="bg-gray-300 px-4 py-2 rounded text-sm">閉じる</button>
+
+            <div id="backup-history" class="hidden border-t pt-4">
+                <h3 class="font-bold mb-2">保存されたバックアップ</h3>
+                <div id="backup-list" class="space-y-1 max-h-60 overflow-y-auto"></div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button onclick="exportDiagnostics()" class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded text-sm">診断情報</button>
+                <button onclick="closeBackupManager()" class="px-4 py-2 bg-gray-300 rounded">閉じる</button>
             </div>
         </div>
     </div>
 
-    <!-- Settings Modal -->
+    <div id="reportModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-4 no-print">レポート</h2><div class="no-print bg-gray-50 p-4 rounded mb-4 flex gap-4"><input type="date" id="report-start" class="border p-2"><input type="date" id="report-end" class="border p-2"><button onclick="generateReport()" class="bg-blue-600 text-white px-4 py-2 rounded">生成</button></div><div id="report-content" class="bg-white p-4"></div><div class="mt-4 flex justify-end gap-2 no-print"><button onclick="printReport()" class="bg-green-600 text-white px-6 py-2 rounded">印刷</button><button onclick="copyReportText()" class="bg-indigo-600 text-white px-6 py-2 rounded">コピー</button><button onclick="closeReport()" class="bg-gray-300 px-4 py-2 rounded">閉じる</button></div></div></div>
+    <div id="exitModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-lg font-bold mb-4 text-red-600">
+                <i class="fas fa-map-marker-alt mr-2"></i>エリア退出検知
+            </h2>
+            <p class="text-sm text-gray-600 mb-4" id="exit-modal-message">院外へ移動したことを検知しました。</p>
+            <div class="grid grid-cols-1 gap-2">
+                <button onclick="confirmExit('WORK_EXIT')" id="btn-work-exit" class="p-3 bg-yellow-100 border-2 border-yellow-400 rounded text-left hover:bg-yellow-200">
+                    <div class="font-bold text-yellow-900">🚑 業務外出（院外活動）</div>
+                    <div class="text-xs text-gray-600 mt-1">ドクターヘリ、救急車同乗など</div>
+                </button>
+                <button onclick="confirmExit('SHIFT_END')" id="btn-shift-end" class="p-3 bg-blue-100 border-2 border-blue-400 rounded text-left hover:bg-blue-200">
+                    <div class="font-bold text-blue-900">🏠 退勤</div>
+                    <div class="text-xs text-gray-600 mt-1">勤務終了</div>
+                </button>
+                <button onclick="confirmExit('IGNORE')" class="p-3 bg-gray-100 border border-gray-300 rounded text-left hover:bg-gray-200">
+                    <div class="font-bold text-gray-700">❌ 記録しない</div>
+                    <div class="text-xs text-gray-600 mt-1">誤検知の場合</div>
+                </button>
+            </div>
+        </div>
+    </div>
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <h2 class="text-lg font-bold mb-4">設定・給与条件</h2>
+            <h2 class="text-lg font-bold mb-4">設定</h2>
             <div class="space-y-4">
-                <div class="bg-blue-50 p-3 rounded border border-blue-200">
-                    <label class="block text-sm font-bold text-blue-900 mb-2">A. 現状の支給条件</label>
-                    <div class="mb-2">
-                        <label class="block text-xs font-bold">管理職手当 (月額)</label>
-                        <input type="number" id="setting-manager-allowance" class="w-full border p-1 rounded" value="80000">
+                <div class="bg-blue-50 p-3 rounded">
+                    <label class="block text-sm font-bold text-blue-900 mb-2">A. 現状の支給</label>
+                    <input type="number" id="setting-manager-allowance" class="w-full border p-2 rounded mb-2" placeholder="管理職手当">
+                    <div class="text-xs text-gray-600 mb-1">固定手当 (時間外区分)</div>
+                    <div class="grid grid-cols-4 gap-1">
+                        <input type="number" id="tier-1" class="border p-1 text-sm" placeholder="1h未満">
+                        <input type="number" id="tier-2" class="border p-1 text-sm" placeholder="1-3h">
+                        <input type="number" id="tier-3" class="border p-1 text-sm" placeholder="3-6h">
+                        <input type="number" id="tier-4" class="border p-1 text-sm" placeholder="6h以上">
                     </div>
-                    <label class="block text-xs font-bold mb-1">固定手当 (時間階段)</label>
-                    <div class="grid grid-cols-4 gap-1 text-xs">
-                        <div><span class="block text-gray-500">1h迄</span><input type="number" id="tier-1" class="border p-1 w-full" value="5000"></div>
-                        <div><span class="block text-gray-500">1-3h</span><input type="number" id="tier-2" class="border p-1 w-full" value="7500"></div>
-                        <div><span class="block text-gray-500">3-6h</span><input type="number" id="tier-3" class="border p-1 w-full" value="12000"></div>
-                        <div><span class="block text-gray-500">6h超</span><input type="number" id="tier-4" class="border p-1 w-full" value="20000"></div>
-                    </div>
-                </div>
-                <div class="bg-green-50 p-3 rounded border border-green-200">
-                    <label class="block text-sm font-bold text-green-900 mb-2">B. 本来(一般職)の計算条件</label>
-                    <div class="grid grid-cols-2 gap-3 mb-2">
-                        <div><label class="block text-xs font-bold">基本給(月)</label><input type="number" id="setting-base-salary" class="w-full border p-1 rounded" value="500000"></div>
-                        <div><label class="block text-xs font-bold">諸手当(月)</label><input type="number" id="setting-allowances-total" class="w-full border p-1 rounded" value="0"></div>
-                    </div>
-                    <p class="text-[10px] text-gray-600">※時給 = (基本給+諸手当)÷155h</p>
-                </div>
-                <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
-                    <label class="block text-sm font-bold text-yellow-900 mb-2"><i class="fas fa-satellite mr-1"></i>GPS設定</label>
-                    <div class="grid grid-cols-2 gap-3 mb-2">
-                        <div><label class="block text-xs font-bold">精度閾値 (m)</label><input type="number" id="setting-gps-accuracy" class="w-full border p-1 rounded" value="200"></div>
-                        <div><label class="block text-xs font-bold">安定回数</label><input type="number" id="setting-gps-stable" class="w-full border p-1 rounded" value="3"></div>
-                    </div>
-                    <p class="text-[10px] text-gray-600">※初回検知時刻で記録されます</p>
                 </div>
                 
-                <div class="bg-orange-50 p-3 rounded border border-orange-200">
-                    <label class="block text-sm font-bold text-orange-900 mb-2"><i class="fas fa-map-marker-alt mr-1"></i>病院位置設定</label>
-                    <div class="grid grid-cols-2 gap-3 mb-2">
-                        <div><label class="block text-xs font-bold">緯度</label><input type="text" id="setting-hospital-lat" class="w-full border p-1 rounded text-xs" value="31.573568"></div>
-                        <div><label class="block text-xs font-bold">経度</label><input type="text" id="setting-hospital-lng" class="w-full border p-1 rounded text-xs" value="130.541833"></div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="block text-xs font-bold">判定半径 (m)</label>
-                        <input type="number" id="setting-radius" class="w-full border p-1 rounded" value="300">
-                        <p class="text-[10px] text-gray-500 mt-1">この距離以内なら「院内」と判定</p>
-                    </div>
-                    <button onclick="setCurrentLocationAsHospital()" class="w-full bg-orange-500 text-white py-2 rounded text-sm font-bold hover:bg-orange-600">
-                        <i class="fas fa-crosshairs mr-1"></i>現在地を病院として登録
+                <div class="bg-green-50 p-3 rounded">
+                    <label class="block text-sm font-bold text-green-900 mb-2">B. 本来の賃金</label>
+                    <input type="number" id="setting-base-salary" class="w-full border p-2 rounded mb-2" placeholder="基本給">
+                    <input type="number" id="setting-allowances-total" class="w-full border p-2 rounded" placeholder="諸手当">
+                </div>
+                
+                <div class="border-t pt-3">
+                    <label class="block text-sm font-bold mb-2">勤務設定</label>
+                    <label class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" id="auto-no-break" class="h-4 w-4">
+                        <span class="text-sm font-bold text-red-600">救急科モード（休憩なし）</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="show-gps-debug" class="h-4 w-4">
+                        <span class="text-sm text-gray-700">GPS詳細情報を表示</span>
+                    </label>
+                </div>
+                
+                <div class="border-t pt-2">
+                    <button onclick="clearAllData()" class="w-full bg-red-100 text-red-800 py-2 rounded text-sm font-bold hover:bg-red-200">
+                        全データ削除
                     </button>
-                    <div id="current-location-info" class="text-[10px] text-gray-500 mt-2 text-center">現在地: 取得中...</div>
-                </div>
-                <div><label class="block text-sm font-bold text-gray-700">情報</label>
-                    <input type="text" id="setting-user-name" class="w-full border p-2 rounded mb-1" placeholder="氏名">
-                    <input type="text" id="setting-hospital-name" class="w-full border p-2 rounded" placeholder="病院名">
-                </div>
-                <div class="border-t pt-2 mt-2">
-                    <button onclick="clearAllData()" class="w-full bg-red-100 text-red-800 py-2 rounded text-sm hover:bg-red-200">全データ削除</button>
                 </div>
             </div>
             <div class="mt-6 flex justify-end gap-2">
-                <button onclick="closeSettings()" class="px-4 py-2 bg-gray-300 rounded">閉じる</button>
-                <button onclick="saveSettings()" class="px-4 py-2 bg-blue-600 text-white rounded">保存</button>
+                <button onclick="closeSettings()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">キャンセル</button>
+                <button onclick="saveSettings()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">保存</button>
             </div>
         </div>
     </div>
-
-    <!-- Other Modals -->
-    <div id="manualLogModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-4">手動ログ追加</h2><div class="space-y-3"><div><label>日時</label><input type="datetime-local" id="manual-timestamp" class="w-full border p-2 rounded"></div><div><label>種別</label><select id="manual-type" class="w-full border p-2 rounded"><option value="ENTRY">入館</option><option value="EXIT">退館</option><option value="DISPATCH">出動</option><option value="RETURN">帰還</option><option value="ACTIVITY">活動</option></select></div><div><label>内容</label><input type="text" id="manual-note" class="w-full border p-2 rounded"></div></div><div class="mt-6 flex justify-end gap-2"><button onclick="closeManualLog()" class="px-4 py-2 bg-gray-300 rounded">キャンセル</button><button onclick="saveManualLog()" class="px-4 py-2 bg-blue-600 text-white rounded">追加</button></div></div></div>
-    <div id="dailyModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-4">日別詳細</h2><input type="date" id="detail-date" class="border p-2 rounded w-full mb-3" onchange="loadDailyDetail()"><div id="daily-detail-content" class="text-sm space-y-2"></div><div class="mt-6 flex justify-end"><button onclick="closeDailyDetail()" class="px-4 py-2 bg-gray-300 rounded">閉じる</button></div></div></div>
-    <div id="detailModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-2">詳細・コピー</h2><textarea id="detail-text-area" class="w-full h-64 border p-2 text-xs font-mono bg-gray-50 rounded" readonly></textarea><button onclick="copyToClipboard('detail-text-area')" class="w-full bg-indigo-600 text-white py-2 rounded mt-2 hover:bg-indigo-700 font-bold">コピーして閉じる</button><div class="mt-2 text-right"><button onclick="closeDetailModal()" class="text-gray-500 text-xs">キャンセル</button></div></div></div>
+    <div id="manualLogModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-4">手動ログ</h2><input type="datetime-local" id="manual-timestamp" class="w-full border p-2 rounded mb-2"><select id="manual-type" class="w-full border p-2 rounded mb-2"><option value="ENTRY">入館</option><option value="EXIT">退館</option><option value="ACTIVITY">活動</option></select><input type="text" id="manual-note" class="w-full border p-2 rounded mb-2"><button onclick="saveManualLog()" class="w-full bg-blue-600 text-white px-4 py-2 rounded">追加</button><button onclick="closeManualLog()" class="w-full bg-gray-300 px-4 py-2 rounded mt-2">閉じる</button></div></div>
+    <div id="detailModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-2">詳細</h2><textarea id="detail-text-area" class="w-full h-64 border p-2 text-xs font-mono bg-gray-50 rounded" readonly></textarea><button onclick="copyToClipboard('detail-text-area')" class="w-full bg-indigo-600 text-white py-2 rounded mt-2">コピー</button><button onclick="closeDetailModal()" class="mt-2 text-gray-500 w-full">閉じる</button></div></div>
 
     <script>
-        // ==================== CONFIG & CONSTANTS ====================
-        const CONFIG_KEY = 'medwork_config_v4_5';
-        const LOG_KEY = 'medwork_logs_v4_5';
-        const SHIFTS_KEY = 'medwork_shifts_v4_5';
-        const APPLIED_KEY = 'medwork_applied_v4_5';
-        
-        // シフトパターン定義
+        // ==================== IndexedDB Manager ====================
+        class DBManager {
+            constructor() {
+                this.dbName = 'MedWorkLogDB';
+                this.version = 1;
+                this.db = null;
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+                    
+                    request.onerror = () => {
+                        console.error('DB Open Error:', request.error);
+                        document.getElementById('storage-warning').style.display = 'block';
+                        this.updateDBStatus(false);
+                        reject(request.error);
+                    };
+                    
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        this.updateDBStatus(true);
+                        console.log('DB Opened Successfully');
+                        resolve(this.db);
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // Logs store
+                        if (!db.objectStoreNames.contains('logs')) {
+                            const logsStore = db.createObjectStore('logs', { keyPath: 'id', autoIncrement: true });
+                            logsStore.createIndex('timestamp', 'timestamp', { unique: false });
+                            logsStore.createIndex('type', 'type', { unique: false });
+                        }
+                        
+                        // Config store
+                        if (!db.objectStoreNames.contains('config')) {
+                            db.createObjectStore('config', { keyPath: 'key' });
+                        }
+                        
+                        // Backups store
+                        if (!db.objectStoreNames.contains('backups')) {
+                            const backupsStore = db.createObjectStore('backups', { keyPath: 'id', autoIncrement: true });
+                            backupsStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
+                        
+                        console.log('DB Structure Created');
+                    };
+                });
+            }
+
+            updateDBStatus(isOk) {
+                const icon = document.getElementById('db-status-icon');
+                if (!icon) return;
+                
+                // アイコンの色と状態を更新
+                if (isOk) {
+                    icon.innerHTML = '<i class="fas fa-database text-xs text-green-400"></i>';
+                    icon.setAttribute('title', 'DB接続OK');
+                } else {
+                    icon.innerHTML = '<i class="fas fa-database text-xs text-red-400"></i>';
+                    icon.setAttribute('title', 'DB接続エラー');
+                }
+            }
+
+            async saveLogs(logs) {
+                if (!this.db) return false;
+                const tx = this.db.transaction(['logs'], 'readwrite');
+                const store = tx.objectStore('logs');
+                
+                // Clear existing logs
+                await store.clear();
+                
+                // Add all logs
+                for (const log of logs) {
+                    await store.add(log);
+                }
+                
+                return new Promise((resolve) => {
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => resolve(false);
+                });
+            }
+
+            async loadLogs() {
+                if (!this.db) return [];
+                const tx = this.db.transaction(['logs'], 'readonly');
+                const store = tx.objectStore('logs');
+                const request = store.getAll();
+                
+                return new Promise((resolve) => {
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => resolve([]);
+                });
+            }
+
+            async saveConfig(key, value) {
+                if (!this.db) return false;
+                const tx = this.db.transaction(['config'], 'readwrite');
+                const store = tx.objectStore('config');
+                await store.put({ key, value });
+                
+                return new Promise((resolve) => {
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => resolve(false);
+                });
+            }
+
+            async loadConfig(key) {
+                if (!this.db) return null;
+                const tx = this.db.transaction(['config'], 'readonly');
+                const store = tx.objectStore('config');
+                const request = store.get(key);
+                
+                return new Promise((resolve) => {
+                    request.onsuccess = () => resolve(request.result ? request.result.value : null);
+                    request.onerror = () => resolve(null);
+                });
+            }
+
+            async createBackup(data) {
+                if (!this.db) return false;
+                const backup = {
+                    timestamp: new Date().toISOString(),
+                    data: data,
+                    version: '5.0'
+                };
+                
+                const tx = this.db.transaction(['backups'], 'readwrite');
+                const store = tx.objectStore('backups');
+                await store.add(backup);
+                
+                // Keep only last 10 backups
+                const allBackups = await store.getAll();
+                return new Promise((resolve) => {
+                    allBackups.onsuccess = async () => {
+                        const backups = allBackups.result;
+                        if (backups.length > 10) {
+                            backups.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                            for (let i = 0; i < backups.length - 10; i++) {
+                                await store.delete(backups[i].id);
+                            }
+                        }
+                    };
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => resolve(false);
+                });
+            }
+
+            async getBackups() {
+                if (!this.db) return [];
+                const tx = this.db.transaction(['backups'], 'readonly');
+                const store = tx.objectStore('backups');
+                const request = store.getAll();
+                
+                return new Promise((resolve) => {
+                    request.onsuccess = () => {
+                        const backups = request.result || [];
+                        backups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        resolve(backups);
+                    };
+                    request.onerror = () => resolve([]);
+                });
+            }
+        }
+
+        // ==================== Initialize ====================
+        const dbManager = new DBManager();
         const SHIFT_PATTERNS = {
-            'day_indoor':       { start: '08:30', end: '17:15', hours: 7.75, break: 60, name: '日勤(院内)', prehospital: false },
-            'day_prehospital':  { start: '08:30', end: '17:15', hours: 7.75, break: 0,  name: '日勤(プレホス)', prehospital: true },
-            'semi_prehospital': { start: '13:15', end: '22:00', hours: 7.75, break: 0,  name: '準夜(プレホス)', prehospital: true },
-            'night_indoor':     { start: '17:15', end: '09:45', hours: 16.5, break: 60, name: '夜勤(院内)', prehospital: false },
-            'holiday':          { start: null,    end: null,    hours: 0,    break: 0,  name: '休日出勤', prehospital: false },
-            'off':              { start: null,    end: null,    hours: 0,    break: 0,  name: '休日', prehospital: false }
+            'day': { start: '08:30', end: '17:15', standardHours: 7.75, breakMinutes: 60, name: '日勤', color: 'blue' },
+            'semi': { start: '13:15', end: '22:00', standardHours: 7.75, breakMinutes: 60, name: '準夜', color: 'orange' },
+            'night': { start: '17:15', end: '09:45', standardHours: 16.5, breakMinutes: 60, name: '夜勤', color: 'purple' },
+            'prehospital': { start: '08:30', end: '17:15', standardHours: 7.75, breakMinutes: 0, name: 'プレホス', color: 'red' },
+            'er': { start: '08:30', end: '17:15', standardHours: 7.75, breakMinutes: 0, name: '救急当直', color: 'red' },
+            'icu': { start: '08:30', end: '17:15', standardHours: 7.75, breakMinutes: 0, name: 'ICU当直', color: 'green' },
+            'oncall': { start: '17:15', end: '08:30', standardHours: 15.25, breakMinutes: 0, name: 'オンコール', color: 'yellow' },
+            'holiday': { start: null, end: null, standardHours: 0, breakMinutes: 0, name: '休日出勤', color: 'gray' },
+            'off': { start: null, end: null, standardHours: 0, breakMinutes: 0, name: '完全休日', color: 'gray' }
         };
         
         let config = {
-            baseSalary: 500000, allowancesTotal: 0, managerAllowance: 80000,
-            allowanceTiers: { tier1: 5000, tier2: 7500, tier3: 12000, tier4: 20000 },
-            hospitalLat: 31.573568, hospitalLng: 130.541833, radius: 300,
-            hospitalName: '鹿児島市立病院', userName: '', 
-            gpsAccuracyLimit: 200, gpsStableThreshold: 3
+            baseSalary: 500000,
+            allowancesTotal: 0,
+            managerAllowance: 80000,
+            allowanceTiers: { tier1: 5000, tier2: 6500, tier3: 9000, tier4: 10000 },
+            nightRate: 50,
+            holidayRate: 35,
+            hospitalLat: 31.573568,
+            hospitalLng: 130.541833,
+            radius: 300,
+            hospitalName: '鹿児島市立病院',
+            userName: '',
+            department: '救急科',
+            autoNoBreak: false,
+            autoBackupEnabled: true,
+            lastBackupTime: null,
+            showGPSDebug: false
         };
         
         let state = {
             isInside: false,
-            status: 'OFF',  // OFF, WORKING, DISPATCHED
+            status: 'OUTSIDE', // 'INSIDE', 'MOBILE_WORK', 'OUTSIDE'
             logs: [],
-            dailyShifts: {},
-            appliedAllowances: {},
-            todayDispatchCount: 0,
             lastGPSCoords: null,
-            chartRange: '7d',
-            lastCalcText: ''
+            holidays: {},
+            appliedAllowances: {},
+            dailyShifts: {},
+            overtimeActivities: { early: '', late: '' },
+            lastCalcText: '',
+            chartRange: '1m',
+            pendingExitTime: null
         };
-        
-        // GPS安定化
-        let gpsStableCount = 0;
-        let lastGpsState = null;
-        let firstStateChangeTime = null;  // 最初に状態が変わった時刻を保存
 
-        // ==================== INIT ====================
-        function init() {
-            loadData();
-            
-            // GPS安定化変数を現在のstateに合わせて初期化
-            lastGpsState = state.isInside;
-            
-            updateClock();
-            setInterval(updateClock, 1000);
-            initGeoLocation();
-            renderLogs();
-            initCharts();
-            recalcToday();
-            updateStatusUI();
-            
-            document.getElementById('detail-date').valueAsDate = new Date();
-            const t = new Date();
-            document.getElementById('report-start').valueAsDate = new Date(t.getFullYear(), t.getMonth(), 1);
-            document.getElementById('report-end').valueAsDate = t;
-            
-            // 本日のシフトをセレクトに反映
-            const today = getTodayStr();
-            if (state.dailyShifts[today]) {
-                document.getElementById('daily-shift-select').value = state.dailyShifts[today];
-            }
-            updateShiftModeIndicator();
-            
-            console.log(`Init complete: status=${state.status}, isInside=${state.isInside}`);
-        }
-        
-        function loadData() {
+        async function init() {
             try {
-                const c = localStorage.getItem(CONFIG_KEY);
-                if (c) config = { ...config, ...JSON.parse(c) };
-                const l = localStorage.getItem(LOG_KEY);
-                if (l) state.logs = JSON.parse(l);
-                const s = localStorage.getItem(SHIFTS_KEY);
-                if (s) state.dailyShifts = JSON.parse(s);
-                const a = localStorage.getItem(APPLIED_KEY);
-                if (a) state.appliedAllowances = JSON.parse(a);
-            } catch (e) { console.error('Load error:', e); }
+                await dbManager.init();
+                await loadAllData();
+                
+                // Start auto-backup if enabled
+                if (config.autoBackupEnabled) {
+                    startAutoBackup();
+                }
+                
+                updateClock();
+                setInterval(updateClock, 1000);
+                initGeoLocation();
+                renderLogs();
+                initCharts();
+                recalcToday();
+                
+                // 今日のシフトをドロップダウンに反映
+                const today = new Date().toLocaleDateString('en-CA');
+                const todayShift = state.dailyShifts[today] || 'day';
+                const shiftSelect = document.getElementById('daily-shift-select');
+                if (shiftSelect) {
+                    shiftSelect.value = todayShift;
+                    // シフトに応じた色も設定
+                    updateShiftSelection();
+                }
+                
+                const t = new Date();
+                document.getElementById('report-start').valueAsDate = new Date(t.getFullYear(), t.getMonth(), 1);
+                document.getElementById('report-end').valueAsDate = t;
+                
+                updateFooterStatus('起動完了');
+            } catch (error) {
+                console.error('Init Error:', error);
+                alert('データベース初期化エラー。ブラウザのIndexedDBが有効か確認してください。');
+            }
+        }
+
+        async function loadAllData() {
+            // Load from IndexedDB
+            state.logs = await dbManager.loadLogs();
+            const savedConfig = await dbManager.loadConfig('config');
+            if (savedConfig) {
+                config = { ...config, ...savedConfig };
+            }
             
-            // UI反映
+            const savedHolidays = await dbManager.loadConfig('holidays');
+            if (savedHolidays) state.holidays = savedHolidays;
+            
+            const savedApplied = await dbManager.loadConfig('appliedAllowances');
+            if (savedApplied) state.appliedAllowances = savedApplied;
+            
+            const savedShifts = await dbManager.loadConfig('dailyShifts');
+            if (savedShifts) state.dailyShifts = savedShifts;
+            
+            // Populate UI
             document.getElementById('setting-base-salary').value = config.baseSalary;
             document.getElementById('setting-allowances-total').value = config.allowancesTotal || 0;
             document.getElementById('setting-manager-allowance').value = config.managerAllowance || 80000;
@@ -494,397 +635,540 @@
             document.getElementById('tier-2').value = config.allowanceTiers.tier2;
             document.getElementById('tier-3').value = config.allowanceTiers.tier3;
             document.getElementById('tier-4').value = config.allowanceTiers.tier4;
-            document.getElementById('setting-hospital-name').value = config.hospitalName;
-            document.getElementById('setting-user-name').value = config.userName;
-            document.getElementById('setting-gps-accuracy').value = config.gpsAccuracyLimit || 200;
-            document.getElementById('setting-gps-stable').value = config.gpsStableThreshold || 3;
+            document.getElementById('auto-no-break').checked = config.autoNoBreak;
+            document.getElementById('auto-backup-enabled').checked = config.autoBackupEnabled;
             
-            // 病院座標と半径
-            document.getElementById('setting-hospital-lat').value = config.hospitalLat || 31.573568;
-            document.getElementById('setting-hospital-lng').value = config.hospitalLng || 130.541833;
-            document.getElementById('setting-radius').value = config.radius || 300;
+            // GPSデバッグモードの設定
+            const gpsDebugCheckbox = document.getElementById('show-gps-debug');
+            if (gpsDebugCheckbox) {
+                gpsDebugCheckbox.checked = config.showGPSDebug || false;
+            }
             
-            // 本日の出動回数をカウント
-            countTodayDispatches();
-            
-            // 本日のログから現在のstatusを復元
-            restoreStatusFromLogs();
+            if (config.lastBackupTime) {
+                document.getElementById('last-backup-time').innerText = new Date(config.lastBackupTime).toLocaleString('ja-JP');
+                document.getElementById('backup-status').innerText = '最終BK: ' + new Date(config.lastBackupTime).toLocaleTimeString('ja-JP');
+            }
         }
-        
-        function restoreStatusFromLogs() {
-            const today = getTodayStr();
-            const todayLogs = state.logs
-                .filter(l => new Date(l.timestamp).toLocaleDateString('en-CA') === today)
-                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            
-            if (todayLogs.length === 0) {
-                state.status = 'OFF';
-                state.isInside = false;
-                return;
-            }
-            
-            // 最新のログから状態を判定
-            let entryCount = 0, exitCount = 0, dispatchCount = 0, returnCount = 0;
-            
-            todayLogs.forEach(l => {
-                if (l.type === 'ENTRY') entryCount++;
-                if (l.type === 'EXIT') exitCount++;
-                if (l.type === 'DISPATCH') dispatchCount++;
-                if (l.type === 'RETURN') returnCount++;
-            });
-            
-            // 出動中かどうか
-            if (dispatchCount > returnCount) {
-                state.status = 'DISPATCHED';
-                state.isInside = false;
-                console.log('Status restored: DISPATCHED');
-                return;
-            }
-            
-            // 勤務中かどうか
-            if (entryCount > exitCount) {
-                state.status = 'WORKING';
-                state.isInside = true;
-                console.log('Status restored: WORKING');
-                return;
-            }
-            
-            // それ以外はOFF
-            state.status = 'OFF';
-            state.isInside = false;
-            console.log('Status restored: OFF');
-        }
-        
-        function getTodayStr() { return new Date().toLocaleDateString('en-CA'); }
-        function getCurrentShift() { return state.dailyShifts[getTodayStr()] || 'day_indoor'; }
-        function isPrehospitalShift() { return SHIFT_PATTERNS[getCurrentShift()]?.prehospital || false; }
 
-        // ==================== GPS ====================
-        function initGeoLocation() {
-            if (!("geolocation" in navigator)) {
-                updateGpsDisplay('GPS非対応', 0, 0, false);
+        async function saveAllData() {
+            await dbManager.saveLogs(state.logs);
+            await dbManager.saveConfig('config', config);
+            await dbManager.saveConfig('holidays', state.holidays);
+            await dbManager.saveConfig('appliedAllowances', state.appliedAllowances);
+            await dbManager.saveConfig('dailyShifts', state.dailyShifts);
+            updateFooterStatus('保存完了');
+        }
+
+        function updateFooterStatus(msg) {
+            const d = new Date();
+            document.getElementById('save-status').innerText = `DB: ${msg} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+            document.getElementById('data-count').innerText = `ログ数: ${state.logs.length}`;
+        }
+
+        // ==================== Auto Backup ====================
+        let autoBackupInterval = null;
+
+        function startAutoBackup() {
+            if (autoBackupInterval) clearInterval(autoBackupInterval);
+            
+            // Check every hour
+            autoBackupInterval = setInterval(async () => {
+                const now = new Date();
+                const lastBackup = config.lastBackupTime ? new Date(config.lastBackupTime) : null;
+                
+                // Create backup if 24 hours have passed
+                if (!lastBackup || (now - lastBackup) > 24 * 60 * 60 * 1000) {
+                    await createAutoBackup();
+                }
+            }, 60 * 60 * 1000); // Every hour
+        }
+
+        async function createAutoBackup() {
+            const backupData = {
+                config,
+                logs: state.logs,
+                holidays: state.holidays,
+                appliedAllowances: state.appliedAllowances,
+                dailyShifts: state.dailyShifts
+            };
+            
+            await dbManager.createBackup(backupData);
+            config.lastBackupTime = new Date().toISOString();
+            await dbManager.saveConfig('config', config);
+            
+            document.getElementById('last-backup-time').innerText = new Date().toLocaleString('ja-JP');
+            document.getElementById('backup-status').innerText = '最終BK: ' + new Date().toLocaleTimeString('ja-JP');
+            
+            showBackupIndicator('自動バックアップ完了');
+        }
+
+        async function createManualBackup() {
+            const backupData = {
+                config,
+                logs: state.logs,
+                holidays: state.holidays,
+                appliedAllowances: state.appliedAllowances,
+                dailyShifts: state.dailyShifts,
+                version: '5.0',
+                timestamp: new Date().toISOString()
+            };
+            
+            // Save to IndexedDB
+            await dbManager.createBackup(backupData);
+            
+            // Download as file
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `MedWorkLog_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            
+            config.lastBackupTime = new Date().toISOString();
+            await dbManager.saveConfig('config', config);
+            
+            document.getElementById('last-backup-time').innerText = new Date().toLocaleString('ja-JP');
+            showBackupIndicator('バックアップ作成完了');
+        }
+
+        async function restoreFromBackup() {
+            const file = document.getElementById('restore-file').files[0];
+            if (!file) return alert('ファイルを選択してください');
+            
+            if (!confirm('現在のデータを上書きしますか？')) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.config) config = data.config;
+                    if (data.logs) state.logs = data.logs;
+                    if (data.holidays) state.holidays = data.holidays;
+                    if (data.appliedAllowances) state.appliedAllowances = data.appliedAllowances;
+                    if (data.dailyShifts) state.dailyShifts = data.dailyShifts;
+                    
+                    await saveAllData();
+                    alert('復元完了しました。ページを再読み込みします。');
+                    location.reload();
+                } catch (error) {
+                    alert('復元エラー: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function toggleAutoBackup() {
+            config.autoBackupEnabled = document.getElementById('auto-backup-enabled').checked;
+            dbManager.saveConfig('config', config);
+            
+            if (config.autoBackupEnabled) {
+                startAutoBackup();
+                showBackupIndicator('自動バックアップ有効化');
+            } else {
+                if (autoBackupInterval) clearInterval(autoBackupInterval);
+                showBackupIndicator('自動バックアップ無効化');
+            }
+        }
+
+        async function viewBackupHistory() {
+            const backups = await dbManager.getBackups();
+            const historyDiv = document.getElementById('backup-history');
+            const listDiv = document.getElementById('backup-list');
+            
+            historyDiv.classList.remove('hidden');
+            
+            if (backups.length === 0) {
+                listDiv.innerHTML = '<p class="text-sm text-gray-500">保存されたバックアップはありません</p>';
                 return;
             }
-            navigator.geolocation.watchPosition(
-                (p) => {
-                    state.lastGPSCoords = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
-                    const accuracy = p.coords.accuracy;
-                    const distance = getDist(p.coords.latitude, p.coords.longitude, config.hospitalLat, config.hospitalLng);
-                    const currentlyInside = distance < config.radius;
-                    
-                    // GPS表示を更新（常に更新）
-                    updateGpsDisplay(
-                        currentlyInside ? '院内' : '院外',
-                        distance,
-                        accuracy,
-                        currentlyInside,
-                        accuracy <= config.gpsAccuracyLimit
-                    );
-                    
-                    // 精度チェック
-                    if (accuracy > config.gpsAccuracyLimit) {
-                        return; // 精度不足は状態変更しない（表示は更新済み）
-                    }
-                    
-                    if (currentlyInside === lastGpsState) { 
-                        gpsStableCount++; 
-                    } else { 
-                        gpsStableCount = 1; 
-                        lastGpsState = currentlyInside;
-                        firstStateChangeTime = new Date();  // 最初の変化時刻を記録
-                    }
-                    
-                    if (gpsStableCount >= config.gpsStableThreshold) {
-                        // 初回検知時刻を渡して処理
-                        handleLocationChange(currentlyInside, firstStateChangeTime);
-                        firstStateChangeTime = null;  // リセット
-                    }
-                },
-                (e) => { 
-                    updateGpsDisplay('GPSエラー', 0, 0, false);
-                    console.error('GPS Error:', e.message);
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-            );
+            
+            listDiv.innerHTML = backups.map((b, i) => {
+                const date = new Date(b.timestamp);
+                const logCount = b.data.logs ? b.data.logs.length : 0;
+                return `
+                    <div class="text-xs border-b py-2 flex justify-between items-center">
+                        <span>${date.toLocaleString('ja-JP')} (${logCount}件)</span>
+                        <button onclick="restoreBackupById(${b.id})" class="text-blue-600 underline">復元</button>
+                    </div>
+                `;
+            }).join('');
         }
-        
-        function updateGpsDisplay(judgment, distance, accuracy, isInside, isAccurate = true) {
-            const box = document.getElementById('gps-status-box');
-            const judgmentEl = document.getElementById('gps-judgment');
-            const distanceEl = document.getElementById('gps-distance');
-            const accuracyEl = document.getElementById('gps-accuracy-display');
-            const radiusEl = document.getElementById('gps-radius-display');
-            const barEl = document.getElementById('gps-distance-bar');
-            const detailEl = document.getElementById('gps-detail');
+
+        async function restoreBackupById(id) {
+            if (!confirm('このバックアップから復元しますか？')) return;
             
-            // 判定表示
-            judgmentEl.innerText = judgment;
-            distanceEl.innerText = distance > 0 ? Math.round(distance) + 'm' : '---m';
-            accuracyEl.innerText = `精度: ${accuracy > 0 ? Math.round(accuracy) + 'm' : '---'}`;
-            radiusEl.innerText = `判定半径: ${config.radius}m`;
+            const tx = dbManager.db.transaction(['backups'], 'readonly');
+            const store = tx.objectStore('backups');
+            const request = store.get(id);
             
-            // 色分け
-            if (isInside) {
-                box.style.background = '#dcfce7';  // 緑（院内）
-                box.style.borderColor = '#22c55e';
-                judgmentEl.style.color = '#16a34a';
-            } else {
-                box.style.background = '#fef3c7';  // 黄（院外）
-                box.style.borderColor = '#f59e0b';
-                judgmentEl.style.color = '#d97706';
-            }
-            
-            // 精度不足の場合は枠をグレーに
-            if (!isAccurate && accuracy > 0) {
-                box.style.borderColor = '#9ca3af';
-                judgmentEl.innerText = judgment + ' (精度不足)';
-            }
-            
-            // 距離バー（半径に対する割合）
-            const ratio = Math.min(100, (distance / config.radius) * 100);
-            barEl.style.width = ratio + '%';
-            barEl.style.background = isInside ? '#22c55e' : '#f59e0b';
-            
-            // 詳細
-            if (distance > 0) {
-                const margin = config.radius - distance;
-                if (isInside) {
-                    detailEl.innerText = `境界まであと ${Math.round(margin)}m（出ると院外判定）`;
-                } else {
-                    detailEl.innerText = `境界まであと ${Math.round(-margin)}m（入ると院内判定）`;
-                }
+            request.onsuccess = async () => {
+                const backup = request.result;
+                if (!backup) return alert('バックアップが見つかりません');
                 
-                // 安定カウント表示
-                if (gpsStableCount > 0) {
-                    detailEl.innerText += ` [安定: ${gpsStableCount}/${config.gpsStableThreshold}]`;
-                }
+                const data = backup.data;
+                if (data.config) config = data.config;
+                if (data.logs) state.logs = data.logs;
+                if (data.holidays) state.holidays = data.holidays;
+                if (data.appliedAllowances) state.appliedAllowances = data.appliedAllowances;
+                if (data.dailyShifts) state.dailyShifts = data.dailyShifts;
+                
+                await saveAllData();
+                alert('復元完了。ページを再読み込みします。');
+                location.reload();
+            };
+        }
+
+        function showBackupIndicator(msg) {
+            const indicator = document.createElement('div');
+            indicator.className = 'backup-indicator';
+            indicator.innerHTML = `<i class="fas fa-check-circle mr-1"></i>${msg}`;
+            document.body.appendChild(indicator);
+            setTimeout(() => indicator.remove(), 3000);
+        }
+
+        function openBackupManager() {
+            document.getElementById('backupModal').style.display = 'block';
+        }
+
+        function closeBackupManager() {
+            document.getElementById('backupModal').style.display = 'none';
+            document.getElementById('backup-history').classList.add('hidden');
+        }
+
+        function exportDiagnostics() {
+            const diagnostics = {
+                dbAvailable: !!dbManager.db,
+                logsCount: state.logs.length,
+                configKeys: Object.keys(config),
+                browserInfo: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(diagnostics, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'diagnostics.json';
+            a.click();
+        }
+
+        // ==================== GPS & Location ====================
+        function initGeoLocation() {
+            if ("geolocation" in navigator) {
+                document.getElementById('current-status-text').innerText = "GPS待機中...";
+                navigator.geolocation.watchPosition(
+                    (p) => { handleGPSUpdate(p); },
+                    (e) => { handleGPSError(e); },
+                    { enableHighAccuracy: true, maximumAge: 0 }
+                );
+                navigator.geolocation.getCurrentPosition((p) => { handleGPSUpdate(p); }, (e) => { }, { enableHighAccuracy: true });
             } else {
-                detailEl.innerText = '位置情報を取得中...';
+                document.getElementById('current-status-text').innerText = "GPS非対応";
             }
         }
-        
+
+        function handleGPSUpdate(p) {
+            state.lastGPSCoords = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
+            const d = getDist(p.coords.latitude, p.coords.longitude, config.hospitalLat, config.hospitalLng);
+            
+            // GPS精度情報（デバッグモード時のみ表示）
+            const debugEl = document.getElementById('gps-debug-info');
+            if (config.showGPSDebug) {
+                debugEl.style.display = 'block';
+                debugEl.innerText = `GPS: ${new Date().toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'})} | 精度:±${Math.round(p.coords.accuracy)}m | 距離:${Math.round(d)}m`;
+            }
+            
+            // ステータステキスト更新（精度をコンパクトに表示）
+            const accuracy = Math.round(p.coords.accuracy);
+            const statusText = d < config.radius ? 
+                `院内 (±${accuracy}m)` : 
+                `院外 (±${accuracy}m)`;
+            document.getElementById('current-status-text').innerText = statusText;
+            
+            handleLocation(d < config.radius);
+        }
+
+        function handleGPSError(e) {
+            document.getElementById('current-status-text').innerText = "GPSエラー: " + e.message;
+        }
+
         function getDist(lat1, lon1, lat2, lon2) {
             const R = 6371000, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
+
+        function handleLocation(isInside) {
+            const prev = state.isInside;
+            const prevStatus = state.status;
+            state.isInside = isInside;
+            const card = document.getElementById('status-card');
+            const txt = document.getElementById('location-status');
+            const btn = document.getElementById('manual-entry-btn');
+            
+            if (!card || !txt || !btn) return; // 要素チェック
+            
+            if (isInside) {
+                card.classList.add('border-green-500');
+                card.classList.remove('border-gray-400', 'border-orange-400');
+                txt.innerHTML = '<i class="fas fa-hospital mr-1"></i>院内 / 勤務中';
+                btn.innerText = '退館';
+                
+                if (!prev) {
+                    // 院外から院内に入った
+                    if (prevStatus === 'MOBILE_WORK') {
+                        // 院外活動からの帰院
+                        addLog('ENTRY', '帰院（院外活動終了）', state.lastGPSCoords);
+                        state.status = 'INSIDE';
+                    } else {
+                        // 通常の入館
+                        addLog('ENTRY', 'GPS自動入館', state.lastGPSCoords);
+                        state.status = 'INSIDE';
+                    }
+                }
+                state.pendingExitTime = null;
+            } else {
+                card.classList.remove('border-green-500', 'border-orange-400');
+                card.classList.add('border-gray-400');
+                txt.innerHTML = '<i class="fas fa-home mr-1"></i>院外 / OFF';
+                btn.innerText = '入館';
+                
+                if (prev && state.status !== 'MOBILE_WORK') {
+                    state.pendingExitTime = new Date().toISOString();
+                    showExitModal();
+                }
+            }
+        }
         
-        function setCurrentLocationAsHospital() {
-            if (!state.lastGPSCoords) {
-                alert('GPS位置情報がまだ取得できていません。少し待ってから再度お試しください。');
+        function showExitModal() {
+            // 現在時刻と今日のシフトを確認
+            const now = new Date();
+            const today = now.toLocaleDateString('en-CA');
+            const currentShift = state.dailyShifts[today] || 'day';
+            const pattern = SHIFT_PATTERNS[currentShift];
+            
+            // シフトが休日の場合は確認モーダル表示
+            if (currentShift === 'holiday') {
+                document.getElementById('exitModal').style.display = 'block';
                 return;
             }
             
-            const lat = state.lastGPSCoords.lat;
-            const lng = state.lastGPSCoords.lng;
+            // 勤務時間の終了時刻を計算
+            const isWithinShift = isWithinShiftHours(now, currentShift, pattern);
             
-            if (confirm(`現在地を病院として登録しますか？\n\n緯度: ${lat.toFixed(6)}\n経度: ${lng.toFixed(6)}`)) {
-                document.getElementById('setting-hospital-lat').value = lat.toFixed(6);
-                document.getElementById('setting-hospital-lng').value = lng.toFixed(6);
-                document.getElementById('current-location-info').innerText = `登録予定: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                alert('座標を入力しました。「保存」ボタンを押して確定してください。');
-            }
-        }
-
-        // ==================== LOCATION HANDLING ====================
-        function handleLocationChange(isInside, detectedTime) {
-            const wasInside = state.isInside;
-            if (wasInside === isInside) return;
-            
-            state.isInside = isInside;
-            const prehospital = isPrehospitalShift();
-            const logTime = detectedTime || new Date();  // 検知時刻がなければ現在時刻
-            
-            if (isInside) {
-                // 院内に入った
-                if (state.status === 'DISPATCHED') {
-                    // プレホス出動から帰還
-                    addLog('RETURN', '帰還 (GPS自動)', logTime);
-                    state.status = 'WORKING';
-                } else if (state.status === 'OFF') {
-                    // 出勤
-                    addLog('ENTRY', 'GPS自動入館', logTime);
-                    state.status = 'WORKING';
-                }
+            if (isWithinShift) {
+                // 勤務時間内の退出 → 自動的に業務外出として記録
+                autoConfirmExit('WORK_EXIT');
             } else {
-                // 院外に出た
-                if (state.status === 'WORKING') {
-                    if (prehospital) {
-                        // プレホス勤務 → 自動で出動記録
-                        addLog('DISPATCH', 'プレホス出動 (GPS自動)', logTime);
-                        state.status = 'DISPATCHED';
-                        state.todayDispatchCount++;
-                    } else {
-                        // 院内勤務 → 退勤確認モーダル
-                        document.getElementById('exitModal').style.display = 'block';
-                    }
-                }
+                // 勤務時間外の退出 → モーダル表示（退勤 or 業務外出を選択）
+                document.getElementById('exitModal').style.display = 'block';
             }
-            
-            updateStatusUI();
-            recalcToday();
         }
         
-        function confirmExit(reason) {
-            document.getElementById('exitModal').style.display = 'none';
-            if (reason === 'IGNORE') return;
+        function isWithinShiftHours(checkTime, shiftType, pattern) {
+            if (!pattern.start || !pattern.end) return false;
             
-            if (reason === 'SHIFT_END') {
-                state.status = 'OFF';
-                state.isInside = false;
-                addLog('EXIT', '退勤');
+            const today = checkTime.toLocaleDateString('en-CA');
+            const [startH, startM] = pattern.start.split(':').map(Number);
+            const [endH, endM] = pattern.end.split(':').map(Number);
+            
+            const shiftStart = new Date(checkTime);
+            shiftStart.setHours(startH, startM, 0, 0);
+            
+            let shiftEnd = new Date(checkTime);
+            shiftEnd.setHours(endH, endM, 0, 0);
+            
+            // 夜勤の場合、終了時刻が翌日
+            if (shiftType === 'night' && endH < 12) {
+                shiftEnd.setDate(shiftEnd.getDate() + 1);
             }
-            updateStatusUI();
-            recalcToday();
+            
+            // 余裕を持たせる（勤務終了30分後まで勤務時間内とみなす）
+            shiftEnd.setMinutes(shiftEnd.getMinutes() + 30);
+            
+            return checkTime >= shiftStart && checkTime <= shiftEnd;
         }
-
-        // ==================== STATUS UI ====================
-        function updateStatusUI() {
-            const card = document.getElementById('status-card');
-            const txt = document.getElementById('location-status');
-            const btn = document.getElementById('main-btn');
-            const info = document.getElementById('session-info');
-            const dispatchArea = document.getElementById('dispatch-counter-area');
-            const dispatchCount = document.getElementById('dispatch-count');
+        
+        function autoConfirmExit(type) {
+            // 確認なしで自動記録
+            const exitTime = state.pendingExitTime || new Date().toISOString();
+            state.pendingExitTime = null;
             
-            const prehospital = isPrehospitalShift();
-            const shiftName = SHIFT_PATTERNS[getCurrentShift()]?.name || '不明';
-            
-            // Reset
-            card.className = 'card p-4 border-l-4';
-            
-            if (state.status === 'DISPATCHED') {
-                card.classList.add('status-prehospital-dispatch');
-                txt.innerHTML = '<i class="fas fa-helicopter text-orange-600 mr-2"></i>出動中';
-                btn.innerText = '帰還報告';
-                btn.className = 'bg-orange-500 text-white px-4 py-2 rounded shadow btn-press font-bold text-sm';
-                info.innerText = `${shiftName} - プレホス出動中`;
+            if (type === 'WORK_EXIT') {
+                state.status = 'MOBILE_WORK';
+                addLog('EXIT', '業務外出（院外活動）', state.lastGPSCoords, exitTime);
                 
-            } else if (state.status === 'WORKING') {
-                if (prehospital) {
-                    card.classList.add('status-prehospital-standby');
-                    txt.innerHTML = '<i class="fas fa-hospital text-orange-600 mr-2"></i>院内待機';
-                    info.innerText = `${shiftName} - 院内待機中`;
-                } else {
-                    card.classList.add('status-indoor-working');
-                    txt.innerHTML = '<i class="fas fa-hospital text-blue-600 mr-2"></i>勤務中';
-                    info.innerText = `${shiftName} - 勤務中`;
-                }
-                btn.innerText = '手動退勤';
-                btn.className = 'bg-red-500 text-white px-4 py-2 rounded shadow btn-press font-bold text-sm';
+                // ステータスカードの表示を更新
+                const card = document.getElementById('status-card');
+                const txt = document.getElementById('location-status');
+                const btn = document.getElementById('manual-entry-btn');
                 
-            } else {
-                card.classList.add('status-off');
-                txt.innerHTML = '<i class="fas fa-home text-gray-500 mr-2"></i>OFF';
-                btn.innerText = '手動入館';
-                btn.className = 'bg-green-600 text-white px-4 py-2 rounded shadow btn-press font-bold text-sm';
-                info.innerText = 'セッション: なし';
-            }
-            
-            // 出動カウンター表示（プレホス勤務時のみ）
-            if (prehospital && state.todayDispatchCount > 0) {
-                dispatchArea.style.display = 'block';
-                dispatchCount.innerText = state.todayDispatchCount;
-            } else {
-                dispatchArea.style.display = 'none';
-            }
-            
-            updateShiftModeIndicator();
-        }
-        
-        function updateShiftModeIndicator() {
-            const indicator = document.getElementById('shift-mode-indicator');
-            const prehospital = isPrehospitalShift();
-            
-            if (prehospital) {
-                indicator.className = 'mt-2 text-xs text-center py-1 rounded shift-prehospital';
-                indicator.innerHTML = '<i class="fas fa-helicopter mr-1"></i>プレホスモード: 院外でも自動で出動記録';
-                indicator.style.display = 'block';
-            } else {
-                indicator.className = 'mt-2 text-xs text-center py-1 rounded shift-indoor';
-                indicator.innerHTML = '<i class="fas fa-hospital mr-1"></i>院内モード: 院外で退勤確認';
-                indicator.style.display = 'block';
+                if (card && txt && btn) {
+                    card.classList.add('border-orange-400');
+                    card.classList.remove('border-green-500', 'border-gray-400');
+                    txt.innerHTML = '<i class="fas fa-ambulance mr-1"></i>院外活動中（プレホス）';
+                    btn.innerText = '帰院・退勤';
+                }
+                
+                // 通知表示
+                showNotification('🚑 院外活動として記録しました', 'info');
             }
         }
         
-        function handleMainButton() {
-            if (state.status === 'DISPATCHED') {
-                // 帰還報告
-                addLog('RETURN', '帰還（手動報告）');
-                state.status = 'WORKING';
-                state.isInside = true;
-            } else if (state.status === 'WORKING') {
-                // 退勤
-                addLog('EXIT', '退勤（手動）');
-                state.status = 'OFF';
-                state.isInside = false;
-            } else {
-                // 入館
-                addLog('ENTRY', '手動入館');
-                state.status = 'WORKING';
-                state.isInside = true;
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'backup-indicator';
+            notification.style.cssText = `
+                position: fixed;
+                top: 70px;
+                right: 10px;
+                padding: 12px 16px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: bold;
+                z-index: 9999;
+                animation: slideIn 0.3s ease-out;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            `;
+            
+            if (type === 'info') {
+                notification.style.background = '#3b82f6';
+                notification.style.color = 'white';
+            } else if (type === 'success') {
+                notification.style.background = '#10b981';
+                notification.style.color = 'white';
+            } else if (type === 'warning') {
+                notification.style.background = '#f59e0b';
+                notification.style.color = 'white';
             }
-            updateStatusUI();
-            recalcToday();
+            
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
         }
 
-        // ==================== SHIFT SELECTION ====================
-        function updateShiftSelection() {
-            const shift = document.getElementById('daily-shift-select').value;
-            const today = getTodayStr();
-            state.dailyShifts[today] = shift;
-            localStorage.setItem(SHIFTS_KEY, JSON.stringify(state.dailyShifts));
-            updateStatusUI();
-            recalcToday();
+        function manualToggleEntry() {
+            if (state.isInside) document.getElementById('exitModal').style.display = 'block';
+            else handleLocation(true);
         }
 
-        // ==================== LOGGING ====================
-        function addLog(type, note, timestamp = null) {
-            state.logs.unshift({
-                id: Date.now(),
-                timestamp: (timestamp instanceof Date ? timestamp : new Date()).toISOString(),
-                type, note,
-                gps: state.lastGPSCoords,
-                shift: getCurrentShift()
-            });
-            saveLogs();
+        async function addLog(type, note, gps, timestampOverride = null) {
+            const ts = timestampOverride || new Date().toISOString();
+            const newLog = { id: Date.now(), timestamp: ts, type, note, gps };
+            state.logs.unshift(newLog);
+            await saveAllData();
             renderLogs();
+            recalcToday();
         }
-        
-        function saveLogs() { localStorage.setItem(LOG_KEY, JSON.stringify(state.logs)); }
-        
-        function countTodayDispatches() {
-            const today = getTodayStr();
-            state.todayDispatchCount = state.logs.filter(l => 
-                new Date(l.timestamp).toLocaleDateString('en-CA') === today && l.type === 'DISPATCH'
-            ).length;
-        }
-        
+
         function renderLogs() {
-            const c = document.getElementById('log-container');
-            c.innerHTML = '';
+            const container = document.getElementById('log-container');
+            if (!container) {
+                // ログコンテナがない場合は何もしない（v5.0ではログ表示UIを簡略化）
+                return;
+            }
+            
+            container.innerHTML = '';
             state.logs.slice(0, 50).forEach(l => {
                 const d = new Date(l.timestamp);
-                const ts = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-                let icon = '●', cls = 'text-gray-600';
-                if (l.type === 'ENTRY') { icon = '▶'; cls = 'text-green-600'; }
-                else if (l.type === 'EXIT') { icon = '■'; cls = 'text-red-600'; }
-                else if (l.type === 'DISPATCH') { icon = '🚁'; cls = 'text-orange-600'; }
-                else if (l.type === 'RETURN') { icon = '🏥'; cls = 'text-blue-600'; }
-                else if (l.type === 'OFF') { icon = '○'; cls = 'text-gray-400'; }
+                const ts = `${d.getDate()}日 ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+                const typeClass = l.type === 'ENTRY' ? 'text-green-600' : l.type === 'EXIT' ? 'text-red-600' : 'text-blue-600';
                 
-                c.innerHTML += `<div class="border-b py-1 flex text-xs">
-                    <span class="w-24 text-gray-400">${ts}</span>
-                    <span class="w-6 ${cls}">${icon}</span>
+                const logItem = document.createElement('div');
+                logItem.setAttribute('class', 'border-b py-1 flex text-xs log-item');
+                logItem.innerHTML = `
+                    <span class="w-20 text-gray-400">${ts}</span>
+                    <span class="font-bold w-12 ${typeClass}">${l.type}</span>
                     <span class="flex-1 truncate">${l.note}</span>
-                </div>`;
+                `;
+                container.appendChild(logItem);
             });
         }
 
-        // ==================== CALCULATION ====================
+        function confirmExit(r) {
+            document.getElementById('exitModal').style.display = 'none';
+            if (r === 'IGNORE') {
+                state.pendingExitTime = null;
+                return;
+            }
+            const exitTime = state.pendingExitTime || new Date().toISOString();
+            state.pendingExitTime = null;
+            
+            if (r === 'WORK_EXIT') {
+                state.status = 'MOBILE_WORK';
+                addLog('EXIT', '業務外出（院外活動）', state.lastGPSCoords, exitTime);
+            } else if (r === 'SHIFT_END') {
+                state.status = 'OUTSIDE';
+                addLog('EXIT', '退勤', state.lastGPSCoords, exitTime);
+            }
+            updateStatusUI();
+            recalcToday();
+        }
+        
+        function manualToggleEntry() {
+            if (state.isInside) {
+                // 院内から退出
+                showExitModal();
+            } else if (state.status === 'MOBILE_WORK') {
+                // 院外活動中 → 選択肢を表示
+                if (confirm('院外活動を終了しますか？\n\nOK: 帰院して勤務継続\nキャンセル: このまま退勤')) {
+                    // 帰院
+                    const returnTime = new Date().toISOString();
+                    addLog('ENTRY', '帰院（院外活動終了）', state.lastGPSCoords, returnTime);
+                    state.status = 'INSIDE';
+                    state.isInside = true;
+                    updateStatusUI();
+                    recalcToday();
+                    showNotification('✅ 帰院しました', 'success');
+                } else {
+                    // 退勤
+                    const exitTime = new Date().toISOString();
+                    addLog('EXIT', '退勤（院外活動先より）', state.lastGPSCoords, exitTime);
+                    state.status = 'OUTSIDE';
+                    state.isInside = false;
+                    updateStatusUI();
+                    recalcToday();
+                    showNotification('👋 退勤しました', 'info');
+                }
+            } else {
+                // 院外から入館
+                handleLocation(true);
+            }
+        }
+
+        function updateStatusUI() {
+            const c = document.getElementById('status-card');
+            const t = document.getElementById('location-status');
+            const b = document.getElementById('manual-entry-btn');
+            
+            if (!c || !t || !b) return; // 要素チェック
+            
+            // すべてのborder色をリセット
+            c.classList.remove('border-green-500', 'border-orange-400', 'border-gray-400');
+            
+            if (state.status === 'MOBILE_WORK') {
+                c.classList.add('border-orange-400');
+                t.innerHTML = '<i class="fas fa-ambulance mr-1"></i>院外活動中（プレホス）';
+                b.innerText = '帰院・退勤';
+            } else if (state.isInside) {
+                c.classList.add('border-green-500');
+                t.innerHTML = '<i class="fas fa-hospital mr-1"></i>院内 / 勤務中';
+                b.innerText = '退館';
+            } else {
+                c.classList.add('border-gray-400');
+                t.innerHTML = '<i class="fas fa-home mr-1"></i>院外 / OFF';
+                b.innerText = '入館';
+            }
+        }
+
+        // ==================== Calculation Functions (Same as v4.6) ====================
         function getCumulativeMonthlyOt(targetDateStr) {
             const targetDate = new Date(targetDateStr);
-            const year = targetDate.getFullYear(), month = targetDate.getMonth();
+            const year = targetDate.getFullYear();
+            const month = targetDate.getMonth();
             let cumulative = 0;
             for (let d = 1; d < targetDate.getDate(); d++) {
                 const dateStr = new Date(year, month, d).toLocaleDateString('en-CA');
@@ -895,46 +1179,28 @@
         }
 
         function calculateDailyStats(dateStr, skipCumulative = false) {
-            const dayLogs = state.logs.filter(l => new Date(l.timestamp).toLocaleDateString('en-CA') === dateStr)
-                                      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            
+            const dayLogs = state.logs.filter(l => new Date(l.timestamp).toLocaleDateString('en-CA') === dateStr).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             if (dayLogs.length === 0) return null;
-            if (dayLogs.some(l => l.type === 'OFF')) {
-                return { isOff: true, actualPay: 0, legalPay: 0, balance: 0, netWorkHours: 0, otHours: 0, nightHours: 0, dispatchCount: 0,
-                         holidayDayHours: 0, holidayNightHours: 0, otDayHours: 0, otNightHours: 0, stdNightHours: 0 };
-            }
+            if (dayLogs.some(l => l.type === 'OFF')) return { isOff: true, actualPay: 0, legalPay: 0, balance: 0, text: '完全休日', otHours: 0, nightHours: 0, holidayDayHours: 0, holidayNightHours: 0, otDayHours: 0, otNightHours: 0, stdNightHours: 0 };
 
-            // 出動回数カウント
-            const dispatchCount = dayLogs.filter(l => l.type === 'DISPATCH').length;
-
-            // 勤務時間計算（ENTRY/EXIT + DISPATCH/RETURN を統合）
             let points = [];
             dayLogs.forEach(l => {
-                if (l.type === 'ENTRY' || l.type === 'DISPATCH') points.push({ t: new Date(l.timestamp).getTime(), type: 1 });
-                if (l.type === 'EXIT' || l.type === 'RETURN') points.push({ t: new Date(l.timestamp).getTime(), type: -1 });
+                if (l.type === 'ENTRY') points.push({ t: new Date(l.timestamp).getTime(), type: 1 });
+                if (l.type === 'EXIT') points.push({ t: new Date(l.timestamp).getTime(), type: -1 });
             });
-            
             const now = new Date();
-            const isToday = dateStr === now.toLocaleDateString('en-CA');
-            if (isToday && (state.status === 'WORKING' || state.status === 'DISPATCHED')) {
-                points.push({ t: now.getTime(), type: -1 });
-            }
+            if (dateStr === now.toLocaleDateString('en-CA') && state.isInside) points.push({ t: now.getTime(), type: -1 });
             points.sort((a, b) => a.t - b.t);
 
             let depth = 0, lastTime = null, totalWorkMs = 0, nightMs = 0;
-            let startTime = null, endTime = null;
-
             points.forEach(p => {
                 if (depth > 0 && lastTime !== null) {
-                    if (startTime === null) startTime = lastTime;
-                    endTime = p.t;
                     totalWorkMs += (p.t - lastTime);
-                    let cur = new Date(lastTime);
-                    const end = new Date(p.t);
-                    while (cur < end) {
-                        const h = cur.getHours();
+                    let start = new Date(lastTime), end = new Date(p.t);
+                    while (start < end) {
+                        const h = start.getHours();
                         if (h < 5 || h >= 22) nightMs += 60000;
-                        cur.setTime(cur.getTime() + 60000);
+                        start.setTime(start.getTime() + 60000);
                     }
                 }
                 depth += p.type;
@@ -942,30 +1208,29 @@
                 if (depth < 0) depth = 0;
             });
 
-            const savedShift = state.dailyShifts[dateStr] || 'day_indoor';
-            const pattern = SHIFT_PATTERNS[savedShift] || SHIFT_PATTERNS['day_indoor'];
-            const breakMs = (pattern.break || 0) * 60000;
-            const netWorkMs = Math.max(0, totalWorkMs - breakMs);
-            const netWorkHours = netWorkMs / 3600000;
-            const nightHours = nightMs / 3600000;
-            const isHoliday = savedShift === 'holiday';
-            const otHours = Math.max(0, netWorkHours - pattern.hours);
-            
-            // Breakdown
+            const savedShift = state.dailyShifts[dateStr] || 'day';
+            const pattern = SHIFT_PATTERNS[savedShift];
+            let breakMs = (config.autoNoBreak ? 0 : (pattern.breakMinutes || 60)) * 60000;
+            if (totalWorkMs < breakMs) breakMs = 0;
+
+            let netWorkHours = Math.max(0, totalWorkMs - breakMs) / 3600000;
+            let nightHours = nightMs / 3600000;
+            const isHoliday = state.holidays[dateStr] || (savedShift === 'holiday');
+            const otHours = Math.max(0, netWorkHours - pattern.standardHours);
+
             let holidayDayHours = 0, holidayNightHours = 0, otDayHours = 0, otNightHours = 0, stdNightHours = 0;
             if (isHoliday) {
                 holidayNightHours = nightHours;
                 holidayDayHours = Math.max(0, netWorkHours - nightHours);
             } else {
-                const stdNight = savedShift === 'night_indoor' ? 7 : 0;
+                let stdNight = (savedShift === 'night') ? 7 : 0;
                 otNightHours = Math.min(Math.max(0, nightHours - stdNight), otHours);
                 otDayHours = Math.max(0, otHours - otNightHours);
                 stdNightHours = Math.max(0, nightHours - otNightHours);
             }
 
-            // A. Actual Pay
             let actualPay = 0;
-            const checkHours = isHoliday ? netWorkHours : otHours;
+            let checkHours = isHoliday ? netWorkHours : otHours;
             if (checkHours > 0) {
                 if (checkHours < 1) actualPay = config.allowanceTiers.tier1;
                 else if (checkHours < 3) actualPay = config.allowanceTiers.tier2;
@@ -974,9 +1239,10 @@
             }
             if (state.appliedAllowances[dateStr] !== undefined) actualPay = state.appliedAllowances[dateStr];
 
-            // B. Legal Pay
-            const hourly = (config.baseSalary + (config.allowancesTotal || 0)) / 155;
-            let legalPay = 0, over60hNote = "";
+            const totalMonthlySalary = config.baseSalary + (config.allowancesTotal || 0);
+            const hourly = totalMonthlySalary / 155;
+            let legalPay = 0;
+            let over60hNote = "";
             let cumulativeOt = 0;
             if (!skipCumulative && !isHoliday) cumulativeOt = getCumulativeMonthlyOt(dateStr);
 
@@ -996,128 +1262,133 @@
                 } else {
                     otPay = hourly * 1.25 * otHours;
                 }
-                legalPay = otPay + (hourly * 0.25 * nightHours);
+                const nightPay = hourly * 0.25 * nightHours;
+                legalPay = otPay + nightPay;
             }
             legalPay = Math.round(legalPay);
 
-            let timeStr = "";
-            if (startTime && endTime) {
-                const s = new Date(startTime), e = new Date(endTime);
-                timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2, '0')}-${e.getHours()}:${String(e.getMinutes()).padStart(2, '0')}`;
-            }
-
             return {
-                netWorkHours, otHours, nightHours, dispatchCount,
-                holidayDayHours, holidayNightHours, otDayHours, otNightHours, stdNightHours,
+                netWorkHours, otHours, nightHours, holidayDayHours, holidayNightHours, otDayHours, otNightHours, stdNightHours,
                 actualPay, legalPay, balance: actualPay - legalPay,
-                over60hNote, timeStr,
-                text: `[${dateStr}] ${pattern.name}\n実働: ${netWorkHours.toFixed(2)}h / 残業: ${otHours.toFixed(2)}h${over60hNote}\n出動: ${dispatchCount}回\n固定手当: ¥${actualPay.toLocaleString()}\n本来賃金: ¥${legalPay.toLocaleString()}`
+                over60hNote,
+                text: `[${dateStr}]\n実働: ${netWorkHours.toFixed(2)}h / 残業: ${otHours.toFixed(2)}h${over60hNote}\n固定手当: ¥${actualPay}\n本来賃金: ¥${legalPay}`
             };
         }
 
         function recalcToday() {
-            const today = getTodayStr();
+            const today = new Date().toLocaleDateString('en-CA');
             const s = calculateDailyStats(today);
-            
             if (s && !s.isOff) {
                 document.getElementById('today-work-hours').innerText = s.netWorkHours.toFixed(1) + 'h';
                 document.getElementById('today-ot-hours').innerText = s.otHours.toFixed(1) + 'h';
                 document.getElementById('today-fixed-allowance').innerText = '¥' + s.actualPay.toLocaleString();
                 document.getElementById('calc-breakdown').innerText = `本来の残業代: ¥${s.legalPay.toLocaleString()}`;
                 state.lastCalcText = s.text;
-                
-                // 出動情報表示
-                const dispInfo = document.getElementById('today-dispatch-info');
-                if (s.dispatchCount > 0) {
-                    dispInfo.innerHTML = `<i class="fas fa-helicopter mr-1"></i>本日の出動: ${s.dispatchCount}回`;
-                    dispInfo.style.display = 'block';
-                } else {
-                    dispInfo.style.display = 'none';
-                }
             } else {
                 document.getElementById('today-work-hours').innerText = '0h';
                 document.getElementById('today-ot-hours').innerText = '0h';
                 document.getElementById('today-fixed-allowance').innerText = '¥0';
                 document.getElementById('calc-breakdown').innerText = 'ログなし';
-                document.getElementById('today-dispatch-info').style.display = 'none';
             }
-            
-            // Monthly
+
             const now = new Date();
-            const year = now.getFullYear(), month = now.getMonth();
+            const year = now.getFullYear();
+            const month = now.getMonth();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            let totalActual = config.managerAllowance || 0, totalLegal = 0;
-            
+            let totalActual = config.managerAllowance || 0;
+            let totalLegal = 0;
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const stat = calculateDailyStats(dateStr);
-                if (stat) { totalActual += stat.actualPay; totalLegal += stat.legalPay; }
+                if (stat) {
+                    totalActual += stat.actualPay;
+                    totalLegal += stat.legalPay;
+                }
             }
-            
             const balance = totalActual - totalLegal;
+            const balanceEl = document.getElementById('month-balance');
+            if (!balanceEl) return;
+            
             document.getElementById('month-actual-pay').innerText = '¥' + totalActual.toLocaleString();
             document.getElementById('month-legal-pay').innerText = '¥' + totalLegal.toLocaleString();
             
-            const balanceEl = document.getElementById('month-balance');
             if (balance < 0) {
                 balanceEl.innerText = '-¥' + Math.abs(balance).toLocaleString();
-                balanceEl.className = "text-3xl font-extrabold text-red-600 blink-red";
+                balanceEl.setAttribute('class', 'text-3xl font-extrabold text-red-600 blink-red');
                 document.getElementById('month-balance-text').innerText = "損失発生中 (名ばかり管理職)";
             } else {
                 balanceEl.innerText = '+¥' + balance.toLocaleString();
-                balanceEl.className = "text-3xl font-extrabold text-green-600";
+                balanceEl.setAttribute('class', 'text-3xl font-extrabold text-green-600');
                 document.getElementById('month-balance-text').innerText = "管理職手当内で推移";
             }
-            
             updateCharts();
         }
 
-        // ==================== CHARTS ====================
+        // ==================== Charts ====================
         let hoursChart, payChart;
-        
+
         function initCharts() {
             const ctxH = document.getElementById('hoursChart').getContext('2d');
             hoursChart = new Chart(ctxH, {
-                type: 'bar', data: { labels: [], datasets: [] },
-                options: { responsive: true, maintainAspectRatio: false,
-                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true, title: { display: true, text: '時間' } }
+                    },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } }
+                }
             });
             const ctxP = document.getElementById('payChart').getContext('2d');
             payChart = new Chart(ctxP, {
-                type: 'bar', data: { labels: [], datasets: [] },
-                options: { responsive: true, maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true } },
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, title: { display: true, text: '円' } } },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } }
+                }
             });
         }
 
         function updateCharts() {
-            let daysRange = 7;
-            if (state.chartRange === '1m') daysRange = 30;
+            let daysRange = 30;
+            if (state.chartRange === '7d') daysRange = 7;
             if (state.chartRange === '3m') daysRange = 90;
-            
-            const days = [], holidayDay = [], holidayNight = [], otDay = [], otNight = [], stdNight = [];
-            const payDaily = [], payCumulative = [];
+            const days = [], holidayDay = [], holidayNight = [], otDay = [], otNight = [], stdNight = [], payDaily = [], payCumulative = [];
             const today = new Date();
-            let cumPay = 0;
-            const startD = new Date(today); startD.setDate(today.getDate() - daysRange + 1);
-            
+            let cumulativePay = 0;
+            const startD = new Date(today);
+            startD.setDate(today.getDate() - daysRange + 1);
             for (let i = 0; i < daysRange; i++) {
-                const d = new Date(startD); d.setDate(startD.getDate() + i);
+                const d = new Date(startD);
+                d.setDate(startD.getDate() + i);
                 const dStr = d.toLocaleDateString('en-CA');
                 days.push(d.getDate() + '日');
                 const s = calculateDailyStats(dStr);
                 if (s) {
-                    holidayDay.push(s.holidayDayHours); holidayNight.push(s.holidayNightHours);
-                    otDay.push(s.otDayHours); otNight.push(s.otNightHours); stdNight.push(s.stdNightHours);
-                    payDaily.push(s.legalPay); cumPay += s.legalPay; payCumulative.push(cumPay);
+                    holidayDay.push(s.holidayDayHours);
+                    holidayNight.push(s.holidayNightHours);
+                    otDay.push(s.otDayHours);
+                    otNight.push(s.otNightHours);
+                    stdNight.push(s.stdNightHours);
+                    payDaily.push(s.legalPay);
+                    cumulativePay += s.legalPay;
+                    payCumulative.push(cumulativePay);
                 } else {
-                    holidayDay.push(0); holidayNight.push(0); otDay.push(0); otNight.push(0); stdNight.push(0);
-                    payDaily.push(0); payCumulative.push(cumPay);
+                    holidayDay.push(0);
+                    holidayNight.push(0);
+                    otDay.push(0);
+                    otNight.push(0);
+                    stdNight.push(0);
+                    payDaily.push(0);
+                    payCumulative.push(cumulativePay);
                 }
             }
-
             hoursChart.data.labels = days;
             hoursChart.data.datasets = [
                 { label: '休日(昼)', data: holidayDay, backgroundColor: '#ef4444' },
@@ -1127,180 +1398,212 @@
                 { label: '深夜(規程内)', data: stdNight, backgroundColor: '#8b5cf6' }
             ];
             hoursChart.update();
-
             payChart.data.labels = days;
             payChart.data.datasets = [
-                { type: 'line', label: '積算', data: payCumulative, borderColor: '#10b981', borderWidth: 2, tension: 0.1 },
-                { type: 'bar', label: '日次', data: payDaily, backgroundColor: '#3b82f6' }
+                { type: 'line', label: '積算残業代', data: payCumulative, borderColor: '#10b981', borderWidth: 2, tension: 0.1, yAxisID: 'y' },
+                { type: 'bar', label: '日次残業代', data: payDaily, backgroundColor: '#3b82f6', yAxisID: 'y' }
             ];
             payChart.update();
         }
-        
+
         function updateChartRange(r) {
             state.chartRange = r;
-            document.querySelectorAll('[id^="btn-"]').forEach(b => b.className = 'text-[10px] px-2 py-1 rounded text-gray-500');
-            document.getElementById('btn-' + r).className = 'text-[10px] px-2 py-1 rounded bg-white shadow-sm';
+            // ボタンのスタイル更新（SVGエラー回避）
+            ['7d', '1m', '3m'].forEach(range => {
+                const btn = document.getElementById(`btn-${range}`);
+                if (btn) {
+                    if (range === r) {
+                        btn.classList.add('bg-white', 'shadow-sm');
+                        btn.classList.remove('text-gray-500');
+                    } else {
+                        btn.classList.remove('bg-white', 'shadow-sm');
+                        btn.classList.add('text-gray-500');
+                    }
+                }
+            });
             updateCharts();
         }
 
-        // ==================== PAST WORK ====================
+        // ==================== UI Functions ====================
+        function showShiftHelp() {
+            const helpText = `
+【シフト選択ガイド】
+
+通常勤務（休憩60分）:
+・日勤/準夜/夜勤
+
+救急科専用（休憩なし）:
+・🚁 プレホス: ドクターヘリ待機
+・🚑 救急当直: 救急外来対応
+・🏥 ICU当直: 集中治療室管理
+・📱 オンコール: 自宅待機
+
+休憩なしシフトは実働時間が長くなり、
+残業代が正確に計算されます！
+            `.trim();
+            
+            alert(helpText);
+        }
+        
+        async function updateShiftSelection() {
+            const shift = document.getElementById('daily-shift-select').value;
+            const today = new Date().toLocaleDateString('en-CA');
+            state.dailyShifts[today] = shift;
+            await dbManager.saveConfig('dailyShifts', state.dailyShifts);
+            
+            // シフト情報を表示
+            const pattern = SHIFT_PATTERNS[shift];
+            const statusCard = document.getElementById('status-card');
+            
+            // カード左側の色を変更
+            statusCard.classList.remove('border-l-4', 'border-gray-400', 'border-blue-500', 'border-orange-500', 'border-purple-500', 'border-red-500', 'border-green-500', 'border-yellow-500');
+            
+            if (pattern.color === 'blue') statusCard.classList.add('border-l-4', 'border-blue-500');
+            else if (pattern.color === 'orange') statusCard.classList.add('border-l-4', 'border-orange-500');
+            else if (pattern.color === 'purple') statusCard.classList.add('border-l-4', 'border-purple-500');
+            else if (pattern.color === 'red') statusCard.classList.add('border-l-4', 'border-red-500');
+            else if (pattern.color === 'green') statusCard.classList.add('border-l-4', 'border-green-500');
+            else if (pattern.color === 'yellow') statusCard.classList.add('border-l-4', 'border-yellow-500');
+            else statusCard.classList.add('border-l-4', 'border-gray-400');
+            
+            // 休憩なしシフトの場合は通知
+            if (pattern.breakMinutes === 0 && shift !== 'holiday' && shift !== 'off') {
+                showNotification(`📋 ${pattern.name}を選択（休憩なし）`, 'info');
+            }
+            
+            recalcToday();
+        }
+
         function updatePastWorkPreview() {
             const shift = document.getElementById('past-shift').value;
             const isOff = shift === 'off';
-            const isPrehospital = shift.includes('prehospital');
             const inputs = document.getElementById('past-work-inputs');
-            const dispatchArea = document.getElementById('past-dispatch-area');
             
             if (isOff) {
                 inputs.classList.add('disabled-area');
-                dispatchArea.style.display = 'none';
-            } else {
-                inputs.classList.remove('disabled-area');
-                dispatchArea.style.display = isPrehospital ? 'block' : 'none';
-                document.getElementById('overtime-detail-area').style.display = 'block';
+                document.getElementById('overtime-detail-area').style.display = 'none';
+                document.getElementById('preview-work').innerText = '-';
+                document.getElementById('preview-actual').innerText = '¥0';
+                document.getElementById('preview-balance').innerText = '¥0';
+                return;
+            }
+            
+            inputs.classList.remove('disabled-area');
+            
+            const startTime = document.getElementById('past-start').value;
+            const endTime = document.getElementById('past-end').value;
+            
+            if (!startTime || !endTime) {
+                document.getElementById('preview-work').innerText = '-';
+                document.getElementById('preview-actual').innerText = '¥0';
+                document.getElementById('preview-balance').innerText = '¥0';
+                return;
+            }
+            
+            // 簡易計算（詳細はsavePastWorkで実施）
+            const pattern = SHIFT_PATTERNS[shift];
+            let workHours = pattern.standardHours;
+            
+            document.getElementById('preview-work').innerText = `約${workHours.toFixed(1)}h`;
+            document.getElementById('overtime-detail-area').style.display = 'block';
+            
+            // 手当プレビュー
+            const appliedType = document.querySelector('input[name="past-applied"]:checked')?.value || 'auto';
+            let allowance = 0;
+            if (appliedType === 'auto') {
+                allowance = config.allowanceTiers.tier1; // 仮の値
+            }
+            document.getElementById('preview-actual').innerText = '¥' + allowance.toLocaleString();
+            document.getElementById('preview-balance').innerText = '¥0（保存後に計算）';
+        }
+
+        function selectOvertimeActivity(type, val) {
+            state.overtimeActivities[type] = val;
+            // すべてのボタンから選択状態を解除
+            const buttons = document.querySelectorAll('.' + type + '-activity-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('activity-selected');
+            });
+            // クリックされたボタンに選択状態を追加
+            if (event && event.target) {
+                event.target.classList.add('activity-selected');
             }
         }
-        
-        function selectOvertimeActivity(type, val) {
-            document.querySelectorAll('.' + type + '-activity-btn').forEach(b => b.classList.remove('activity-selected'));
-            if (event && event.target) event.target.classList.add('activity-selected');
-        }
-        
+
         function openPastWork() {
             document.getElementById('pastWorkModal').style.display = 'block';
             document.getElementById('past-date').valueAsDate = new Date();
+            state.overtimeActivities = { early: '', late: '' };
             updatePastWorkPreview();
         }
-        function closePastWork() { document.getElementById('pastWorkModal').style.display = 'none'; }
-        
-        function savePastWork() {
+
+        function closePastWork() {
+            document.getElementById('pastWorkModal').style.display = 'none';
+        }
+
+        async function savePastWork() {
             const date = document.getElementById('past-date').value;
             const shift = document.getElementById('past-shift').value;
-            if (!date) return alert('日付を選択してください');
+            if (!date) return alert('日付選択必須');
             
             state.dailyShifts[date] = shift;
-            localStorage.setItem(SHIFTS_KEY, JSON.stringify(state.dailyShifts));
+            await dbManager.saveConfig('dailyShifts', state.dailyShifts);
             
             if (shift === 'off') {
-                const offDate = new Date(`${date}T09:00:00`);
+                const offDate = new Date(`${date}T00:00:00`);
                 state.logs.push({ id: Date.now(), timestamp: offDate.toISOString(), type: 'OFF', note: '完全休日 [過去入力]', manual: true });
                 state.appliedAllowances[date] = 0;
             } else {
                 const start = document.getElementById('past-start').value;
                 const end = document.getElementById('past-end').value;
-                if (!start || !end) return alert('出退勤時間を入力してください');
-                
+                if (!start || !end) return alert('時間入力必須');
                 const dStart = new Date(`${date}T${start}`);
                 let dEnd = new Date(`${date}T${end}`);
-                if (shift === 'night_indoor' && dEnd < dStart) dEnd.setDate(dEnd.getDate() + 1);
-                
-                state.logs.push({ id: Date.now(), timestamp: dStart.toISOString(), type: 'ENTRY', note: '過去入力開始', shift, manual: true });
-                state.logs.push({ id: Date.now() + 1, timestamp: dEnd.toISOString(), type: 'EXIT', note: '過去入力終了', shift, manual: true });
-                
-                // プレホス出動記録
-                const dispatchCount = parseInt(document.getElementById('past-dispatch-count').value) || 0;
-                for (let i = 0; i < dispatchCount; i++) {
-                    state.logs.push({ id: Date.now() + 10 + i, timestamp: dStart.toISOString(), type: 'DISPATCH', note: `出動${i+1} [過去入力]`, shift, manual: true });
-                    state.logs.push({ id: Date.now() + 20 + i, timestamp: dStart.toISOString(), type: 'RETURN', note: `帰還${i+1} [過去入力]`, shift, manual: true });
-                }
-                
-                // 固定手当
+                if (shift === 'night' && dEnd < dStart) dEnd.setDate(dEnd.getDate() + 1);
+                state.logs.push({ id: Date.now(), timestamp: dStart.toISOString(), type: 'ENTRY', note: '過去入力開始', manual: true });
+                state.logs.push({ id: Date.now() + 1, timestamp: dEnd.toISOString(), type: 'EXIT', note: '過去入力終了', manual: true });
+                if (state.overtimeActivities.early) state.logs.push({ id: Date.now() + 2, timestamp: dStart.toISOString(), type: 'ACTIVITY', note: `早出: ${state.overtimeActivities.early}`, manual: true });
+                if (state.overtimeActivities.late) state.logs.push({ id: Date.now() + 3, timestamp: dEnd.toISOString(), type: 'ACTIVITY', note: `残業: ${state.overtimeActivities.late}`, manual: true });
                 const appliedType = document.querySelector('input[name="past-applied"]:checked').value;
-                if (appliedType === 'custom') state.appliedAllowances[date] = parseInt(document.getElementById('past-applied-amount').value) || 0;
-                else if (appliedType === 'none') state.appliedAllowances[date] = 0;
-                else delete state.appliedAllowances[date];
+                if (appliedType === 'none') {
+                    state.appliedAllowances[date] = 0;
+                } else {
+                    delete state.appliedAllowances[date];
+                }
             }
-            
             state.logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            saveLogs();
-            localStorage.setItem(APPLIED_KEY, JSON.stringify(state.appliedAllowances));
+            await saveAllData();
             closePastWork();
             recalcToday();
             renderLogs();
             alert('保存しました');
         }
 
-        // ==================== REPORT ====================
-        function generateReport() {
-            const startDate = new Date(document.getElementById('report-start').value);
-            const endDate = new Date(document.getElementById('report-end').value);
-            if (!startDate || !endDate) return alert('期間を選択');
-            
-            let totalLegal = 0, totalFixed = 0, totalDispatch = 0;
-            let reportRows = '';
-            let d = new Date(startDate);
-            
-            while (d <= endDate) {
-                const dateStr = d.toLocaleDateString('en-CA');
-                const stats = calculateDailyStats(dateStr);
-                const dayOfWeek = ['日','月','火','水','木','金','土'][d.getDay()];
-                const shift = state.dailyShifts[dateStr] || 'day_indoor';
-                const pattern = SHIFT_PATTERNS[shift];
-                
-                if (stats) {
-                    if (stats.isOff) {
-                        reportRows += `<tr class="holiday-row"><td>${dateStr} (${dayOfWeek})</td><td colspan="8" class="text-center">休日</td></tr>`;
-                    } else {
-                        const dispatchNote = stats.dispatchCount > 0 ? `<span class="text-orange-600">🚁${stats.dispatchCount}</span>` : '';
-                        totalLegal += stats.legalPay; totalFixed += stats.actualPay; totalDispatch += stats.dispatchCount;
-                        reportRows += `<tr>
-                            <td>${dateStr} (${dayOfWeek})</td>
-                            <td>${pattern.name}</td>
-                            <td>${stats.timeStr || '-'}</td>
-                            <td>${stats.otHours.toFixed(2)}h</td>
-                            <td>${stats.nightHours.toFixed(2)}h</td>
-                            <td>${dispatchNote}</td>
-                            <td class="text-right">¥${stats.actualPay.toLocaleString()}</td>
-                            <td class="text-right">¥${stats.legalPay.toLocaleString()}</td>
-                            <td class="text-right font-bold ${stats.balance < 0 ? 'text-red-600' : ''}">¥${stats.balance.toLocaleString()}</td>
-                        </tr>`;
-                    }
-                }
-                d.setDate(d.getDate() + 1);
-            }
-            
-            const managerPay = config.managerAllowance;
-            const totalActual = managerPay + totalFixed;
-            const finalBalance = totalActual - totalLegal;
-            const hourlyRate = Math.round((config.baseSalary + (config.allowancesTotal || 0)) / 155);
-            
-            document.getElementById('report-content').innerHTML = `
-                <div class="print-only"><h1>管理職待遇に関する損益分析報告書</h1></div>
-                <div class="report-summary">
-                    <div class="report-box"><strong>A. 現状の支給総額:</strong> ¥${totalActual.toLocaleString()}<br><span class="text-xs">(管理職手当 ¥${managerPay.toLocaleString()} + 固定手当 ¥${totalFixed.toLocaleString()})</span></div>
-                    <div class="report-box"><strong>B. 一般職残業代:</strong> ¥${totalLegal.toLocaleString()}<br><span class="text-xs">プレホス出動: 計${totalDispatch}回</span></div>
-                </div>
-                <div class="report-box" style="margin-bottom:20px; background:${finalBalance < 0 ? '#fee2e2' : '#dcfce7'};">
-                    <strong>【最終損益】: <span style="font-size:1.5em;">¥${finalBalance.toLocaleString()}</span></strong><br>
-                    ${finalBalance < 0 ? '管理職待遇により損失が発生しています。' : '管理職手当が残業代を上回っています。'}
-                </div>
-                <table class="report-table">
-                    <thead><tr><th>日付</th><th>シフト</th><th>時間</th><th>残業</th><th>深夜</th><th>出動</th><th>固定手当</th><th>本来残業代</th><th>損益</th></tr></thead>
-                    <tbody>${reportRows}</tbody>
-                </table>
-                <div style="margin-top:20px; font-size:10px;">
-                    <strong>【計算根拠】</strong> 時給: ¥${hourlyRate.toLocaleString()} / 割増: 時間外1.25(60h超1.50), 休日1.35, 深夜+0.25
-                </div>`;
-        }
-        
-        function copyReportText() {
-            navigator.clipboard.writeText(document.getElementById('report-content').innerText).then(() => alert('コピーしました'));
+        function openDetailModal() {
+            document.getElementById('detail-text-area').value = state.lastCalcText;
+            document.getElementById('detailModal').style.display = 'block';
         }
 
-        // ==================== COMMON ====================
-        function openDetailModal() { document.getElementById('detail-text-area').value = state.lastCalcText; document.getElementById('detailModal').style.display = 'block'; }
-        function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
-        function copyToClipboard(id) { navigator.clipboard.writeText(document.getElementById(id).value); alert('コピーしました'); closeDetailModal(); }
-        function openSettings() { 
-            document.getElementById('settingsModal').style.display = 'block'; 
-            // 現在地情報を更新
-            if (state.lastGPSCoords) {
-                const info = document.getElementById('current-location-info');
-                info.innerText = `現在地: ${state.lastGPSCoords.lat.toFixed(6)}, ${state.lastGPSCoords.lng.toFixed(6)} (精度${Math.round(state.lastGPSCoords.accuracy)}m)`;
-            }
+        function closeDetailModal() {
+            document.getElementById('detailModal').style.display = 'none';
         }
-        function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
-        function saveSettings() {
+
+        function copyToClipboard(id) {
+            const el = document.getElementById(id);
+            el.select();
+            navigator.clipboard.writeText(el.value);
+            alert('コピーしました');
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        async function saveSettings() {
             config.baseSalary = parseInt(document.getElementById('setting-base-salary').value);
             config.allowancesTotal = parseInt(document.getElementById('setting-allowances-total').value) || 0;
             config.managerAllowance = parseInt(document.getElementById('setting-manager-allowance').value) || 80000;
@@ -1308,51 +1611,124 @@
             config.allowanceTiers.tier2 = parseInt(document.getElementById('tier-2').value);
             config.allowanceTiers.tier3 = parseInt(document.getElementById('tier-3').value);
             config.allowanceTiers.tier4 = parseInt(document.getElementById('tier-4').value);
-            config.hospitalName = document.getElementById('setting-hospital-name').value;
-            config.userName = document.getElementById('setting-user-name').value;
-            config.gpsAccuracyLimit = parseInt(document.getElementById('setting-gps-accuracy').value) || 200;
-            config.gpsStableThreshold = parseInt(document.getElementById('setting-gps-stable').value) || 3;
+            config.autoNoBreak = document.getElementById('auto-no-break').checked;
             
-            // 病院座標と半径
-            config.hospitalLat = parseFloat(document.getElementById('setting-hospital-lat').value) || 31.573568;
-            config.hospitalLng = parseFloat(document.getElementById('setting-hospital-lng').value) || 130.541833;
-            config.radius = parseInt(document.getElementById('setting-radius').value) || 300;
+            // GPSデバッグモード設定
+            const gpsDebugCheckbox = document.getElementById('show-gps-debug');
+            if (gpsDebugCheckbox) {
+                config.showGPSDebug = gpsDebugCheckbox.checked;
+            }
             
-            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-            closeSettings(); recalcToday(); 
-            alert('保存しました。GPS判定に新しい設定が適用されます。');
+            await dbManager.saveConfig('config', config);
+            closeSettings();
+            recalcToday();
+            
+            // GPS表示を更新
+            if (!config.showGPSDebug) {
+                const debugEl = document.getElementById('gps-debug-info');
+                if (debugEl) debugEl.style.display = 'none';
+            }
         }
-        function openManualLog() { document.getElementById('manualLogModal').style.display = 'block'; }
-        function closeManualLog() { document.getElementById('manualLogModal').style.display = 'none'; }
-        function saveManualLog() {
+
+        function openManualLog() {
+            document.getElementById('manualLogModal').style.display = 'block';
+        }
+
+        function closeManualLog() {
+            document.getElementById('manualLogModal').style.display = 'none';
+        }
+
+        async function saveManualLog() {
             const ts = document.getElementById('manual-timestamp').value;
             const type = document.getElementById('manual-type').value;
             const note = document.getElementById('manual-note').value;
             if (!ts || !note) return alert('入力不備');
-            state.logs.unshift({ id: Date.now(), timestamp: new Date(ts).toISOString(), type, note: note + ' [手動]', shift: getCurrentShift() });
-            state.logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            saveLogs(); countTodayDispatches(); recalcToday(); renderLogs(); closeManualLog();
+            await addLog(type, note + ' [手動]', null, new Date(ts).toISOString());
+            closeManualLog();
         }
-        function clearAllData() { if (confirm('全データを削除しますか？')) { localStorage.clear(); location.reload(); } }
-        function openReport() { document.getElementById('reportModal').style.display = 'block'; }
-        function closeReport() { document.getElementById('reportModal').style.display = 'none'; }
-        function printReport() { window.print(); }
-        function viewDailyDetail() { document.getElementById('dailyModal').style.display = 'block'; loadDailyDetail(); }
-        function loadDailyDetail() {
-            const dStr = document.getElementById('detail-date').value;
-            const logs = state.logs.filter(l => new Date(l.timestamp).toLocaleDateString('en-CA') === dStr);
-            document.getElementById('daily-detail-content').innerHTML = logs.map(l => 
-                `<div>[${new Date(l.timestamp).toLocaleTimeString()}] ${l.type}: ${l.note}</div>`
-            ).join('') || '<div class="text-gray-400">ログなし</div>';
+
+        async function clearAllData() {
+            if (confirm('全削除しますか？')) {
+                await dbManager.db.close();
+                indexedDB.deleteDatabase('MedWorkLogDB');
+                localStorage.clear();
+                location.reload();
+            }
         }
-        function closeDailyDetail() { document.getElementById('dailyModal').style.display = 'none'; }
-        function updateClock() { document.getElementById('clock-display').innerText = new Date().toLocaleTimeString('ja-JP'); }
-        function exportCSV() {
-            let csv = "Date,Type,Shift,Note\n";
-            state.logs.forEach(l => csv += `${l.timestamp},${l.type},${l.shift || ''},\"${l.note}\"\n`);
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-            a.download = 'medworklog_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+
+        function openReport() {
+            document.getElementById('reportModal').style.display = 'block';
+        }
+
+        function closeReport() {
+            document.getElementById('reportModal').style.display = 'none';
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        function copyReportText() {
+            const content = document.getElementById('report-content').innerText;
+            navigator.clipboard.writeText(content).then(() => alert('レポートのテキストをコピーしました'));
+        }
+
+        function generateReport() {
+            const startDate = new Date(document.getElementById('report-start').value);
+            const endDate = new Date(document.getElementById('report-end').value);
+            if (!startDate || !endDate) return alert('期間選択');
+            let totalLegal = 0, totalFixed = 0;
+            let reportRows = '';
+            let cumulativeOtMonth = 0;
+            let currentMonth = -1;
+            let d = new Date(startDate);
+            while (d <= endDate) {
+                if (d.getMonth() !== currentMonth) {
+                    cumulativeOtMonth = 0;
+                    currentMonth = d.getMonth();
+                }
+                const dateStr = d.toLocaleDateString('en-CA');
+                const stats = calculateDailyStats(dateStr);
+                const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+                if (stats) {
+                    if (stats.isOff) {
+                        reportRows += `<tr class="holiday-row"><td>${dateStr}</td><td colspan="7" class="text-center">休日</td></tr>`;
+                    } else {
+                        cumulativeOtMonth += stats.otHours;
+                        let otRateNote = stats.over60hNote ? `<span class="rate-badge">60h超</span>` : "";
+                        const dayLogs = state.logs.filter(l => new Date(l.timestamp).toLocaleDateString('en-CA') === dateStr);
+                        const remarks = dayLogs.filter(l => l.type === 'ACTIVITY').map(l => l.note.replace(' [過去入力]', '')).join(', ');
+                        totalLegal += stats.legalPay;
+                        totalFixed += stats.actualPay;
+                        reportRows += `<tr><td>${dateStr} (${dayOfWeek})</td><td>${SHIFT_PATTERNS[state.dailyShifts[dateStr] || 'day'].name}</td><td>${stats.timeStr || '-'}</td><td>${stats.otHours.toFixed(2)}h${otRateNote}</td><td>${stats.nightHours.toFixed(2)}h</td><td class="text-right">¥${stats.actualPay.toLocaleString()}</td><td class="text-right">¥${stats.legalPay.toLocaleString()}</td><td class="text-right font-bold ${stats.balance < 0 ? 'text-red-600' : ''}">¥${stats.balance.toLocaleString()}</td><td class="text-left text-xs">${remarks}</td></tr>`;
+                    }
+                }
+                d.setDate(d.getDate() + 1);
+            }
+            const managerPay = config.managerAllowance;
+            const totalActual = managerPay + totalFixed;
+            const finalBalance = totalActual - totalLegal;
+            const hourlyRate = Math.round((config.baseSalary + (config.allowancesTotal || 0)) / 155);
+            const html = `
+                <div class="print-only"><h1>管理職待遇に関する損益分析報告書</h1></div>
+                <div class="report-summary"><div class="report-box"><strong>A. 現状の支給総額:</strong> ¥${totalActual.toLocaleString()}<br><span class="text-xs">(管理職手当 ¥${managerPay.toLocaleString()} + 固定手当 ¥${totalFixed.toLocaleString()})</span></div><div class="report-box"><strong>B. 一般職としての残業代:</strong> ¥${totalLegal.toLocaleString()}</div></div>
+                <div class="report-box" style="margin-bottom:20px; background:${finalBalance < 0 ? '#fee2e2' : '#dcfce7'}; border-color:${finalBalance < 0 ? 'red' : 'green'};"><strong>【最終損益 (A - B)】: <span style="font-size:1.5em;">¥${finalBalance.toLocaleString()}</span></strong><br>${finalBalance < 0 ? '管理職待遇により、一般職より賃金が低くなっています（名ばかり管理職の可能性大）。' : '現状、管理職手当が残業代を上回っています。'}</div>
+                <table class="report-table"><thead><tr><th>日付</th><th>シフト</th><th>時間</th><th>残業</th><th>深夜</th><th>固定手当</th><th>本来残業代</th><th>日次損益</th><th>備考</th></tr></thead><tbody>${reportRows}</tbody></table>
+                <div style="margin-top:20px; font-size:10px;"><strong>【計算根拠】</strong><br>時給単価: ¥${hourlyRate.toLocaleString()} (基礎賃金÷155h)<br>割増率: 時間外1.25(60h超1.50) / 休日1.35 / 深夜+0.25</div>`;
+            document.getElementById('report-content').innerHTML = html;
+        }
+
+        function updateClock() {
+            document.getElementById('clock-display').innerText = new Date().toLocaleTimeString('ja-JP');
+        }
+
+        // ==================== PWA Registration ====================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.error('Service Worker registration failed:', err));
+            });
         }
 
         window.onload = init;
