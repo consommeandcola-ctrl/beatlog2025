@@ -417,11 +417,11 @@
 <div class="config-panel">
   <div class="config-group" style="flex:2; min-width:260px;">
     <label>エンドポイント</label>
-    <input type="text" id="endpoint" value="http://192.168.11.27:8080/api/v1/chat/completions" placeholder="http://...">
+    <input type="text" id="endpoint" value="http://192.168.11.27:11434/api/chat" placeholder="http://...">
   </div>
   <div class="config-group">
     <label>モデル</label>
-    <input type="text" id="modelName" value="permissive" placeholder="model name">
+    <input type="text" id="modelName" value="deepseek-r1-distill-qwen-7b-4bit" placeholder="model name">
   </div>
   <div>
     <button class="btn-clear" onclick="checkConnection()" style="height:40px; padding: 0 20px;">接続確認</button>
@@ -708,7 +708,9 @@ async function submitSummary() {
           // Ollama形式
           if (json.message?.content) {
             fullText += json.message.content;
-            textNode.textContent = fullText;
+            // deepseek-r1のthinkタグを除去して表示
+            const displayText = fullText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+            textNode.textContent = displayText || fullText;
           }
           // OpenAI互換形式（ストリーム）
           if (json.choices?.[0]?.delta?.content) {
