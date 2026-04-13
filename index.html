@@ -1,1737 +1,787 @@
 <!DOCTYPE html>
+<!-- 作成日時: 2026-04-12 / ver 1.0.0 -->
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#312e81">
-    <meta name="description" content="医療従事者向け勤務実態記録アプリ">
-    <title>MedWorkLog PWA v5.0</title>
-    
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="manifest" href="manifest.json">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedSummarizer v1.0.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js"></script>
-    <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; padding-bottom: 40px; }
-        .btn-press { transition: transform 0.1s; }
-        .btn-press:active { transform: scale(0.95); }
-        .card { background: white; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 2% auto; padding: 20px; border: 1px solid #888; width: 95%; max-width: 900px; border-radius: 10px; max-height: 95vh; overflow-y: auto; }
-        .blink-red { animation: blinker 2s linear infinite; color: red; font-weight: bold; }
-        @keyframes blinker { 50% { opacity: 0.5; } }
-        .disabled-area { opacity: 0.4; pointer-events: none; }
-        .rate-badge { font-size: 0.7em; padding: 1px 3px; border-radius: 3px; background: #fee2e2; color: #991b1b; border: 1px solid #f87171; margin-left: 4px; }
-        .activity-selected { background-color: #3b82f6 !important; color: white !important; font-weight: bold; border-color: #2563eb !important; }
-        .log-item { position: relative; }
-        .log-item:hover .edit-btns { display: flex; }
-        .edit-btns { display: none; }
-        #storage-warning { display: none; background-color: #fee2e2; color: #991b1b; padding: 8px; text-align: center; font-weight: bold; border-bottom: 2px solid #ef4444; position: fixed; top: 0; left: 0; right: 0; z-index: 31; }
-        #footer-status { position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2937; color: #9ca3af; font-size: 10px; padding: 4px 10px; display: flex; justify-content: space-between; z-index: 40; }
-        header { min-height: 65px; }
-        header button { min-width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-        #footer-status { position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2937; color: #9ca3af; font-size: 10px; padding: 4px 10px; display: flex; justify-content: space-between; z-index: 40; }
-        .backup-indicator { position: fixed; top: 70px; right: 10px; background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; z-index: 35; animation: fadeOut 3s forwards; }
-        @keyframes fadeOut { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
-        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        
-        @media print {
-            body { background: white; color: black; padding-bottom: 0; }
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            #footer-status { display: none; }
-            .modal { position: static; background: none; }
-            .modal-content { width: 100%; max-width: 100%; margin: 0; border: none; box-shadow: none; }
-            table { width: 100%; border-collapse: collapse; font-size: 10px; }
-            th, td { border: 1px solid #000; padding: 4px; }
-            .report-summary-box { border: 2px solid #000; padding: 10px; margin-bottom: 10px; }
-        }
-        .print-only { display: none; }
-        .report-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        .report-table th, .report-table td { border: 1px solid #ccc; padding: 4px; text-align: center; }
-        .report-table th { background-color: #f0f0f0; font-weight: bold; }
-        .report-table td.text-left { text-align: left; }
-        .report-table td.text-right { text-align: right; }
-        .report-table tr.holiday-row { background-color: #fff0f0; }
-        .report-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .report-box { border: 1px solid #ccc; padding: 10px; border-radius: 4px; background: #fff; }
-        .mobile-work-active { background-color: #fffbeb; border-color: #f59e0b; }
-        .db-status-ok { color: #10b981; }
-        .db-status-error { color: #ef4444; }
-    </style>
+  :root {
+    --bg: #0a0f1e;
+    --bg2: #111827;
+    --bg3: #1a2236;
+    --border: #1e3a5f;
+    --teal: #00c9b1;
+    --teal2: #00a896;
+    --blue: #3b82f6;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --error: #f87171;
+    --success: #34d399;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+  }
+
+  /* ── ヘッダー ── */
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(22px, 4vw, 32px);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .logo span { color: var(--teal); }
+
+  .badge {
+    font-size: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text3);
+    text-transform: uppercase;
+    padding-bottom: 2px;
+  }
+
+  /* ── 設定パネル ── */
+  .config-panel {
+    width: 100%;
+    max-width: 860px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+
+  .config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .config-group label {
+    font-size: 11px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .config-group input, .config-group select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .config-group input:focus, .config-group select:focus {
+    border-color: var(--teal);
+  }
+  .config-group select option { background: var(--bg3); }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text3);
+    display: inline-block;
+    margin-right: 6px;
+    transition: background 0.3s;
+  }
+  .status-dot.ok { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .status-dot.err { background: var(--error); }
+
+  .status-label {
+    font-size: 12px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    padding-bottom: 10px;
+  }
+
+  /* ── メインエリア ── */
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .main { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .char-count {
+    font-size: 11px;
+    color: var(--text3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  textarea {
+    flex: 1;
+    min-height: 320px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    line-height: 1.8;
+    padding: 20px;
+    resize: none;
+    outline: none;
+  }
+  textarea::placeholder { color: var(--text3); }
+
+  .panel-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .btn-clear {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text3);
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-clear:hover { border-color: var(--text3); color: var(--text2); }
+
+  /* ── 出力パネル ── */
+  .output-body {
+    flex: 1;
+    min-height: 320px;
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--text);
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .output-placeholder {
+    color: var(--text3);
+    font-style: italic;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 80%;
+    line-height: 2;
+  }
+
+  .output-placeholder .icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    display: block;
+    opacity: 0.3;
+  }
+
+  /* ストリーミングカーソル */
+  .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 14px;
+    background: var(--teal);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ── 送信ボタン ── */
+  .submit-area {
+    width: 100%;
+    max-width: 860px;
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .mode-select {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    padding: 0 14px;
+    height: 52px;
+    outline: none;
+    cursor: pointer;
+    min-width: 160px;
+  }
+  .mode-select:focus { border-color: var(--teal); }
+  .mode-select option { background: var(--bg2); }
+
+  .btn-submit {
+    flex: 1;
+    height: 52px;
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-submit:hover { opacity: 0.9; }
+  .btn-submit:active { transform: scale(0.99); }
+  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-submit .loading-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.5);
+    width: 0%;
+    animation: none;
+  }
+  .btn-submit.loading .loading-bar {
+    animation: progress 3s ease-in-out infinite;
+  }
+  @keyframes progress {
+    0% { width: 0%; left: 0; }
+    50% { width: 70%; left: 0; }
+    100% { width: 0%; left: 100%; }
+  }
+
+  /* ── エラー表示 ── */
+  .error-msg {
+    width: 100%;
+    max-width: 860px;
+    margin-top: 16px;
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--error);
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* ── セクション区切り（出力内） ── */
+  .summary-section { margin-bottom: 16px; }
+  .summary-section strong {
+    display: block;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+
+  .image-drop-area {
+    border-top: 1px dashed var(--border);
+    padding: 16px 20px;
+    cursor: pointer;
+    text-align: center;
+    color: var(--text3);
+    font-size: 12px;
+    transition: background 0.2s;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.8;
+  }
+  .image-drop-area:hover { background: rgba(255,255,255,0.02); }
+
+  .img-remove-btn {
+    position: absolute;
+    top: 4px; right: 4px;
+    background: rgba(0,0,0,0.6);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    width: 24px; height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .btn-copy {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text3);
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-copy:hover { border-color: var(--teal); color: var(--teal); }
+  .btn-copy.copied { border-color: var(--success); color: var(--success); }
+</style>
 </head>
-<body class="pb-24">
+<body>
 
-    <div id="storage-warning" class="no-print">
-        <i class="fas fa-exclamation-triangle mr-2"></i>警告: データベース接続エラー！ データが保存されません
+<header>
+  <div>
+    <div class="logo">Med<span>Sum</span></div>
+    <div class="badge">Medical Document Summarizer</div>
+  </div>
+  <div class="status-label">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">未接続</span>
+  </div>
+</header>
+
+<!-- 設定パネル -->
+<div class="config-panel">
+  <div class="config-group" style="flex:2; min-width:260px;">
+    <label>エンドポイント</label>
+    <input type="text" id="endpoint" value="http://192.168.11.27:8080/api/v1/chat/completions" placeholder="http://...">
+  </div>
+  <div class="config-group">
+    <label>モデル</label>
+    <input type="text" id="modelName" value="permissive" placeholder="model name">
+  </div>
+  <div>
+    <button class="btn-clear" onclick="checkConnection()" style="height:40px; padding: 0 20px;">接続確認</button>
+  </div>
+</div>
+
+<!-- 入力・出力 -->
+<div class="main">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">入力</span>
+      <span class="char-count" id="charCount">0 文字</span>
     </div>
+    <textarea id="inputText" placeholder="医学文書をここにペーストしてください。
 
-    <header class="bg-indigo-900 text-white p-3 sticky top-0 z-30 shadow-md no-print">
-        <div class="flex justify-between items-center">
-            <!-- 左側: タイトルとステータス -->
-            <div class="flex-1 min-w-0" onclick="initGeoLocation()" class="cursor-pointer">
-                <div class="flex items-center gap-2 mb-1">
-                    <h1 class="text-base font-bold truncate">
-                        <i class="fas fa-user-md mr-1"></i>勤務記録 v5.0
-                    </h1>
-                    <span id="db-status-icon" class="flex-shrink-0 w-5 h-5 flex items-center justify-center" title="DB状態">
-                        <i class="fas fa-database text-xs"></i>
-                    </span>
-                </div>
-                <div class="flex items-center gap-2 text-xs">
-                    <p class="opacity-80 truncate" id="current-status-text">GPS待機中...</p>
-                </div>
-            </div>
-            
-            <!-- 右側: ボタン群 -->
-            <div class="flex gap-1 flex-shrink-0 ml-2">
-                <button onclick="openPastWork()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700 transition" title="過去勤務">
-                    <i class="fas fa-calendar-plus"></i>
-                </button>
-                <button onclick="openManualLog()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700 transition" title="手動ログ">
-                    <i class="fas fa-plus-circle"></i>
-                </button>
-                <button onclick="openReport()" class="bg-red-600 text-white p-2 rounded hover:bg-red-700 shadow transition" title="レポート">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                </button>
-                <button onclick="openBackupManager()" class="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition" title="バックアップ">
-                    <i class="fas fa-shield-alt"></i>
-                </button>
-                <button onclick="openSettings()" class="bg-indigo-800 text-white p-2 rounded hover:bg-indigo-700 transition" title="設定">
-                    <i class="fas fa-cog"></i>
-                </button>
-            </div>
-        </div>
-        
-        <!-- GPS詳細情報（デバッグ用・通常は非表示） -->
-        <div id="gps-debug-info" class="text-[9px] bg-indigo-800 px-2 py-1 rounded mt-2 hidden"></div>
-    </header>
-
-    <main class="p-4 space-y-4">
-        <div class="card p-4 border-l-4 border-gray-400" id="status-card">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h2 class="text-sm text-gray-500 font-bold">現在地・勤務状況</h2>
-                    <div class="text-2xl font-bold mt-1" id="location-status">院外 / OFF</div>
-                    <div class="text-sm text-gray-600 mt-1 font-mono" id="clock-display">--:--:--</div>
-                </div>
-                <div class="text-right">
-                    <button onclick="manualToggleEntry()" id="manual-entry-btn" class="bg-green-600 text-white px-4 py-2 rounded shadow btn-press font-bold text-xs">手動入館</button>
-                </div>
-            </div>
-            <div class="mt-3 pt-3 border-t border-gray-100">
-                <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs text-gray-500 font-bold">本日のシフト</label>
-                    <button onclick="showShiftHelp()" class="text-xs text-blue-600 hover:text-blue-800" title="シフトの説明">
-                        <i class="fas fa-question-circle"></i>
-                    </button>
-                </div>
-                <select id="daily-shift-select" onchange="updateShiftSelection()" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 block p-2">
-                    <optgroup label="通常勤務">
-                        <option value="day">日勤 (8:30-17:15)</option>
-                        <option value="semi">準夜 (13:15-22:00)</option>
-                        <option value="night">夜勤 (17:15-翌09:45)</option>
-                    </optgroup>
-                    <optgroup label="救急科専用">
-                        <option value="prehospital">🚁 プレホス (休憩なし)</option>
-                        <option value="er">🚑 救急当直 (休憩なし)</option>
-                        <option value="icu">🏥 ICU当直 (休憩なし)</option>
-                        <option value="oncall">📱 オンコール (17:15-翌8:30)</option>
-                    </optgroup>
-                    <optgroup label="休日">
-                        <option value="holiday">休日出勤</option>
-                        <option value="off">完全休日</option>
-                    </optgroup>
-                </select>
-                <div id="shift-description" class="text-[10px] text-gray-500 mt-1 hidden"></div>
-            </div>
-        </div>
-
-        <div class="card p-4 border-l-4 border-indigo-600">
-            <h2 class="text-sm text-indigo-900 font-bold mb-3 border-b pb-2"><i class="fas fa-balance-scale mr-2"></i>今月の待遇損益 (管理職 vs 一般職)</h2>
-            <div class="grid grid-cols-2 gap-4 text-center mb-4">
-                <div class="bg-gray-50 p-2 rounded">
-                    <div class="text-xs text-gray-500">A. 現状の支給予定</div>
-                    <div class="text-lg font-bold text-blue-600" id="month-actual-pay">¥0</div>
-                </div>
-                <div class="bg-gray-50 p-2 rounded">
-                    <div class="text-xs text-gray-500">B. 本来の残業代</div>
-                    <div class="text-lg font-bold text-green-600" id="month-legal-pay">¥0</div>
-                </div>
-            </div>
-            <div class="bg-indigo-50 border border-indigo-100 p-3 rounded text-center">
-                <div class="text-xs font-bold text-indigo-800 mb-1">差額判定 (A - B)</div>
-                <div class="text-3xl font-extrabold" id="month-balance">¥0</div>
-                <div class="text-xs mt-1" id="month-balance-text">計算中...</div>
-            </div>
-        </div>
-
-        <div class="card p-4 border-l-4 border-red-500">
-            <div class="flex justify-between items-center mb-2">
-                <h2 class="text-sm text-gray-500 font-bold"><i class="fas fa-calculator mr-2"></i>本日の詳細</h2>
-                <button onclick="openDetailModal()" class="text-xs bg-gray-100 border px-3 py-1 rounded shadow-sm">詳細コピー</button>
-            </div>
-            <div class="grid grid-cols-2 gap-4 mb-3">
-                <div class="border rounded p-2 bg-gray-50"><div class="text-xs text-gray-500">実働 / 残業</div><div class="text-lg font-bold"><span id="today-work-hours">0.0h</span> / <span id="today-ot-hours" class="text-red-600">0.0h</span></div></div>
-                <div class="border rounded p-2 bg-blue-50"><div class="text-xs text-blue-600">固定手当(本日)</div><div class="text-lg font-bold text-blue-600" id="today-fixed-allowance">¥0</div></div>
-            </div>
-            <div class="mt-2 text-xs text-gray-400 text-right" id="calc-breakdown">データ待機中...</div>
-        </div>
-
-        <div class="card p-4">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="text-sm text-gray-500 font-bold">残業分析グラフ</h2>
-                <div class="flex bg-gray-200 rounded p-0.5 mb-2 w-fit">
-                    <button onclick="updateChartRange('7d')" class="text-[10px] px-2 py-1 rounded bg-white shadow-sm" id="btn-7d">7日</button>
-                    <button onclick="updateChartRange('1m')" class="text-[10px] px-2 py-1 rounded text-gray-500" id="btn-1m">1ヶ月</button>
-                    <button onclick="updateChartRange('3m')" class="text-[10px] px-2 py-1 rounded text-gray-500" id="btn-3m">3ヶ月</button>
-                </div>
-            </div>
-            <div class="mb-6"><h3 class="text-xs font-bold text-gray-600 mb-1">時間外・区分別積上げ (時間)</h3><div class="relative w-full h-48"><canvas id="hoursChart"></canvas></div></div>
-            <div><h3 class="text-xs font-bold text-gray-600 mb-1">給与・積算 (円)</h3><div class="relative w-full h-48"><canvas id="payChart"></canvas></div></div>
-        </div>
-    </main>
-
-    <div id="footer-status" class="no-print">
-        <span id="save-status">DB: 初期化中...</span>
-        <span id="data-count">ログ数: 0</span>
-        <span id="backup-status">バックアップ: 未実施</span>
+退院サマリー、紹介状、検査報告書、ガイドライン抜粋など、どのような文書でも要約します。"></textarea>
+    <div class="image-drop-area" id="imageDropArea" onclick="document.getElementById('imageInput').click()">
+      <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
+      <div id="imagePreviewWrap" style="display:none; position:relative;">
+        <img id="imagePreview" style="max-width:100%; max-height:160px; border-radius:8px; display:block; margin:0 auto;">
+        <button class="img-remove-btn" onclick="removeImage(event)">✕</button>
+      </div>
+      <div id="imageDropLabel">
+        <span style="font-size:24px; opacity:0.3;">🖼</span><br>
+        <span>画像をタップして追加</span><br>
+        <span style="font-size:11px; opacity:0.5;">検査結果・画像レポート・処方箋など</span>
+      </div>
     </div>
-
-    <!-- Modals (same structure as before) -->
-    <div id="pastWorkModal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <h2 class="text-lg font-bold mb-4">過去の記録入力</h2>
-            <div class="space-y-3">
-                <div><label>日付</label><input type="date" id="past-date" class="w-full border p-2 rounded"></div>
-                <div><label>シフト</label>
-                    <select id="past-shift" class="w-full border p-2 rounded" onchange="updatePastWorkPreview()">
-                        <optgroup label="通常勤務">
-                            <option value="day">日勤 (8:30-17:15)</option>
-                            <option value="semi">準夜 (13:15-22:00)</option>
-                            <option value="night">夜勤 (17:15-翌09:45)</option>
-                        </optgroup>
-                        <optgroup label="救急科専用">
-                            <option value="prehospital">🚁 プレホス (休憩なし)</option>
-                            <option value="er">🚑 救急当直 (休憩なし)</option>
-                            <option value="icu">🏥 ICU当直 (休憩なし)</option>
-                            <option value="oncall">📱 オンコール (17:15-翌8:30)</option>
-                        </optgroup>
-                        <optgroup label="休日">
-                            <option value="holiday">休日出勤</option>
-                            <option value="off">完全休日</option>
-                        </optgroup>
-                    </select>
-                </div>
-                <div id="past-work-inputs">
-                    <div class="grid grid-cols-2 gap-2"><div><label>出勤</label><input type="time" id="past-start" class="w-full border p-2 rounded" onchange="updatePastWorkPreview()"></div><div><label>退勤</label><input type="time" id="past-end" class="w-full border p-2 rounded" onchange="updatePastWorkPreview()"></div></div>
-                    <div class="mt-2"><label class="flex items-center text-sm"><input type="checkbox" id="past-no-break" class="mr-2" onchange="updatePastWorkPreview()"><span class="text-red-600 font-bold">休憩なし (常時待機)</span></label></div>
-                    <div id="overtime-detail-area" class="border rounded p-3 bg-yellow-50 mt-3" style="display:none;"><h3 class="font-bold text-sm text-orange-800">時間外業務内容</h3><div class="grid grid-cols-3 gap-1 mt-2"><button onclick="selectOvertimeActivity('early','準備')" class="early-activity-btn text-xs border bg-white">準備</button><button onclick="selectOvertimeActivity('early','引継')" class="early-activity-btn text-xs border bg-white">引継</button><button onclick="selectOvertimeActivity('early','回診')" class="early-activity-btn text-xs border bg-white">回診</button></div><div class="grid grid-cols-3 gap-1 mt-2"><button onclick="selectOvertimeActivity('late','救急')" class="late-activity-btn text-xs border bg-white">救急</button><button onclick="selectOvertimeActivity('late','記録')" class="late-activity-btn text-xs border bg-white">記録</button><button onclick="selectOvertimeActivity('late','カンファ')" class="late-activity-btn text-xs border bg-white">カンファ</button></div></div>
-                    <div class="border-t pt-3 mt-3"><label class="block text-sm font-bold mb-1">固定手当(科長職)</label><div class="space-y-2"><label class="flex items-center text-sm"><input type="radio" name="past-applied" value="auto" class="mr-2" checked onchange="updatePastWorkPreview()"><span>自動計算</span></label><label class="flex items-center text-sm"><input type="radio" name="past-applied" value="none" class="mr-2" onchange="updatePastWorkPreview()"><span>なし（¥0）</span></label></div></div>
-                </div>
-                <div class="bg-blue-50 border border-blue-200 rounded p-3 text-xs space-y-1"><div class="flex justify-between"><span>実働時間:</span> <span id="preview-work" class="font-bold">-</span></div><div class="flex justify-between"><span>固定手当:</span> <span id="preview-actual" class="font-bold">¥0</span></div><div class="border-t pt-1 mt-1 flex justify-between font-bold text-red-600"><span>待遇損益:</span> <span id="preview-balance">¥0</span></div></div>
-            </div>
-            <div class="mt-6 flex justify-end gap-2"><button onclick="closePastWork()" class="px-4 py-2 bg-gray-300 rounded">キャンセル</button><button onclick="savePastWork()" class="px-4 py-2 bg-blue-600 text-white rounded">保存</button></div>
-        </div>
+    <div class="panel-footer">
+      <button class="btn-clear" onclick="clearInput()">クリア</button>
     </div>
+  </div>
 
-    <div id="backupModal" class="modal">
-        <div class="modal-content">
-            <h2 class="text-lg font-bold mb-4"><i class="fas fa-shield-alt mr-2"></i>バックアップ管理</h2>
-            
-            <div class="bg-green-50 border border-green-200 rounded p-4 mb-4">
-                <h3 class="font-bold text-green-800 mb-2"><i class="fas fa-info-circle mr-1"></i>自動バックアップ設定</h3>
-                <div class="space-y-2">
-                    <label class="flex items-center text-sm">
-                        <input type="checkbox" id="auto-backup-enabled" class="mr-2" onchange="toggleAutoBackup()">
-                        <span>自動バックアップを有効化 (24時間ごと)</span>
-                    </label>
-                    <div class="text-xs text-gray-600 ml-6">
-                        最終バックアップ: <span id="last-backup-time">未実施</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-3 mb-4">
-                <button onclick="createManualBackup()" class="w-full bg-blue-600 text-white px-4 py-2 rounded shadow flex items-center justify-center gap-2">
-                    <i class="fas fa-download"></i>
-                    <span>今すぐバックアップ作成</span>
-                </button>
-                
-                <div class="border p-4 rounded bg-gray-50">
-                    <p class="text-sm mb-2 font-bold">バックアップから復元:</p>
-                    <input type="file" id="restore-file" accept=".json" class="text-sm w-full mb-2">
-                    <button onclick="restoreFromBackup()" class="w-full bg-orange-600 text-white px-4 py-2 rounded text-sm">
-                        <i class="fas fa-upload mr-1"></i>復元実行
-                    </button>
-                </div>
-
-                <button onclick="viewBackupHistory()" class="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded text-sm">
-                    <i class="fas fa-history mr-1"></i>バックアップ履歴表示
-                </button>
-            </div>
-
-            <div id="backup-history" class="hidden border-t pt-4">
-                <h3 class="font-bold mb-2">保存されたバックアップ</h3>
-                <div id="backup-list" class="space-y-1 max-h-60 overflow-y-auto"></div>
-            </div>
-
-            <div class="mt-6 flex justify-end gap-2">
-                <button onclick="exportDiagnostics()" class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded text-sm">診断情報</button>
-                <button onclick="closeBackupManager()" class="px-4 py-2 bg-gray-300 rounded">閉じる</button>
-            </div>
-        </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">要約</span>
+      <button class="btn-copy" id="copyBtn" onclick="copyOutput()" style="display:none;">コピー</button>
     </div>
-
-    <div id="reportModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-4 no-print">レポート</h2><div class="no-print bg-gray-50 p-4 rounded mb-4 flex gap-4"><input type="date" id="report-start" class="border p-2"><input type="date" id="report-end" class="border p-2"><button onclick="generateReport()" class="bg-blue-600 text-white px-4 py-2 rounded">生成</button></div><div id="report-content" class="bg-white p-4"></div><div class="mt-4 flex justify-end gap-2 no-print"><button onclick="printReport()" class="bg-green-600 text-white px-6 py-2 rounded">印刷</button><button onclick="copyReportText()" class="bg-indigo-600 text-white px-6 py-2 rounded">コピー</button><button onclick="closeReport()" class="bg-gray-300 px-4 py-2 rounded">閉じる</button></div></div></div>
-    <div id="exitModal" class="modal">
-        <div class="modal-content">
-            <h2 class="text-lg font-bold mb-4 text-red-600">
-                <i class="fas fa-map-marker-alt mr-2"></i>エリア退出検知
-            </h2>
-            <p class="text-sm text-gray-600 mb-4" id="exit-modal-message">院外へ移動したことを検知しました。</p>
-            <div class="grid grid-cols-1 gap-2">
-                <button onclick="confirmExit('WORK_EXIT')" id="btn-work-exit" class="p-3 bg-yellow-100 border-2 border-yellow-400 rounded text-left hover:bg-yellow-200">
-                    <div class="font-bold text-yellow-900">🚑 業務外出（院外活動）</div>
-                    <div class="text-xs text-gray-600 mt-1">ドクターヘリ、救急車同乗など</div>
-                </button>
-                <button onclick="confirmExit('SHIFT_END')" id="btn-shift-end" class="p-3 bg-blue-100 border-2 border-blue-400 rounded text-left hover:bg-blue-200">
-                    <div class="font-bold text-blue-900">🏠 退勤</div>
-                    <div class="text-xs text-gray-600 mt-1">勤務終了</div>
-                </button>
-                <button onclick="confirmExit('IGNORE')" class="p-3 bg-gray-100 border border-gray-300 rounded text-left hover:bg-gray-200">
-                    <div class="font-bold text-gray-700">❌ 記録しない</div>
-                    <div class="text-xs text-gray-600 mt-1">誤検知の場合</div>
-                </button>
-            </div>
-        </div>
+    <div class="output-body" id="outputBody">
+      <div class="output-placeholder" id="placeholder">
+        <span class="icon">⚕</span>
+        左に文書をペーストして<br>要約モードを選び<br>実行してください
+      </div>
     </div>
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <h2 class="text-lg font-bold mb-4">設定</h2>
-            <div class="space-y-4">
-                <div class="bg-blue-50 p-3 rounded">
-                    <label class="block text-sm font-bold text-blue-900 mb-2">A. 現状の支給</label>
-                    <input type="number" id="setting-manager-allowance" class="w-full border p-2 rounded mb-2" placeholder="管理職手当">
-                    <div class="text-xs text-gray-600 mb-1">固定手当 (時間外区分)</div>
-                    <div class="grid grid-cols-4 gap-1">
-                        <input type="number" id="tier-1" class="border p-1 text-sm" placeholder="1h未満">
-                        <input type="number" id="tier-2" class="border p-1 text-sm" placeholder="1-3h">
-                        <input type="number" id="tier-3" class="border p-1 text-sm" placeholder="3-6h">
-                        <input type="number" id="tier-4" class="border p-1 text-sm" placeholder="6h以上">
-                    </div>
-                </div>
-                
-                <div class="bg-green-50 p-3 rounded">
-                    <label class="block text-sm font-bold text-green-900 mb-2">B. 本来の賃金</label>
-                    <input type="number" id="setting-base-salary" class="w-full border p-2 rounded mb-2" placeholder="基本給">
-                    <input type="number" id="setting-allowances-total" class="w-full border p-2 rounded" placeholder="諸手当">
-                </div>
-                
-                <div class="border-t pt-3">
-                    <label class="block text-sm font-bold mb-2">勤務設定</label>
-                    <label class="flex items-center gap-2 mb-2">
-                        <input type="checkbox" id="auto-no-break" class="h-4 w-4">
-                        <span class="text-sm font-bold text-red-600">救急科モード（休憩なし）</span>
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" id="show-gps-debug" class="h-4 w-4">
-                        <span class="text-sm text-gray-700">GPS詳細情報を表示</span>
-                    </label>
-                </div>
-                
-                <div class="border-t pt-2">
-                    <button onclick="clearAllData()" class="w-full bg-red-100 text-red-800 py-2 rounded text-sm font-bold hover:bg-red-200">
-                        全データ削除
-                    </button>
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-2">
-                <button onclick="closeSettings()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">キャンセル</button>
-                <button onclick="saveSettings()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">保存</button>
-            </div>
-        </div>
+    <div class="panel-footer" id="outputFooter" style="display:none;">
+      <span style="font-size:11px; color:var(--text3);" id="tokenInfo"></span>
     </div>
-    <div id="manualLogModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-4">手動ログ</h2><input type="datetime-local" id="manual-timestamp" class="w-full border p-2 rounded mb-2"><select id="manual-type" class="w-full border p-2 rounded mb-2"><option value="ENTRY">入館</option><option value="EXIT">退館</option><option value="ACTIVITY">活動</option></select><input type="text" id="manual-note" class="w-full border p-2 rounded mb-2"><button onclick="saveManualLog()" class="w-full bg-blue-600 text-white px-4 py-2 rounded">追加</button><button onclick="closeManualLog()" class="w-full bg-gray-300 px-4 py-2 rounded mt-2">閉じる</button></div></div>
-    <div id="detailModal" class="modal"><div class="modal-content"><h2 class="text-lg font-bold mb-2">詳細</h2><textarea id="detail-text-area" class="w-full h-64 border p-2 text-xs font-mono bg-gray-50 rounded" readonly></textarea><button onclick="copyToClipboard('detail-text-area')" class="w-full bg-indigo-600 text-white py-2 rounded mt-2">コピー</button><button onclick="closeDetailModal()" class="mt-2 text-gray-500 w-full">閉じる</button></div></div>
-
-    <script>
-        // ==================== IndexedDB Manager ====================
-        class DBManager {
-            constructor() {
-                this.dbName = 'MedWorkLogDB';
-                this.version = 1;
-                this.db = null;
-            }
-
-            async init() {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(this.dbName, this.version);
-                    
-                    request.onerror = () => {
-                        console.error('DB Open Error:', request.error);
-                        document.getElementById('storage-warning').style.display = 'block';
-                        this.updateDBStatus(false);
-                        reject(request.error);
-                    };
-                    
-                    request.onsuccess = () => {
-                        this.db = request.result;
-                        this.updateDBStatus(true);
-                        console.log('DB Opened Successfully');
-                        resolve(this.db);
-                    };
-                    
-                    request.onupgradeneeded = (event) => {
-                        const db = event.target.result;
-                        
-                        // Logs store
-                        if (!db.objectStoreNames.contains('logs')) {
-                            const logsStore = db.createObjectStore('logs', { keyPath: 'id', autoIncrement: true });
-                            logsStore.createIndex('timestamp', 'timestamp', { unique: false });
-                            logsStore.createIndex('type', 'type', { unique: false });
-                        }
-                        
-                        // Config store
-                        if (!db.objectStoreNames.contains('config')) {
-                            db.createObjectStore('config', { keyPath: 'key' });
-                        }
-                        
-                        // Backups store
-                        if (!db.objectStoreNames.contains('backups')) {
-                            const backupsStore = db.createObjectStore('backups', { keyPath: 'id', autoIncrement: true });
-                            backupsStore.createIndex('timestamp', 'timestamp', { unique: false });
-                        }
-                        
-                        console.log('DB Structure Created');
-                    };
-                });
-            }
-
-            updateDBStatus(isOk) {
-                const icon = document.getElementById('db-status-icon');
-                if (!icon) return;
-                
-                // アイコンの色と状態を更新
-                if (isOk) {
-                    icon.innerHTML = '<i class="fas fa-database text-xs text-green-400"></i>';
-                    icon.setAttribute('title', 'DB接続OK');
-                } else {
-                    icon.innerHTML = '<i class="fas fa-database text-xs text-red-400"></i>';
-                    icon.setAttribute('title', 'DB接続エラー');
-                }
-            }
-
-            async saveLogs(logs) {
-                if (!this.db) return false;
-                const tx = this.db.transaction(['logs'], 'readwrite');
-                const store = tx.objectStore('logs');
-                
-                // Clear existing logs
-                await store.clear();
-                
-                // Add all logs
-                for (const log of logs) {
-                    await store.add(log);
-                }
-                
-                return new Promise((resolve) => {
-                    tx.oncomplete = () => resolve(true);
-                    tx.onerror = () => resolve(false);
-                });
-            }
-
-            async loadLogs() {
-                if (!this.db) return [];
-                const tx = this.db.transaction(['logs'], 'readonly');
-                const store = tx.objectStore('logs');
-                const request = store.getAll();
-                
-                return new Promise((resolve) => {
-                    request.onsuccess = () => resolve(request.result || []);
-                    request.onerror = () => resolve([]);
-                });
-            }
-
-            async saveConfig(key, value) {
-                if (!this.db) return false;
-                const tx = this.db.transaction(['config'], 'readwrite');
-                const store = tx.objectStore('config');
-                await store.put({ key, value });
-                
-                return new Promise((resolve) => {
-                    tx.oncomplete = () => resolve(true);
-                    tx.onerror = () => resolve(false);
-                });
-            }
-
-            async loadConfig(key) {
-                if (!this.db) return null;
-                const tx = this.db.transaction(['config'], 'readonly');
-                const store = tx.objectStore('config');
-                const request = store.get(key);
-                
-                return new Promise((resolve) => {
-                    request.onsuccess = () => resolve(request.result ? request.result.value : null);
-                    request.onerror = () => resolve(null);
-                });
-            }
-
-            async createBackup(data) {
-                if (!this.db) return false;
-                const backup = {
-                    timestamp: new Date().toISOString(),
-                    data: data,
-                    version: '5.0'
-                };
-                
-                const tx = this.db.transaction(['backups'], 'readwrite');
-                const store = tx.objectStore('backups');
-                await store.add(backup);
-                
-                // Keep only last 10 backups
-                const allBackups = await store.getAll();
-                return new Promise((resolve) => {
-                    allBackups.onsuccess = async () => {
-                        const backups = allBackups.result;
-                        if (backups.length > 10) {
-                            backups.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                            for (let i = 0; i < backups.length - 10; i++) {
-                                await store.delete(backups[i].id);
-                            }
-                        }
-                    };
-                    tx.oncomplete = () => resolve(true);
-                    tx.onerror = () => resolve(false);
-                });
-            }
-
-            async getBackups() {
-                if (!this.db) return [];
-                const tx = this.db.transaction(['backups'], 'readonly');
-                const store = tx.objectStore('backups');
-                const request = store.getAll();
-                
-                return new Promise((resolve) => {
-                    request.onsuccess = () => {
-                        const backups = request.result || [];
-                        backups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                        resolve(backups);
-                    };
-                    request.onerror = () => resolve([]);
-                });
-            }
-        }
-
-        // ==================== Initialize ====================
-        const dbManager = new DBManager();
-        const SHIFT_PATTERNS = {
-            'day': { start: '08:30', end: '17:15', standardHours: 7.75, breakMinutes: 60, name: '日勤', color: 'blue' },
-            'semi': { start: '13:15', end: '22:00', standardHours: 7.75, breakMinutes: 60, name: '準夜', color: 'orange' },
-            'night': { start: '17:15', end: '09:45', standardHours: 16.5, breakMinutes: 60, name: '夜勤', color: 'purple' },
-            'prehospital': { start: '08:30', end: '17:15', standardHours: 7.75, breakMinutes: 0, name: 'プレホス', color: 'red' },
-            'er': { start: '08:30', end: '17:15', standardHours: 7.75, breakMinutes: 0, name: '救急当直', color: 'red' },
-            'icu': { start: '08:30', end: '17:15', standardHours: 7.75, breakMinutes: 0, name: 'ICU当直', color: 'green' },
-            'oncall': { start: '17:15', end: '08:30', standardHours: 15.25, breakMinutes: 0, name: 'オンコール', color: 'yellow' },
-            'holiday': { start: null, end: null, standardHours: 0, breakMinutes: 0, name: '休日出勤', color: 'gray' },
-            'off': { start: null, end: null, standardHours: 0, breakMinutes: 0, name: '完全休日', color: 'gray' }
-        };
-        
-        let config = {
-            baseSalary: 500000,
-            allowancesTotal: 0,
-            managerAllowance: 80000,
-            allowanceTiers: { tier1: 5000, tier2: 6500, tier3: 9000, tier4: 10000 },
-            nightRate: 50,
-            holidayRate: 35,
-            hospitalLat: 31.573568,
-            hospitalLng: 130.541833,
-            radius: 300,
-            hospitalName: '鹿児島市立病院',
-            userName: '',
-            department: '救急科',
-            autoNoBreak: false,
-            autoBackupEnabled: true,
-            lastBackupTime: null,
-            showGPSDebug: false
-        };
-        
-        let state = {
-            isInside: false,
-            status: 'OUTSIDE', // 'INSIDE', 'MOBILE_WORK', 'OUTSIDE'
-            logs: [],
-            lastGPSCoords: null,
-            holidays: {},
-            appliedAllowances: {},
-            dailyShifts: {},
-            overtimeActivities: { early: '', late: '' },
-            lastCalcText: '',
-            chartRange: '1m',
-            pendingExitTime: null
-        };
-
-        async function init() {
-            try {
-                await dbManager.init();
-                await loadAllData();
-                
-                // Start auto-backup if enabled
-                if (config.autoBackupEnabled) {
-                    startAutoBackup();
-                }
-                
-                updateClock();
-                setInterval(updateClock, 1000);
-                initGeoLocation();
-                renderLogs();
-                initCharts();
-                recalcToday();
-                
-                // 今日のシフトをドロップダウンに反映
-                const today = new Date().toLocaleDateString('en-CA');
-                const todayShift = state.dailyShifts[today] || 'day';
-                const shiftSelect = document.getElementById('daily-shift-select');
-                if (shiftSelect) {
-                    shiftSelect.value = todayShift;
-                    // シフトに応じた色も設定
-                    updateShiftSelection();
-                }
-                
-                const t = new Date();
-                document.getElementById('report-start').valueAsDate = new Date(t.getFullYear(), t.getMonth(), 1);
-                document.getElementById('report-end').valueAsDate = t;
-                
-                updateFooterStatus('起動完了');
-            } catch (error) {
-                console.error('Init Error:', error);
-                alert('データベース初期化エラー。ブラウザのIndexedDBが有効か確認してください。');
-            }
-        }
-
-        async function loadAllData() {
-            // Load from IndexedDB
-            state.logs = await dbManager.loadLogs();
-            const savedConfig = await dbManager.loadConfig('config');
-            if (savedConfig) {
-                config = { ...config, ...savedConfig };
-            }
-            
-            const savedHolidays = await dbManager.loadConfig('holidays');
-            if (savedHolidays) state.holidays = savedHolidays;
-            
-            const savedApplied = await dbManager.loadConfig('appliedAllowances');
-            if (savedApplied) state.appliedAllowances = savedApplied;
-            
-            const savedShifts = await dbManager.loadConfig('dailyShifts');
-            if (savedShifts) state.dailyShifts = savedShifts;
-            
-            // Populate UI
-            document.getElementById('setting-base-salary').value = config.baseSalary;
-            document.getElementById('setting-allowances-total').value = config.allowancesTotal || 0;
-            document.getElementById('setting-manager-allowance').value = config.managerAllowance || 80000;
-            document.getElementById('tier-1').value = config.allowanceTiers.tier1;
-            document.getElementById('tier-2').value = config.allowanceTiers.tier2;
-            document.getElementById('tier-3').value = config.allowanceTiers.tier3;
-            document.getElementById('tier-4').value = config.allowanceTiers.tier4;
-            document.getElementById('auto-no-break').checked = config.autoNoBreak;
-            document.getElementById('auto-backup-enabled').checked = config.autoBackupEnabled;
-            
-            // GPSデバッグモードの設定
-            const gpsDebugCheckbox = document.getElementById('show-gps-debug');
-            if (gpsDebugCheckbox) {
-                gpsDebugCheckbox.checked = config.showGPSDebug || false;
-            }
-            
-            if (config.lastBackupTime) {
-                document.getElementById('last-backup-time').innerText = new Date(config.lastBackupTime).toLocaleString('ja-JP');
-                document.getElementById('backup-status').innerText = '最終BK: ' + new Date(config.lastBackupTime).toLocaleTimeString('ja-JP');
-            }
-        }
-
-        async function saveAllData() {
-            await dbManager.saveLogs(state.logs);
-            await dbManager.saveConfig('config', config);
-            await dbManager.saveConfig('holidays', state.holidays);
-            await dbManager.saveConfig('appliedAllowances', state.appliedAllowances);
-            await dbManager.saveConfig('dailyShifts', state.dailyShifts);
-            updateFooterStatus('保存完了');
-        }
-
-        function updateFooterStatus(msg) {
-            const d = new Date();
-            document.getElementById('save-status').innerText = `DB: ${msg} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-            document.getElementById('data-count').innerText = `ログ数: ${state.logs.length}`;
-        }
-
-        // ==================== Auto Backup ====================
-        let autoBackupInterval = null;
-
-        function startAutoBackup() {
-            if (autoBackupInterval) clearInterval(autoBackupInterval);
-            
-            // Check every hour
-            autoBackupInterval = setInterval(async () => {
-                const now = new Date();
-                const lastBackup = config.lastBackupTime ? new Date(config.lastBackupTime) : null;
-                
-                // Create backup if 24 hours have passed
-                if (!lastBackup || (now - lastBackup) > 24 * 60 * 60 * 1000) {
-                    await createAutoBackup();
-                }
-            }, 60 * 60 * 1000); // Every hour
-        }
-
-        async function createAutoBackup() {
-            const backupData = {
-                config,
-                logs: state.logs,
-                holidays: state.holidays,
-                appliedAllowances: state.appliedAllowances,
-                dailyShifts: state.dailyShifts
-            };
-            
-            await dbManager.createBackup(backupData);
-            config.lastBackupTime = new Date().toISOString();
-            await dbManager.saveConfig('config', config);
-            
-            document.getElementById('last-backup-time').innerText = new Date().toLocaleString('ja-JP');
-            document.getElementById('backup-status').innerText = '最終BK: ' + new Date().toLocaleTimeString('ja-JP');
-            
-            showBackupIndicator('自動バックアップ完了');
-        }
-
-        async function createManualBackup() {
-            const backupData = {
-                config,
-                logs: state.logs,
-                holidays: state.holidays,
-                appliedAllowances: state.appliedAllowances,
-                dailyShifts: state.dailyShifts,
-                version: '5.0',
-                timestamp: new Date().toISOString()
-            };
-            
-            // Save to IndexedDB
-            await dbManager.createBackup(backupData);
-            
-            // Download as file
-            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `MedWorkLog_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-            a.click();
-            
-            config.lastBackupTime = new Date().toISOString();
-            await dbManager.saveConfig('config', config);
-            
-            document.getElementById('last-backup-time').innerText = new Date().toLocaleString('ja-JP');
-            showBackupIndicator('バックアップ作成完了');
-        }
-
-        async function restoreFromBackup() {
-            const file = document.getElementById('restore-file').files[0];
-            if (!file) return alert('ファイルを選択してください');
-            
-            if (!confirm('現在のデータを上書きしますか？')) return;
-            
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    
-                    if (data.config) config = data.config;
-                    if (data.logs) state.logs = data.logs;
-                    if (data.holidays) state.holidays = data.holidays;
-                    if (data.appliedAllowances) state.appliedAllowances = data.appliedAllowances;
-                    if (data.dailyShifts) state.dailyShifts = data.dailyShifts;
-                    
-                    await saveAllData();
-                    alert('復元完了しました。ページを再読み込みします。');
-                    location.reload();
-                } catch (error) {
-                    alert('復元エラー: ' + error.message);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function toggleAutoBackup() {
-            config.autoBackupEnabled = document.getElementById('auto-backup-enabled').checked;
-            dbManager.saveConfig('config', config);
-            
-            if (config.autoBackupEnabled) {
-                startAutoBackup();
-                showBackupIndicator('自動バックアップ有効化');
-            } else {
-                if (autoBackupInterval) clearInterval(autoBackupInterval);
-                showBackupIndicator('自動バックアップ無効化');
-            }
-        }
-
-        async function viewBackupHistory() {
-            const backups = await dbManager.getBackups();
-            const historyDiv = document.getElementById('backup-history');
-            const listDiv = document.getElementById('backup-list');
-            
-            historyDiv.classList.remove('hidden');
-            
-            if (backups.length === 0) {
-                listDiv.innerHTML = '<p class="text-sm text-gray-500">保存されたバックアップはありません</p>';
-                return;
-            }
-            
-            listDiv.innerHTML = backups.map((b, i) => {
-                const date = new Date(b.timestamp);
-                const logCount = b.data.logs ? b.data.logs.length : 0;
-                return `
-                    <div class="text-xs border-b py-2 flex justify-between items-center">
-                        <span>${date.toLocaleString('ja-JP')} (${logCount}件)</span>
-                        <button onclick="restoreBackupById(${b.id})" class="text-blue-600 underline">復元</button>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function restoreBackupById(id) {
-            if (!confirm('このバックアップから復元しますか？')) return;
-            
-            const tx = dbManager.db.transaction(['backups'], 'readonly');
-            const store = tx.objectStore('backups');
-            const request = store.get(id);
-            
-            request.onsuccess = async () => {
-                const backup = request.result;
-                if (!backup) return alert('バックアップが見つかりません');
-                
-                const data = backup.data;
-                if (data.config) config = data.config;
-                if (data.logs) state.logs = data.logs;
-                if (data.holidays) state.holidays = data.holidays;
-                if (data.appliedAllowances) state.appliedAllowances = data.appliedAllowances;
-                if (data.dailyShifts) state.dailyShifts = data.dailyShifts;
-                
-                await saveAllData();
-                alert('復元完了。ページを再読み込みします。');
-                location.reload();
-            };
-        }
-
-        function showBackupIndicator(msg) {
-            const indicator = document.createElement('div');
-            indicator.className = 'backup-indicator';
-            indicator.innerHTML = `<i class="fas fa-check-circle mr-1"></i>${msg}`;
-            document.body.appendChild(indicator);
-            setTimeout(() => indicator.remove(), 3000);
-        }
-
-        function openBackupManager() {
-            document.getElementById('backupModal').style.display = 'block';
-        }
-
-        function closeBackupManager() {
-            document.getElementById('backupModal').style.display = 'none';
-            document.getElementById('backup-history').classList.add('hidden');
-        }
-
-        function exportDiagnostics() {
-            const diagnostics = {
-                dbAvailable: !!dbManager.db,
-                logsCount: state.logs.length,
-                configKeys: Object.keys(config),
-                browserInfo: navigator.userAgent,
-                timestamp: new Date().toISOString()
-            };
-            
-            const blob = new Blob([JSON.stringify(diagnostics, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'diagnostics.json';
-            a.click();
-        }
-
-        // ==================== GPS & Location ====================
-        function initGeoLocation() {
-            if ("geolocation" in navigator) {
-                document.getElementById('current-status-text').innerText = "GPS待機中...";
-                navigator.geolocation.watchPosition(
-                    (p) => { handleGPSUpdate(p); },
-                    (e) => { handleGPSError(e); },
-                    { enableHighAccuracy: true, maximumAge: 0 }
-                );
-                navigator.geolocation.getCurrentPosition((p) => { handleGPSUpdate(p); }, (e) => { }, { enableHighAccuracy: true });
-            } else {
-                document.getElementById('current-status-text').innerText = "GPS非対応";
-            }
-        }
-
-        function handleGPSUpdate(p) {
-            state.lastGPSCoords = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
-            const d = getDist(p.coords.latitude, p.coords.longitude, config.hospitalLat, config.hospitalLng);
-            
-            // GPS精度情報（デバッグモード時のみ表示）
-            const debugEl = document.getElementById('gps-debug-info');
-            if (config.showGPSDebug) {
-                debugEl.style.display = 'block';
-                debugEl.innerText = `GPS: ${new Date().toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'})} | 精度:±${Math.round(p.coords.accuracy)}m | 距離:${Math.round(d)}m`;
-            }
-            
-            // ステータステキスト更新（精度をコンパクトに表示）
-            const accuracy = Math.round(p.coords.accuracy);
-            const statusText = d < config.radius ? 
-                `院内 (±${accuracy}m)` : 
-                `院外 (±${accuracy}m)`;
-            document.getElementById('current-status-text').innerText = statusText;
-            
-            handleLocation(d < config.radius);
-        }
-
-        function handleGPSError(e) {
-            document.getElementById('current-status-text').innerText = "GPSエラー: " + e.message;
-        }
-
-        function getDist(lat1, lon1, lat2, lon2) {
-            const R = 6371000, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        }
-
-        function handleLocation(isInside) {
-            const prev = state.isInside;
-            const prevStatus = state.status;
-            state.isInside = isInside;
-            const card = document.getElementById('status-card');
-            const txt = document.getElementById('location-status');
-            const btn = document.getElementById('manual-entry-btn');
-            
-            if (!card || !txt || !btn) return; // 要素チェック
-            
-            if (isInside) {
-                card.classList.add('border-green-500');
-                card.classList.remove('border-gray-400', 'border-orange-400');
-                txt.innerHTML = '<i class="fas fa-hospital mr-1"></i>院内 / 勤務中';
-                btn.innerText = '退館';
-                
-                if (!prev) {
-                    // 院外から院内に入った
-                    if (prevStatus === 'MOBILE_WORK') {
-                        // 院外活動からの帰院
-                        addLog('ENTRY', '帰院（院外活動終了）', state.lastGPSCoords);
-                        state.status = 'INSIDE';
-                    } else {
-                        // 通常の入館
-                        addLog('ENTRY', 'GPS自動入館', state.lastGPSCoords);
-                        state.status = 'INSIDE';
-                    }
-                }
-                state.pendingExitTime = null;
-            } else {
-                card.classList.remove('border-green-500', 'border-orange-400');
-                card.classList.add('border-gray-400');
-                txt.innerHTML = '<i class="fas fa-home mr-1"></i>院外 / OFF';
-                btn.innerText = '入館';
-                
-                if (prev && state.status !== 'MOBILE_WORK') {
-                    state.pendingExitTime = new Date().toISOString();
-                    showExitModal();
-                }
-            }
-        }
-        
-        function showExitModal() {
-            // 現在時刻と今日のシフトを確認
-            const now = new Date();
-            const today = now.toLocaleDateString('en-CA');
-            const currentShift = state.dailyShifts[today] || 'day';
-            const pattern = SHIFT_PATTERNS[currentShift];
-            
-            // シフトが休日の場合は確認モーダル表示
-            if (currentShift === 'holiday') {
-                document.getElementById('exitModal').style.display = 'block';
-                return;
-            }
-            
-            // 勤務時間の終了時刻を計算
-            const isWithinShift = isWithinShiftHours(now, currentShift, pattern);
-            
-            if (isWithinShift) {
-                // 勤務時間内の退出 → 自動的に業務外出として記録
-                autoConfirmExit('WORK_EXIT');
-            } else {
-                // 勤務時間外の退出 → モーダル表示（退勤 or 業務外出を選択）
-                document.getElementById('exitModal').style.display = 'block';
-            }
-        }
-        
-        function isWithinShiftHours(checkTime, shiftType, pattern) {
-            if (!pattern.start || !pattern.end) return false;
-            
-            const today = checkTime.toLocaleDateString('en-CA');
-            const [startH, startM] = pattern.start.split(':').map(Number);
-            const [endH, endM] = pattern.end.split(':').map(Number);
-            
-            const shiftStart = new Date(checkTime);
-            shiftStart.setHours(startH, startM, 0, 0);
-            
-            let shiftEnd = new Date(checkTime);
-            shiftEnd.setHours(endH, endM, 0, 0);
-            
-            // 夜勤の場合、終了時刻が翌日
-            if (shiftType === 'night' && endH < 12) {
-                shiftEnd.setDate(shiftEnd.getDate() + 1);
-            }
-            
-            // 余裕を持たせる（勤務終了30分後まで勤務時間内とみなす）
-            shiftEnd.setMinutes(shiftEnd.getMinutes() + 30);
-            
-            return checkTime >= shiftStart && checkTime <= shiftEnd;
-        }
-        
-        function autoConfirmExit(type) {
-            // 確認なしで自動記録
-            const exitTime = state.pendingExitTime || new Date().toISOString();
-            state.pendingExitTime = null;
-            
-            if (type === 'WORK_EXIT') {
-                state.status = 'MOBILE_WORK';
-                addLog('EXIT', '業務外出（院外活動）', state.lastGPSCoords, exitTime);
-                
-                // ステータスカードの表示を更新
-                const card = document.getElementById('status-card');
-                const txt = document.getElementById('location-status');
-                const btn = document.getElementById('manual-entry-btn');
-                
-                if (card && txt && btn) {
-                    card.classList.add('border-orange-400');
-                    card.classList.remove('border-green-500', 'border-gray-400');
-                    txt.innerHTML = '<i class="fas fa-ambulance mr-1"></i>院外活動中（プレホス）';
-                    btn.innerText = '帰院・退勤';
-                }
-                
-                // 通知表示
-                showNotification('🚑 院外活動として記録しました', 'info');
-            }
-        }
-        
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = 'backup-indicator';
-            notification.style.cssText = `
-                position: fixed;
-                top: 70px;
-                right: 10px;
-                padding: 12px 16px;
-                border-radius: 6px;
-                font-size: 13px;
-                font-weight: bold;
-                z-index: 9999;
-                animation: slideIn 0.3s ease-out;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            `;
-            
-            if (type === 'info') {
-                notification.style.background = '#3b82f6';
-                notification.style.color = 'white';
-            } else if (type === 'success') {
-                notification.style.background = '#10b981';
-                notification.style.color = 'white';
-            } else if (type === 'warning') {
-                notification.style.background = '#f59e0b';
-                notification.style.color = 'white';
-            }
-            
-            notification.innerHTML = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'fadeOut 0.3s ease-out';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-
-        function manualToggleEntry() {
-            if (state.isInside) document.getElementById('exitModal').style.display = 'block';
-            else handleLocation(true);
-        }
-
-        async function addLog(type, note, gps, timestampOverride = null) {
-            const ts = timestampOverride || new Date().toISOString();
-            const newLog = { id: Date.now(), timestamp: ts, type, note, gps };
-            state.logs.unshift(newLog);
-            await saveAllData();
-            renderLogs();
-            recalcToday();
-        }
-
-        function renderLogs() {
-            const container = document.getElementById('log-container');
-            if (!container) {
-                // ログコンテナがない場合は何もしない（v5.0ではログ表示UIを簡略化）
-                return;
-            }
-            
-            container.innerHTML = '';
-            state.logs.slice(0, 50).forEach(l => {
-                const d = new Date(l.timestamp);
-                const ts = `${d.getDate()}日 ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-                const typeClass = l.type === 'ENTRY' ? 'text-green-600' : l.type === 'EXIT' ? 'text-red-600' : 'text-blue-600';
-                
-                const logItem = document.createElement('div');
-                logItem.setAttribute('class', 'border-b py-1 flex text-xs log-item');
-                logItem.innerHTML = `
-                    <span class="w-20 text-gray-400">${ts}</span>
-                    <span class="font-bold w-12 ${typeClass}">${l.type}</span>
-                    <span class="flex-1 truncate">${l.note}</span>
-                `;
-                container.appendChild(logItem);
-            });
-        }
-
-        function confirmExit(r) {
-            document.getElementById('exitModal').style.display = 'none';
-            if (r === 'IGNORE') {
-                state.pendingExitTime = null;
-                return;
-            }
-            const exitTime = state.pendingExitTime || new Date().toISOString();
-            state.pendingExitTime = null;
-            
-            if (r === 'WORK_EXIT') {
-                state.status = 'MOBILE_WORK';
-                addLog('EXIT', '業務外出（院外活動）', state.lastGPSCoords, exitTime);
-            } else if (r === 'SHIFT_END') {
-                state.status = 'OUTSIDE';
-                addLog('EXIT', '退勤', state.lastGPSCoords, exitTime);
-            }
-            updateStatusUI();
-            recalcToday();
-        }
-        
-        function manualToggleEntry() {
-            if (state.isInside) {
-                // 院内から退出
-                showExitModal();
-            } else if (state.status === 'MOBILE_WORK') {
-                // 院外活動中 → 選択肢を表示
-                if (confirm('院外活動を終了しますか？\n\nOK: 帰院して勤務継続\nキャンセル: このまま退勤')) {
-                    // 帰院
-                    const returnTime = new Date().toISOString();
-                    addLog('ENTRY', '帰院（院外活動終了）', state.lastGPSCoords, returnTime);
-                    state.status = 'INSIDE';
-                    state.isInside = true;
-                    updateStatusUI();
-                    recalcToday();
-                    showNotification('✅ 帰院しました', 'success');
-                } else {
-                    // 退勤
-                    const exitTime = new Date().toISOString();
-                    addLog('EXIT', '退勤（院外活動先より）', state.lastGPSCoords, exitTime);
-                    state.status = 'OUTSIDE';
-                    state.isInside = false;
-                    updateStatusUI();
-                    recalcToday();
-                    showNotification('👋 退勤しました', 'info');
-                }
-            } else {
-                // 院外から入館
-                handleLocation(true);
-            }
-        }
-
-        function updateStatusUI() {
-            const c = document.getElementById('status-card');
-            const t = document.getElementById('location-status');
-            const b = document.getElementById('manual-entry-btn');
-            
-            if (!c || !t || !b) return; // 要素チェック
-            
-            // すべてのborder色をリセット
-            c.classList.remove('border-green-500', 'border-orange-400', 'border-gray-400');
-            
-            if (state.status === 'MOBILE_WORK') {
-                c.classList.add('border-orange-400');
-                t.innerHTML = '<i class="fas fa-ambulance mr-1"></i>院外活動中（プレホス）';
-                b.innerText = '帰院・退勤';
-            } else if (state.isInside) {
-                c.classList.add('border-green-500');
-                t.innerHTML = '<i class="fas fa-hospital mr-1"></i>院内 / 勤務中';
-                b.innerText = '退館';
-            } else {
-                c.classList.add('border-gray-400');
-                t.innerHTML = '<i class="fas fa-home mr-1"></i>院外 / OFF';
-                b.innerText = '入館';
-            }
-        }
-
-        // ==================== Calculation Functions (Same as v4.6) ====================
-        function getCumulativeMonthlyOt(targetDateStr) {
-            const targetDate = new Date(targetDateStr);
-            const year = targetDate.getFullYear();
-            const month = targetDate.getMonth();
-            let cumulative = 0;
-            for (let d = 1; d < targetDate.getDate(); d++) {
-                const dateStr = new Date(year, month, d).toLocaleDateString('en-CA');
-                const s = calculateDailyStats(dateStr, true);
-                if (s && !s.isOff) cumulative += s.otHours;
-            }
-            return cumulative;
-        }
-
-        function calculateDailyStats(dateStr, skipCumulative = false) {
-            const dayLogs = state.logs.filter(l => new Date(l.timestamp).toLocaleDateString('en-CA') === dateStr).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            if (dayLogs.length === 0) return null;
-            if (dayLogs.some(l => l.type === 'OFF')) return { isOff: true, actualPay: 0, legalPay: 0, balance: 0, text: '完全休日', otHours: 0, nightHours: 0, holidayDayHours: 0, holidayNightHours: 0, otDayHours: 0, otNightHours: 0, stdNightHours: 0 };
-
-            let points = [];
-            dayLogs.forEach(l => {
-                if (l.type === 'ENTRY') points.push({ t: new Date(l.timestamp).getTime(), type: 1 });
-                if (l.type === 'EXIT') points.push({ t: new Date(l.timestamp).getTime(), type: -1 });
-            });
-            const now = new Date();
-            if (dateStr === now.toLocaleDateString('en-CA') && state.isInside) points.push({ t: now.getTime(), type: -1 });
-            points.sort((a, b) => a.t - b.t);
-
-            let depth = 0, lastTime = null, totalWorkMs = 0, nightMs = 0;
-            points.forEach(p => {
-                if (depth > 0 && lastTime !== null) {
-                    totalWorkMs += (p.t - lastTime);
-                    let start = new Date(lastTime), end = new Date(p.t);
-                    while (start < end) {
-                        const h = start.getHours();
-                        if (h < 5 || h >= 22) nightMs += 60000;
-                        start.setTime(start.getTime() + 60000);
-                    }
-                }
-                depth += p.type;
-                lastTime = p.t;
-                if (depth < 0) depth = 0;
-            });
-
-            const savedShift = state.dailyShifts[dateStr] || 'day';
-            const pattern = SHIFT_PATTERNS[savedShift];
-            let breakMs = (config.autoNoBreak ? 0 : (pattern.breakMinutes || 60)) * 60000;
-            if (totalWorkMs < breakMs) breakMs = 0;
-
-            let netWorkHours = Math.max(0, totalWorkMs - breakMs) / 3600000;
-            let nightHours = nightMs / 3600000;
-            const isHoliday = state.holidays[dateStr] || (savedShift === 'holiday');
-            const otHours = Math.max(0, netWorkHours - pattern.standardHours);
-
-            let holidayDayHours = 0, holidayNightHours = 0, otDayHours = 0, otNightHours = 0, stdNightHours = 0;
-            if (isHoliday) {
-                holidayNightHours = nightHours;
-                holidayDayHours = Math.max(0, netWorkHours - nightHours);
-            } else {
-                let stdNight = (savedShift === 'night') ? 7 : 0;
-                otNightHours = Math.min(Math.max(0, nightHours - stdNight), otHours);
-                otDayHours = Math.max(0, otHours - otNightHours);
-                stdNightHours = Math.max(0, nightHours - otNightHours);
-            }
-
-            let actualPay = 0;
-            let checkHours = isHoliday ? netWorkHours : otHours;
-            if (checkHours > 0) {
-                if (checkHours < 1) actualPay = config.allowanceTiers.tier1;
-                else if (checkHours < 3) actualPay = config.allowanceTiers.tier2;
-                else if (checkHours < 6) actualPay = config.allowanceTiers.tier3;
-                else actualPay = config.allowanceTiers.tier4;
-            }
-            if (state.appliedAllowances[dateStr] !== undefined) actualPay = state.appliedAllowances[dateStr];
-
-            const totalMonthlySalary = config.baseSalary + (config.allowancesTotal || 0);
-            const hourly = totalMonthlySalary / 155;
-            let legalPay = 0;
-            let over60hNote = "";
-            let cumulativeOt = 0;
-            if (!skipCumulative && !isHoliday) cumulativeOt = getCumulativeMonthlyOt(dateStr);
-
-            if (isHoliday) {
-                const dayWork = Math.max(0, netWorkHours - nightHours);
-                legalPay = (hourly * 1.35 * dayWork) + (hourly * 1.60 * nightHours);
-            } else {
-                let otPay = 0;
-                if (cumulativeOt >= 60) {
-                    otPay = hourly * 1.50 * otHours;
-                    over60hNote = " (全1.5倍)";
-                } else if (cumulativeOt + otHours > 60) {
-                    const normalPart = 60 - cumulativeOt;
-                    const highPart = otHours - normalPart;
-                    otPay = (hourly * 1.25 * normalPart) + (hourly * 1.50 * highPart);
-                    over60hNote = " (一部1.5倍)";
-                } else {
-                    otPay = hourly * 1.25 * otHours;
-                }
-                const nightPay = hourly * 0.25 * nightHours;
-                legalPay = otPay + nightPay;
-            }
-            legalPay = Math.round(legalPay);
-
-            return {
-                netWorkHours, otHours, nightHours, holidayDayHours, holidayNightHours, otDayHours, otNightHours, stdNightHours,
-                actualPay, legalPay, balance: actualPay - legalPay,
-                over60hNote,
-                text: `[${dateStr}]\n実働: ${netWorkHours.toFixed(2)}h / 残業: ${otHours.toFixed(2)}h${over60hNote}\n固定手当: ¥${actualPay}\n本来賃金: ¥${legalPay}`
-            };
-        }
-
-        function recalcToday() {
-            const today = new Date().toLocaleDateString('en-CA');
-            const s = calculateDailyStats(today);
-            if (s && !s.isOff) {
-                document.getElementById('today-work-hours').innerText = s.netWorkHours.toFixed(1) + 'h';
-                document.getElementById('today-ot-hours').innerText = s.otHours.toFixed(1) + 'h';
-                document.getElementById('today-fixed-allowance').innerText = '¥' + s.actualPay.toLocaleString();
-                document.getElementById('calc-breakdown').innerText = `本来の残業代: ¥${s.legalPay.toLocaleString()}`;
-                state.lastCalcText = s.text;
-            } else {
-                document.getElementById('today-work-hours').innerText = '0h';
-                document.getElementById('today-ot-hours').innerText = '0h';
-                document.getElementById('today-fixed-allowance').innerText = '¥0';
-                document.getElementById('calc-breakdown').innerText = 'ログなし';
-            }
-
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            let totalActual = config.managerAllowance || 0;
-            let totalLegal = 0;
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const stat = calculateDailyStats(dateStr);
-                if (stat) {
-                    totalActual += stat.actualPay;
-                    totalLegal += stat.legalPay;
-                }
-            }
-            const balance = totalActual - totalLegal;
-            const balanceEl = document.getElementById('month-balance');
-            if (!balanceEl) return;
-            
-            document.getElementById('month-actual-pay').innerText = '¥' + totalActual.toLocaleString();
-            document.getElementById('month-legal-pay').innerText = '¥' + totalLegal.toLocaleString();
-            
-            if (balance < 0) {
-                balanceEl.innerText = '-¥' + Math.abs(balance).toLocaleString();
-                balanceEl.setAttribute('class', 'text-3xl font-extrabold text-red-600 blink-red');
-                document.getElementById('month-balance-text').innerText = "損失発生中 (名ばかり管理職)";
-            } else {
-                balanceEl.innerText = '+¥' + balance.toLocaleString();
-                balanceEl.setAttribute('class', 'text-3xl font-extrabold text-green-600');
-                document.getElementById('month-balance-text').innerText = "管理職手当内で推移";
-            }
-            updateCharts();
-        }
-
-        // ==================== Charts ====================
-        let hoursChart, payChart;
-
-        function initCharts() {
-            const ctxH = document.getElementById('hoursChart').getContext('2d');
-            hoursChart = new Chart(ctxH, {
-                type: 'bar',
-                data: { labels: [], datasets: [] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { stacked: true },
-                        y: { stacked: true, beginAtZero: true, title: { display: true, text: '時間' } }
-                    },
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } }
-                }
-            });
-            const ctxP = document.getElementById('payChart').getContext('2d');
-            payChart = new Chart(ctxP, {
-                type: 'bar',
-                data: { labels: [], datasets: [] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, title: { display: true, text: '円' } } },
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } }
-                }
-            });
-        }
-
-        function updateCharts() {
-            let daysRange = 30;
-            if (state.chartRange === '7d') daysRange = 7;
-            if (state.chartRange === '3m') daysRange = 90;
-            const days = [], holidayDay = [], holidayNight = [], otDay = [], otNight = [], stdNight = [], payDaily = [], payCumulative = [];
-            const today = new Date();
-            let cumulativePay = 0;
-            const startD = new Date(today);
-            startD.setDate(today.getDate() - daysRange + 1);
-            for (let i = 0; i < daysRange; i++) {
-                const d = new Date(startD);
-                d.setDate(startD.getDate() + i);
-                const dStr = d.toLocaleDateString('en-CA');
-                days.push(d.getDate() + '日');
-                const s = calculateDailyStats(dStr);
-                if (s) {
-                    holidayDay.push(s.holidayDayHours);
-                    holidayNight.push(s.holidayNightHours);
-                    otDay.push(s.otDayHours);
-                    otNight.push(s.otNightHours);
-                    stdNight.push(s.stdNightHours);
-                    payDaily.push(s.legalPay);
-                    cumulativePay += s.legalPay;
-                    payCumulative.push(cumulativePay);
-                } else {
-                    holidayDay.push(0);
-                    holidayNight.push(0);
-                    otDay.push(0);
-                    otNight.push(0);
-                    stdNight.push(0);
-                    payDaily.push(0);
-                    payCumulative.push(cumulativePay);
-                }
-            }
-            hoursChart.data.labels = days;
-            hoursChart.data.datasets = [
-                { label: '休日(昼)', data: holidayDay, backgroundColor: '#ef4444' },
-                { label: '休日(夜)', data: holidayNight, backgroundColor: '#991b1b' },
-                { label: '残業(昼)', data: otDay, backgroundColor: '#f97316' },
-                { label: '残業(夜)', data: otNight, backgroundColor: '#c2410c' },
-                { label: '深夜(規程内)', data: stdNight, backgroundColor: '#8b5cf6' }
-            ];
-            hoursChart.update();
-            payChart.data.labels = days;
-            payChart.data.datasets = [
-                { type: 'line', label: '積算残業代', data: payCumulative, borderColor: '#10b981', borderWidth: 2, tension: 0.1, yAxisID: 'y' },
-                { type: 'bar', label: '日次残業代', data: payDaily, backgroundColor: '#3b82f6', yAxisID: 'y' }
-            ];
-            payChart.update();
-        }
-
-        function updateChartRange(r) {
-            state.chartRange = r;
-            // ボタンのスタイル更新（SVGエラー回避）
-            ['7d', '1m', '3m'].forEach(range => {
-                const btn = document.getElementById(`btn-${range}`);
-                if (btn) {
-                    if (range === r) {
-                        btn.classList.add('bg-white', 'shadow-sm');
-                        btn.classList.remove('text-gray-500');
-                    } else {
-                        btn.classList.remove('bg-white', 'shadow-sm');
-                        btn.classList.add('text-gray-500');
-                    }
-                }
-            });
-            updateCharts();
-        }
-
-        // ==================== UI Functions ====================
-        function showShiftHelp() {
-            const helpText = `
-【シフト選択ガイド】
-
-通常勤務（休憩60分）:
-・日勤/準夜/夜勤
-
-救急科専用（休憩なし）:
-・🚁 プレホス: ドクターヘリ待機
-・🚑 救急当直: 救急外来対応
-・🏥 ICU当直: 集中治療室管理
-・📱 オンコール: 自宅待機
-
-休憩なしシフトは実働時間が長くなり、
-残業代が正確に計算されます！
-            `.trim();
-            
-            alert(helpText);
-        }
-        
-        async function updateShiftSelection() {
-            const shift = document.getElementById('daily-shift-select').value;
-            const today = new Date().toLocaleDateString('en-CA');
-            state.dailyShifts[today] = shift;
-            await dbManager.saveConfig('dailyShifts', state.dailyShifts);
-            
-            // シフト情報を表示
-            const pattern = SHIFT_PATTERNS[shift];
-            const statusCard = document.getElementById('status-card');
-            
-            // カード左側の色を変更
-            statusCard.classList.remove('border-l-4', 'border-gray-400', 'border-blue-500', 'border-orange-500', 'border-purple-500', 'border-red-500', 'border-green-500', 'border-yellow-500');
-            
-            if (pattern.color === 'blue') statusCard.classList.add('border-l-4', 'border-blue-500');
-            else if (pattern.color === 'orange') statusCard.classList.add('border-l-4', 'border-orange-500');
-            else if (pattern.color === 'purple') statusCard.classList.add('border-l-4', 'border-purple-500');
-            else if (pattern.color === 'red') statusCard.classList.add('border-l-4', 'border-red-500');
-            else if (pattern.color === 'green') statusCard.classList.add('border-l-4', 'border-green-500');
-            else if (pattern.color === 'yellow') statusCard.classList.add('border-l-4', 'border-yellow-500');
-            else statusCard.classList.add('border-l-4', 'border-gray-400');
-            
-            // 休憩なしシフトの場合は通知
-            if (pattern.breakMinutes === 0 && shift !== 'holiday' && shift !== 'off') {
-                showNotification(`📋 ${pattern.name}を選択（休憩なし）`, 'info');
-            }
-            
-            recalcToday();
-        }
-
-        function updatePastWorkPreview() {
-            const shift = document.getElementById('past-shift').value;
-            const isOff = shift === 'off';
-            const inputs = document.getElementById('past-work-inputs');
-            
-            if (isOff) {
-                inputs.classList.add('disabled-area');
-                document.getElementById('overtime-detail-area').style.display = 'none';
-                document.getElementById('preview-work').innerText = '-';
-                document.getElementById('preview-actual').innerText = '¥0';
-                document.getElementById('preview-balance').innerText = '¥0';
-                return;
-            }
-            
-            inputs.classList.remove('disabled-area');
-            
-            const startTime = document.getElementById('past-start').value;
-            const endTime = document.getElementById('past-end').value;
-            
-            if (!startTime || !endTime) {
-                document.getElementById('preview-work').innerText = '-';
-                document.getElementById('preview-actual').innerText = '¥0';
-                document.getElementById('preview-balance').innerText = '¥0';
-                return;
-            }
-            
-            // 簡易計算（詳細はsavePastWorkで実施）
-            const pattern = SHIFT_PATTERNS[shift];
-            let workHours = pattern.standardHours;
-            
-            document.getElementById('preview-work').innerText = `約${workHours.toFixed(1)}h`;
-            document.getElementById('overtime-detail-area').style.display = 'block';
-            
-            // 手当プレビュー
-            const appliedType = document.querySelector('input[name="past-applied"]:checked')?.value || 'auto';
-            let allowance = 0;
-            if (appliedType === 'auto') {
-                allowance = config.allowanceTiers.tier1; // 仮の値
-            }
-            document.getElementById('preview-actual').innerText = '¥' + allowance.toLocaleString();
-            document.getElementById('preview-balance').innerText = '¥0（保存後に計算）';
-        }
-
-        function selectOvertimeActivity(type, val) {
-            state.overtimeActivities[type] = val;
-            // すべてのボタンから選択状態を解除
-            const buttons = document.querySelectorAll('.' + type + '-activity-btn');
-            buttons.forEach(btn => {
-                btn.classList.remove('activity-selected');
-            });
-            // クリックされたボタンに選択状態を追加
-            if (event && event.target) {
-                event.target.classList.add('activity-selected');
-            }
-        }
-
-        function openPastWork() {
-            document.getElementById('pastWorkModal').style.display = 'block';
-            document.getElementById('past-date').valueAsDate = new Date();
-            state.overtimeActivities = { early: '', late: '' };
-            updatePastWorkPreview();
-        }
-
-        function closePastWork() {
-            document.getElementById('pastWorkModal').style.display = 'none';
-        }
-
-        async function savePastWork() {
-            const date = document.getElementById('past-date').value;
-            const shift = document.getElementById('past-shift').value;
-            if (!date) return alert('日付選択必須');
-            
-            state.dailyShifts[date] = shift;
-            await dbManager.saveConfig('dailyShifts', state.dailyShifts);
-            
-            if (shift === 'off') {
-                const offDate = new Date(`${date}T00:00:00`);
-                state.logs.push({ id: Date.now(), timestamp: offDate.toISOString(), type: 'OFF', note: '完全休日 [過去入力]', manual: true });
-                state.appliedAllowances[date] = 0;
-            } else {
-                const start = document.getElementById('past-start').value;
-                const end = document.getElementById('past-end').value;
-                if (!start || !end) return alert('時間入力必須');
-                const dStart = new Date(`${date}T${start}`);
-                let dEnd = new Date(`${date}T${end}`);
-                if (shift === 'night' && dEnd < dStart) dEnd.setDate(dEnd.getDate() + 1);
-                state.logs.push({ id: Date.now(), timestamp: dStart.toISOString(), type: 'ENTRY', note: '過去入力開始', manual: true });
-                state.logs.push({ id: Date.now() + 1, timestamp: dEnd.toISOString(), type: 'EXIT', note: '過去入力終了', manual: true });
-                if (state.overtimeActivities.early) state.logs.push({ id: Date.now() + 2, timestamp: dStart.toISOString(), type: 'ACTIVITY', note: `早出: ${state.overtimeActivities.early}`, manual: true });
-                if (state.overtimeActivities.late) state.logs.push({ id: Date.now() + 3, timestamp: dEnd.toISOString(), type: 'ACTIVITY', note: `残業: ${state.overtimeActivities.late}`, manual: true });
-                const appliedType = document.querySelector('input[name="past-applied"]:checked').value;
-                if (appliedType === 'none') {
-                    state.appliedAllowances[date] = 0;
-                } else {
-                    delete state.appliedAllowances[date];
-                }
-            }
-            state.logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            await saveAllData();
-            closePastWork();
-            recalcToday();
-            renderLogs();
-            alert('保存しました');
-        }
-
-        function openDetailModal() {
-            document.getElementById('detail-text-area').value = state.lastCalcText;
-            document.getElementById('detailModal').style.display = 'block';
-        }
-
-        function closeDetailModal() {
-            document.getElementById('detailModal').style.display = 'none';
-        }
-
-        function copyToClipboard(id) {
-            const el = document.getElementById(id);
-            el.select();
-            navigator.clipboard.writeText(el.value);
-            alert('コピーしました');
-        }
-
-        function openSettings() {
-            document.getElementById('settingsModal').style.display = 'block';
-        }
-
-        function closeSettings() {
-            document.getElementById('settingsModal').style.display = 'none';
-        }
-
-        async function saveSettings() {
-            config.baseSalary = parseInt(document.getElementById('setting-base-salary').value);
-            config.allowancesTotal = parseInt(document.getElementById('setting-allowances-total').value) || 0;
-            config.managerAllowance = parseInt(document.getElementById('setting-manager-allowance').value) || 80000;
-            config.allowanceTiers.tier1 = parseInt(document.getElementById('tier-1').value);
-            config.allowanceTiers.tier2 = parseInt(document.getElementById('tier-2').value);
-            config.allowanceTiers.tier3 = parseInt(document.getElementById('tier-3').value);
-            config.allowanceTiers.tier4 = parseInt(document.getElementById('tier-4').value);
-            config.autoNoBreak = document.getElementById('auto-no-break').checked;
-            
-            // GPSデバッグモード設定
-            const gpsDebugCheckbox = document.getElementById('show-gps-debug');
-            if (gpsDebugCheckbox) {
-                config.showGPSDebug = gpsDebugCheckbox.checked;
-            }
-            
-            await dbManager.saveConfig('config', config);
-            closeSettings();
-            recalcToday();
-            
-            // GPS表示を更新
-            if (!config.showGPSDebug) {
-                const debugEl = document.getElementById('gps-debug-info');
-                if (debugEl) debugEl.style.display = 'none';
-            }
-        }
-
-        function openManualLog() {
-            document.getElementById('manualLogModal').style.display = 'block';
-        }
-
-        function closeManualLog() {
-            document.getElementById('manualLogModal').style.display = 'none';
-        }
-
-        async function saveManualLog() {
-            const ts = document.getElementById('manual-timestamp').value;
-            const type = document.getElementById('manual-type').value;
-            const note = document.getElementById('manual-note').value;
-            if (!ts || !note) return alert('入力不備');
-            await addLog(type, note + ' [手動]', null, new Date(ts).toISOString());
-            closeManualLog();
-        }
-
-        async function clearAllData() {
-            if (confirm('全削除しますか？')) {
-                await dbManager.db.close();
-                indexedDB.deleteDatabase('MedWorkLogDB');
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        function openReport() {
-            document.getElementById('reportModal').style.display = 'block';
-        }
-
-        function closeReport() {
-            document.getElementById('reportModal').style.display = 'none';
-        }
-
-        function printReport() {
-            window.print();
-        }
-
-        function copyReportText() {
-            const content = document.getElementById('report-content').innerText;
-            navigator.clipboard.writeText(content).then(() => alert('レポートのテキストをコピーしました'));
-        }
-
-        function generateReport() {
-            const startDate = new Date(document.getElementById('report-start').value);
-            const endDate = new Date(document.getElementById('report-end').value);
-            if (!startDate || !endDate) return alert('期間選択');
-            let totalLegal = 0, totalFixed = 0;
-            let reportRows = '';
-            let cumulativeOtMonth = 0;
-            let currentMonth = -1;
-            let d = new Date(startDate);
-            while (d <= endDate) {
-                if (d.getMonth() !== currentMonth) {
-                    cumulativeOtMonth = 0;
-                    currentMonth = d.getMonth();
-                }
-                const dateStr = d.toLocaleDateString('en-CA');
-                const stats = calculateDailyStats(dateStr);
-                const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
-                if (stats) {
-                    if (stats.isOff) {
-                        reportRows += `<tr class="holiday-row"><td>${dateStr}</td><td colspan="7" class="text-center">休日</td></tr>`;
-                    } else {
-                        cumulativeOtMonth += stats.otHours;
-                        let otRateNote = stats.over60hNote ? `<span class="rate-badge">60h超</span>` : "";
-                        const dayLogs = state.logs.filter(l => new Date(l.timestamp).toLocaleDateString('en-CA') === dateStr);
-                        const remarks = dayLogs.filter(l => l.type === 'ACTIVITY').map(l => l.note.replace(' [過去入力]', '')).join(', ');
-                        totalLegal += stats.legalPay;
-                        totalFixed += stats.actualPay;
-                        reportRows += `<tr><td>${dateStr} (${dayOfWeek})</td><td>${SHIFT_PATTERNS[state.dailyShifts[dateStr] || 'day'].name}</td><td>${stats.timeStr || '-'}</td><td>${stats.otHours.toFixed(2)}h${otRateNote}</td><td>${stats.nightHours.toFixed(2)}h</td><td class="text-right">¥${stats.actualPay.toLocaleString()}</td><td class="text-right">¥${stats.legalPay.toLocaleString()}</td><td class="text-right font-bold ${stats.balance < 0 ? 'text-red-600' : ''}">¥${stats.balance.toLocaleString()}</td><td class="text-left text-xs">${remarks}</td></tr>`;
-                    }
-                }
-                d.setDate(d.getDate() + 1);
-            }
-            const managerPay = config.managerAllowance;
-            const totalActual = managerPay + totalFixed;
-            const finalBalance = totalActual - totalLegal;
-            const hourlyRate = Math.round((config.baseSalary + (config.allowancesTotal || 0)) / 155);
-            const html = `
-                <div class="print-only"><h1>管理職待遇に関する損益分析報告書</h1></div>
-                <div class="report-summary"><div class="report-box"><strong>A. 現状の支給総額:</strong> ¥${totalActual.toLocaleString()}<br><span class="text-xs">(管理職手当 ¥${managerPay.toLocaleString()} + 固定手当 ¥${totalFixed.toLocaleString()})</span></div><div class="report-box"><strong>B. 一般職としての残業代:</strong> ¥${totalLegal.toLocaleString()}</div></div>
-                <div class="report-box" style="margin-bottom:20px; background:${finalBalance < 0 ? '#fee2e2' : '#dcfce7'}; border-color:${finalBalance < 0 ? 'red' : 'green'};"><strong>【最終損益 (A - B)】: <span style="font-size:1.5em;">¥${finalBalance.toLocaleString()}</span></strong><br>${finalBalance < 0 ? '管理職待遇により、一般職より賃金が低くなっています（名ばかり管理職の可能性大）。' : '現状、管理職手当が残業代を上回っています。'}</div>
-                <table class="report-table"><thead><tr><th>日付</th><th>シフト</th><th>時間</th><th>残業</th><th>深夜</th><th>固定手当</th><th>本来残業代</th><th>日次損益</th><th>備考</th></tr></thead><tbody>${reportRows}</tbody></table>
-                <div style="margin-top:20px; font-size:10px;"><strong>【計算根拠】</strong><br>時給単価: ¥${hourlyRate.toLocaleString()} (基礎賃金÷155h)<br>割増率: 時間外1.25(60h超1.50) / 休日1.35 / 深夜+0.25</div>`;
-            document.getElementById('report-content').innerHTML = html;
-        }
-
-        function updateClock() {
-            document.getElementById('clock-display').innerText = new Date().toLocaleTimeString('ja-JP');
-        }
-
-        // ==================== PWA Registration ====================
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.error('Service Worker registration failed:', err));
-            });
-        }
-
-        window.onload = init;
-    </script>
+  </div>
+</div>
+
+<!-- 送信エリア -->
+<div class="submit-area">
+  <select class="mode-select" id="summaryMode">
+    <option value="general">📋 一般要約</option>
+    <option value="clinical">🏥 臨床要約</option>
+    <option value="discharge">📄 退院サマリー</option>
+    <option value="bullet">• 箇条書き</option>
+    <option value="translate">🌐 英→日 翻訳要約</option>
+  </select>
+  <button class="btn-submit" id="submitBtn" onclick="submitSummary()">
+    要約を実行
+    <div class="loading-bar" id="loadingBar"></div>
+  </button>
+</div>
+
+<div class="error-msg" id="errorMsg"></div>
+
+<script>
+// ── プロンプト定義 ──
+const PROMPTS = {
+  general: `あなたは優秀な医療文書アシスタントです。
+以下の医学文書を日本語で簡潔に要約してください。
+重要な情報（主訴、診断、治療方針、注意事項）を漏らさず、読みやすい形にまとめてください。`,
+
+  clinical: `あなたは救急・総合内科専門の医師アシスタントです。
+以下の医学文書を臨床的観点から要約してください。
+【主訴・現病歴】【身体所見・検査結果】【診断】【治療・処置】【今後の方針】の構造で整理してください。`,
+
+  discharge: `あなたは病院の医師事務補助スタッフです。
+以下の文書から退院サマリーの形式で要約を作成してください。
+入院期間、主病名、入院経過、退院時状態、退院後指示を明確に記載してください。`,
+
+  bullet: `あなたは医療文書の要約専門家です。
+以下の医学文書の要点を箇条書きで整理してください。
+各項目は1〜2文で簡潔にまとめ、重要度の高い情報を先に記載してください。`,
+
+  translate: `あなたは医学英語の翻訳・要約の専門家です。
+以下の英語医学文書を日本語に翻訳しながら要約してください。
+専門用語には適切な日本語訳を使用し、重要な数値や固有名詞は正確に記載してください。`
+};
+
+// ── 画像処理 ──
+let currentImageBase64 = null;
+
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  loadImage(file);
+}
+
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    // base64部分のみ抽出
+    currentImageBase64 = dataUrl.split(',')[1];
+    document.getElementById('imagePreview').src = dataUrl;
+    document.getElementById('imagePreviewWrap').style.display = 'block';
+    document.getElementById('imageDropLabel').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage(e) {
+  e.stopPropagation();
+  currentImageBase64 = null;
+  document.getElementById('imagePreview').src = '';
+  document.getElementById('imagePreviewWrap').style.display = 'none';
+  document.getElementById('imageDropLabel').style.display = 'block';
+  document.getElementById('imageInput').value = '';
+}
+
+// ドラッグ&ドロップ対応
+document.addEventListener('DOMContentLoaded', () => {
+  const area = document.getElementById('imageDropArea');
+  area.addEventListener('dragover', (e) => { e.preventDefault(); area.style.background = 'rgba(0,201,177,0.05)'; });
+  area.addEventListener('dragleave', () => { area.style.background = ''; });
+  area.addEventListener('drop', (e) => {
+    e.preventDefault();
+    area.style.background = '';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadImage(file);
+  });
+});
+
+
+async function checkConnection() {
+  const endpoint = document.getElementById('endpoint').value.trim();
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('statusText');
+  const model = document.getElementById('modelName').value.trim();
+
+  label.textContent = '確認中...';
+  dot.className = 'status-dot';
+
+  try {
+    // チャットエンドポイントに最小リクエストを投げて確認
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: 'user', content: 'hi' }],
+        stream: false
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+    if (res.ok) {
+      dot.className = 'status-dot ok';
+      label.textContent = '接続OK';
+    } else {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  } catch (e) {
+    dot.className = 'status-dot err';
+    label.textContent = `接続失敗: ${e.message}`;
+  }
+}
+
+// ── 入力文字数カウント ──
+document.getElementById('inputText').addEventListener('input', function() {
+  document.getElementById('charCount').textContent = `${this.value.length.toLocaleString()} 文字`;
+});
+
+// ── クリア ──
+function clearInput() {
+  document.getElementById('inputText').value = '';
+  document.getElementById('charCount').textContent = '0 文字';
+}
+
+// ── コピー ──
+function copyOutput() {
+  const text = document.getElementById('outputBody').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ コピー済';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'コピー'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── 要約実行 ──
+async function submitSummary() {
+  const inputText = document.getElementById('inputText').value.trim();
+  const endpoint = document.getElementById('endpoint').value.trim();
+  const model = document.getElementById('modelName').value.trim();
+  const mode = document.getElementById('summaryMode').value;
+
+  if (!inputText && !currentImageBase64) {
+    showError('文書をペーストするか画像を追加してください。');
+    return;
+  }
+  if (!endpoint) {
+    showError('エンドポイントを入力してください。');
+    return;
+  }
+
+  const systemPrompt = PROMPTS[mode];
+  const userMessage = {
+    role: 'user',
+    content: `以下の医学文書を要約してください：\n\n${inputText || '（画像を参照してください）'}`
+  };
+  if (currentImageBase64) {
+    userMessage.images = [currentImageBase64];
+  }
+
+  // UI準備
+  setLoading(true);
+  clearError();
+  clearOutputDisplay();
+
+  const startTime = Date.now();
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          userMessage
+        ],
+        stream: true
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+
+    // ストリーミング読み取り
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let evalCount = 0;
+
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('copyBtn').style.display = 'none';
+
+    const outputBody = document.getElementById('outputBody');
+    outputBody.innerHTML = '';
+
+    const textNode = document.createElement('div');
+    textNode.style.whiteSpace = 'pre-wrap';
+    textNode.style.lineHeight = '1.9';
+    outputBody.appendChild(textNode);
+
+    const cursorEl = document.createElement('span');
+    cursorEl.className = 'cursor';
+    outputBody.appendChild(cursorEl);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n').filter(l => l.trim());
+
+      for (const line of lines) {
+        try {
+          // SSE形式 "data: {...}" の場合
+          const jsonStr = line.startsWith('data: ') ? line.slice(6) : line;
+          if (jsonStr === '[DONE]') {
+            cursorEl.remove();
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('tokenInfo').textContent = `${elapsed}s`;
+            document.getElementById('outputFooter').style.display = 'flex';
+            document.getElementById('copyBtn').style.display = 'inline-block';
+            continue;
+          }
+          const json = JSON.parse(jsonStr);
+
+          // Ollama形式
+          if (json.message?.content) {
+            fullText += json.message.content;
+            textNode.textContent = fullText;
+          }
+          // OpenAI互換形式（ストリーム）
+          if (json.choices?.[0]?.delta?.content) {
+            fullText += json.choices[0].delta.content;
+            textNode.textContent = fullText;
+          }
+          // OpenAI互換形式（非ストリーム）
+          if (json.choices?.[0]?.message?.content) {
+            fullText = json.choices[0].message.content;
+            textNode.textContent = fullText;
+          }
+
+          if (json.eval_count) evalCount = json.eval_count;
+          if (json.done || json.choices?.[0]?.finish_reason === 'stop') {
+            cursorEl.remove();
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('tokenInfo').textContent =
+              evalCount ? `${evalCount} tokens · ${elapsed}s` : `${elapsed}s`;
+            document.getElementById('outputFooter').style.display = 'flex';
+            document.getElementById('copyBtn').style.display = 'inline-block';
+          }
+        } catch (_) {}
+      }
+    }
+
+  } catch (e) {
+    showError(`エラー: ${e.message}\n\nエンドポイントとモデル名を確認し、ai.localのサーバーが起動していることを確認してください。`);
+    resetOutputDisplay();
+  } finally {
+    setLoading(false);
+  }
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('submitBtn');
+  if (on) {
+    btn.disabled = true;
+    btn.innerHTML = '処理中...<div class="loading-bar" id="loadingBar"></div>';
+    btn.classList.add('loading');
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = '要約を実行<div class="loading-bar" id="loadingBar"></div>';
+    btn.classList.remove('loading');
+  }
+}
+
+function clearOutputDisplay() {
+  const ob = document.getElementById('outputBody');
+  ob.innerHTML = '<div class="output-placeholder" id="placeholder" style="display:none;"></div>';
+  document.getElementById('outputFooter').style.display = 'none';
+  document.getElementById('copyBtn').style.display = 'none';
+}
+
+function resetOutputDisplay() {
+  const ob = document.getElementById('outputBody');
+  ob.innerHTML = `<div class="output-placeholder" id="placeholder">
+    <span class="icon">⚕</span>
+    左に文書をペーストして<br>要約モードを選び<br>実行してください
+  </div>`;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function clearError() {
+  document.getElementById('errorMsg').classList.remove('show');
+}
+
+// 起動時に接続確認
+window.addEventListener('load', () => setTimeout(checkConnection, 500));
+</script>
 </body>
 </html>
